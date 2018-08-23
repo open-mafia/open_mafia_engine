@@ -1,3 +1,5 @@
+-r base.txt
+
 alabaster==0.7.11
 Babel==2.6.0
 certifi==2018.8.13
