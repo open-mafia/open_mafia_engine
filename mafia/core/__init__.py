@@ -1,17 +1,18 @@
+""""""
 
-class StateObject(object):
-    """Base class for stateful objects."""
-
-    pass
+import uuid
 
 
-class DeltaObject(object):
-    """Base class for objects that change states."""
+class GameObject:
+    """Base class for all game objects."""
 
-    pass
+    def __init__(self):
+        self.ID = uuid.uuid1()
 
-
-class Engine(StateObject):
-    """"""
-
-    pass
+    def __repr__(self):
+        its = self.__dict__.items()
+        kw = ", ".join(
+            "{}={}".format(k, repr(v)) for k, v in its
+            if k[0] != "_"
+        )
+        return "{}({})".format(self.__class__.__name__, kw)
