@@ -1,6 +1,6 @@
 """"""
 
-from mafia.core import GameObject
+from mafia.core import GameObject, singleton
 from mafia.core.action import ActionQueue
 
 
@@ -37,11 +37,15 @@ class Subscriber:
         return None
 
 
-class EventManager:
+@singleton
+class EventManagerType:
     """Object that manages event-related things.
     
     Subscriptions:
     { EventType : set([subscribers]) }
+
+    TODO: Rewrite with class-based singleton, not 
+    as a decorator (ie. __new__...)
     """
 
     def __init__(self):
@@ -95,3 +99,6 @@ class EventManager:
 
         # execute local queue
         q.execute()
+
+
+EventManager = EventManagerType()
