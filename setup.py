@@ -32,9 +32,12 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose'],
     install_requires=[
+        
+    ],
+    docs_requires=[
         # Required for building documentation
-        # "sphinx", "sphinxcontrib-napoleon",
-        # "sphinx_rtd_theme",
+        "sphinx",  # "sphinxcontrib-napoleon",
+        "sphinx_rtd_theme",
     ],
     packages=find_packages(),
 )
