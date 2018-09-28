@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 #
 # Configuration file for the Sphinx documentation builder.
@@ -13,11 +14,10 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath(os.path.join('..', '..'))
-
-import mafia
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join('../..')))
+from mafia import __version__
 
 # -- Project information -----------------------------------------------------
 
@@ -26,9 +26,9 @@ copyright = '2018, Open Mafia Team'
 author = 'Open Mafia Team'
 
 # The short X.Y version
-version = ''
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
@@ -42,15 +42,38 @@ release = '0.0.1'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.coverage',
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
+    #'sphinx.ext.githubpages',
+
     'sphinx_rtd_theme',
+
+    'sphinx.ext.napoleon',
+    'sphinxcontrib.apidoc',  
 ]
+
+
+# Extension configuration
+
+# Napoleon: numpy-style docstrings
+# See: http://www.sphinx-doc.org/en/stable/ext/napoleon.html#configuration
+napoleon_numpy_docstring = True
+napoleon_google_docstring = False
+napoleon_include_init_with_doc = True
+
+# Sphinxcontrib-apidoc: better integration with autodoc
+# See: https://github.com/sphinx-contrib/apidoc 
+apidoc_module_dir = '../../mafia'
+apidoc_output_dir = '_reference'
+apidoc_excluded_paths = ['tests']
+apidoc_separate_modules = True
+
+
+
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

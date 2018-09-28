@@ -7,10 +7,12 @@ Welcome to Open Mafia Engine's documentation!
 =============================================
 
 .. toctree::
+    :glob:
     :maxdepth: 2
     :caption: Contents:
 
-    .. automodule: mafia
+    readme
+    _reference/modules
 
 
 Indices and tables
