@@ -1,0 +1,19 @@
+
+
+# Instead of the following methods, 
+# we're using pip_install=True with extras
+#requirements_file: requirements/docs.txt
+#conda:
+#  file: environment.yml
+
+
+build:
+  image: latest
+
+python:
+  version: 3.6
+  use_system_site_packages: true
+  pip_install: true
+  extra_requirements:
+    - tests
+    - docs

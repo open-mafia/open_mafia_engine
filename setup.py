@@ -29,15 +29,20 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Natural Language :: English',
     ],
-    test_suite='nose.collector',
-    tests_require=['nose'],
     install_requires=[
         
     ],
-    docs_requires=[
+    test_suite='nose.collector',
+    tests_require=['nose'],
+    extras_require={
         # Required for building documentation
-        "sphinx",  # "sphinxcontrib-napoleon",
-        "sphinx_rtd_theme",
-    ],
+        'docs': [
+            "sphinx", "sphinxcontrib-apidoc",
+            "sphinx_rtd_theme",
+        ],
+        'tests': [
+            'nose',
+        ]
+    },
     packages=find_packages(),
 )
