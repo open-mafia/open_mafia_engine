@@ -68,6 +68,20 @@ class EventManagerType:
             self.members[event_class].add(obj)
 
     def unsubscribe_me(self, obj, *event_classes):
+        """Removes `obj` from subscriptions for specific events.
+        
+        Currently doesn't look for parent classes of `event_classes.
+        Probably should (so you could unsub from all Events 
+        via the base class), but not implemented yet.
+
+        Parameters
+        ----------
+        obj : GameObject
+            Object to set as a subscriber.
+        event_classes : list
+            List of Event classes to unsubscribe from.
+        """
+        
         # TODO: Unsubscribe from parent classes too?
 
         for event_class in event_classes:
@@ -80,7 +94,16 @@ class EventManagerType:
                 pass
 
     def handle_event(self, event):
-        """"""
+        """Handles a passed event.
+        
+        Making a local action queue from subscriber actions, 
+        then executes it. This may trigger more events!
+        
+        Parameters
+        ----------
+        event : Event
+            Triggering event.
+        """
 
         # get set of subscribers (via isinstance())
         subscribers = []

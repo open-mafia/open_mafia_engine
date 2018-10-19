@@ -22,7 +22,12 @@ class Action(GameObject):
 
 
 class ActionQueue:
-    """"""
+    """Queue for actions, with priorities.
+    
+    Starts out empty, can be added to.
+    Priorities are found at execution time (sorting, descending).
+    Execution can trigger additional queues.
+    """
 
     def __init__(self):
         self.members = []
@@ -40,7 +45,7 @@ class ActionQueue:
         self.members.append(action)
 
     def execute(self):
-        """Executes all actions in queue."""
+        """Executes all actions in queue, according to priority."""
 
         # sort members by priority
         acts = sorted(self.members, key=lambda x: x.priority, reverse=True)        
