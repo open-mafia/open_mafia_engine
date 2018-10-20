@@ -1,4 +1,4 @@
-""""""
+"""Module that defines event base objects and EventManager."""
 
 from mafia.core import GameObject, singleton
 

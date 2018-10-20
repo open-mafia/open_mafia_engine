@@ -1,4 +1,4 @@
-""""""
+"""Module that defines Action and related events."""
 
 import logging
 
@@ -31,7 +31,6 @@ class PostActionEvent(ActionEvent):
     action : Action
         The action that was performed.
     """
-
 
 
 class Action(GameObject):
