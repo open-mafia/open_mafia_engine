@@ -1,8 +1,10 @@
+"""Rudimentary test of the event system."""
 
 from mafia.core import GameObject
-from mafia.core.action import Action, ActionQueue
+from mafia.core.action import Action
 from mafia.core.event import (
-    InternalEvent, Subscriber, EventManager
+    InternalEvent, Subscriber, 
+    EventManager, ActionQueue
 )
 
 

@@ -1,7 +1,6 @@
 """"""
 
 from mafia.core import GameObject, singleton
-from mafia.core.action import ActionQueue
 
 
 class Event(GameObject):
@@ -35,6 +34,43 @@ class Subscriber:
             The generated action to respond.
         """
         return None
+
+
+class ActionQueue:
+    """Queue for actions, with priorities.
+    
+    Starts out empty, can be added to.
+    Priorities are found at execution time (sorting, descending).
+    Execution can trigger additional queues.
+    """
+
+    def __init__(self):
+        self.members = []
+
+    def add(self, action):
+        """Adds action, with its priority, to the queue.
+
+        Parameters
+        ----------
+        action : Action or None
+            Passed action
+        """
+        if action is None:
+            return
+        self.members.append(action)
+
+    def execute(self):
+        """Executes all actions in queue, according to priority."""
+
+        # sort members by priority
+        acts = sorted(self.members, key=lambda x: x.priority, reverse=True)        
+        # Alt, but I don't like it:
+        # from operator import attrgetter
+        # sorted(self.members, key=attrgetter('priority'))
+
+        # call members one at a time
+        for act in acts:
+            act.execute()
 
 
 @singleton
@@ -125,3 +161,4 @@ class EventManagerType:
 
 
 EventManager = EventManagerType()
+"""The singleton that handles events and responses to them."""
