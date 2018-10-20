@@ -20,6 +20,10 @@ class GameObject:
 
 
 def singleton(cls):
+    """Wrapper to create a singleton class.
+    
+    TODO: Possibly, redo as a metaclass."""
+
     instance = None
  
     @functools.wraps(cls)
