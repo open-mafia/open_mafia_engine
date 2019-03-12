@@ -1,10 +1,11 @@
 
-open_mafia_engine
+Open Mafia Engine
 #################
 
-Open-source, extendable mafia engine.
+Open-source, extendable mafia engine, written in Python.
 
-Docs available at https://open-mafia-engine.readthedocs.io/en/dev/ (dev).
-When we end up with an initial release, we'll move them to the "stable" URL. 
+Docs available at https://open-mafia-engine.rtfd.io (stable/master) 
+or https://open-mafia-engine.readthedocs.io/en/dev/ (dev).
+So far, "stable" just lags behind "dev".
 
-Currently under construction! :)
+Currently under construction! Feel free to star and check back soonish! :)

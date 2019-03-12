@@ -1,4 +1,20 @@
-"""Module that defines event base objects and EventManager."""
+"""Module that defines Event base objects and EventManager.
+
+This engine is based on a publisher-:class:`Subscriber` event model. 
+Whenever an :class:`Event` is set off, the :class:`EventManager` 
+creates an :class:`ActionQueue` of responses (:class:`Action`'s), 
+weighted by priority. This queue is then executed. Additional 
+:class:`Event`'s that are set off during this execution form 
+additional :class:`ActionQueue`'s.
+
+There is currently no protection against infinite call/response, 
+beyond the Python call stack overflowing...
+
+:class:`Event`'s are split between :class:`ExternalEvent`'s (which 
+are events that come from the API - the exact mechanism is TBD) 
+and :class:`InternalEvent`'s, which are caused by other components 
+(as a response to initial triggering events, for example).
+"""
 
 from mafia.core import GameObject, singleton
 

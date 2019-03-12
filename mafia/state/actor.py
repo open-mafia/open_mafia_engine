@@ -1,3 +1,11 @@
+"""Module for Actors and Alignments.
+
+:class:`Actor`'s are the entities that perform actions. 
+This generally includes players and non-player characters. 
+
+:class:`Alignment`'s are basically teams. The mechanism for determining 
+game-ending and/or alignment-winning behavior is TBD.
+"""
 
 from mafia.core import GameObject
 from mafia.core.event import Subscriber, ExternalEvent, EventManager
