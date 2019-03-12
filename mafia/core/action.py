@@ -34,7 +34,16 @@ class PostActionEvent(ActionEvent):
 
 
 class Action(GameObject):
-    """Base class for all actions."""
+    """Base class for all actions.
+    
+    :class:`Action`'s are "stored" actions which can be executed. 
+    Note that creating the object doesn't automatically :meth:`execute()` 
+    it - that has to be called explicitly. The :class:`PreActionEvent` 
+    and :class:`PostActionEvent` objects are created before and after the 
+    action execution code runs - this allows responses to happen before 
+    any changes are made. In order to create custom behavior, you 
+    (probably) only need to override :meth:`_execute()`.
+    """
 
     _default_priority = 0
 
@@ -46,7 +55,7 @@ class Action(GameObject):
         """Runs the action, triggering events as needed.
         
         In most cases, to change the behavior, you only 
-        need to override `_execute()`."""
+        need to override :meth:`_execute()`."""
                 
         # send pre-event
         pae = PreActionEvent(self)

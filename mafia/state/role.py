@@ -1,4 +1,12 @@
-"""Base classes for abilities and roles."""
+"""Base classes for abilities and roles.
+
+An :class:`Ability` specifies the potential for an :class:`Actor` to 
+perform an :class:`Action`. 
+
+An :class:`ActivatedAbility` is activated by the actor directly, while 
+a :class:`TriggeredAbility` is triggered by some external event. You can 
+think of these as "active" and "passive/reactive" abilities respectively.
+"""
 
 from copy import deepcopy
 from mafia.core import GameObject
