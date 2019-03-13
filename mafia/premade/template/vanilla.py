@@ -10,7 +10,7 @@ from mafia.premade.ability.vote import VoteAbility, VoteTally
 from mafia.state.role import Role
 from mafia.state.actor import Actor, Alignment
 # from mafia.state.actor import ActorControlEvent
-from mafia.state.game import GameState 
+from mafia.state.game import GameState, PhaseState 
 
 
 class VanillaGame(GameState):
@@ -24,12 +24,12 @@ class VanillaGame(GameState):
         Object which keeps the vote.
     """
 
-    def __init__(self, alignments=[], vote_tally=None):
+    def __init__(self, phase_state=[], alignments=[], vote_tally=None):
         if not isinstance(vote_tally, VoteTally):
             raise TypeError(
                 "vote_tally must be a VoteTally, got %r" % vote_tally)
         self.vote_tally = vote_tally 
-        super().__init__(alignments=alignments)
+        super().__init__(phase_state=phase_state, alignments=alignments)
 
     @classmethod
     def generate(
@@ -93,6 +93,7 @@ class VanillaGame(GameState):
             z
 
         res = cls(
+            phase_state=PhaseState(['day', 'night']), 
             alignments=[align_town, align_mafia], 
             vote_tally=vote_tally,
         )
