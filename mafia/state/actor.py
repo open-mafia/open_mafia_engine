@@ -11,6 +11,55 @@ from mafia.core import GameObject
 from mafia.core.event import Subscriber, ExternalEvent, EventManager
 # from mafia.state.role import Role
 
+from collections.abc import MutableMapping  
+
+
+class BaseStatus(GameObject, MutableMapping):
+    """Base status object.
+
+    This behaves like a "Bunch" or "dotted dict". 
+    Default keys are set, but you may add others. 
+    Default values are None, unless given in `defaults`.
+
+    Attributes
+    ----------
+    ID : UUID
+        The UUID of this status, not of the Actor.
+
+    Class Attributes
+    ----------------
+    defaults : dict
+        Default values. If not given, they are None. 
+    """
+
+    defaults = {}
+
+    def __init__(self, **kwargs):
+        super().__init__() 
+        for k, v in kwargs.items():
+            setattr(self, k, v) 
+
+    def __iter__(self):
+        return iter(self.__dict__) 
+
+    def __len__(self):
+        return len(set(self.keys()))
+
+    def __getattr__(self, k):
+        try:
+            super().__getattr__(k)
+        except Exception:
+            return self.defaults.get(k, None) 
+
+    def __getitem__(self, k):
+        return getattr(self, k, self.defaults.get(k, None))
+
+    def __setitem__(self, k, value):
+        setattr(self, k, value)
+
+    def __delitem__(self, k):
+        delattr(self, k) 
+
 
 class Alignment(GameObject):
     """Defines an alignment (team).
@@ -63,6 +112,34 @@ class ActorControlEvent(ExternalEvent):
         self.kwargs = kwargs
 
 
+class ActorStatus(BaseStatus):
+    """Current actor status.
+
+    This behaves like a "Bunch" or "dotted dict". 
+    Default keys are set, but you may add others. 
+    Default values are None, unless given in `defaults`.
+
+    Attributes
+    ----------
+    alive : bool
+        Whether this actor is alive.
+    ID : UUID
+        The UUID of this status, not of the Actor.
+
+    Class Attributes
+    ----------------
+    defaults : dict
+        Default values. If not given, they are None. 
+    """
+
+    defaults = {
+        'alive': True
+    }
+
+    def __init__(self, alive=True, **kwargs):
+        super().__init__(alive=alive, **kwargs) 
+
+
 class Actor(GameObject, Subscriber):
     """A stateful object that performs actions.
     
@@ -74,7 +151,7 @@ class Actor(GameObject, Subscriber):
         Alignment (team) this actor is on.
     role : Role
         Role for this actor.
-    status : dict
+    status : ActorStatus
         Current status.
     """
 
@@ -82,7 +159,7 @@ class Actor(GameObject, Subscriber):
         super().__init__()
         self.name = name
         self.role = role
-        self.status = dict(status)
+        self.status = ActorStatus(**status)
         # self.alignment = None
         alignment.add(self)
 
