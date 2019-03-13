@@ -5,12 +5,12 @@ These typically have
 
 # from mafia.core.event import EventManager
 import random 
-from mafia.premade.ability.vote import VoteAbility, VoteTally 
-# TODO: Add Kill or Nightkill or smth! 
 from mafia.state.role import Role
 from mafia.state.actor import Actor, Alignment
 # from mafia.state.actor import ActorControlEvent
 from mafia.state.game import GameState, PhaseState 
+from mafia.premade.ability.vote import VoteAbility, VoteTally 
+from mafia.premade.ability.kill import KillAbility  
 
 
 class VanillaGame(GameState):
@@ -78,7 +78,7 @@ class VanillaGame(GameState):
             abils = [VoteAbility(vote_tally)] 
 
             if i < n_mafia:
-                abils += []  # TODO: Add NightKill
+                abils += [KillAbility()]  # TODO: Add NightKill
                 align = align_mafia
             else:
                 align = align_town 
