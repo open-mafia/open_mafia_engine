@@ -75,10 +75,10 @@ class VanillaGame(GameState):
         align_mafia = Alignment(mafia_name)
 
         for i, player in enumerate(players):
-            abils = [VoteAbility(vote_tally)] 
+            abils = [VoteAbility('lynch-vote', tally=vote_tally)] 
 
             if i < n_mafia:
-                abils += [KillAbility()]  # TODO: Add NightKill
+                abils += [KillAbility('mafia-kill')]  # TODO: Add NightKill
                 align = align_mafia
             else:
                 align = align_town 

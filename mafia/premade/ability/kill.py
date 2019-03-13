@@ -24,9 +24,15 @@ class KillAction(Action):
 
 
 class KillAbility(ActivatedAbility):
-    """Allows an actor to kill."""
+    """Allows an actor to kill.
+    
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    """
 
-    def __init__(self):
-        super().__init__() 
+    def __init__(self, name):
+        super().__init__(name=name)
 
     # TODO: Add "do the thing" here. 

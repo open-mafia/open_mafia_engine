@@ -14,17 +14,30 @@ from mafia.core import GameObject
 
 
 class Ability(GameObject):
-    """Base class for all abilities."""
+    """Base class for all abilities.
+    
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    """
 
-    def __init__(self):
+    def __init__(self, name):
         super().__init__()
+        self.name = name 
 
 
 class ActivatedAbility(Ability):
-    """Activated ability base class."""
+    """Activated ability base class.
+    
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    """
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name):
+        super().__init__(name=name)
 
     def activate(self, actor, **kwargs):
         # TODO: Set some sort of internal event
@@ -33,10 +46,16 @@ class ActivatedAbility(Ability):
 
 
 class TriggeredAbility(Ability):
-    """Triggered (passive) ability base class."""
+    """Triggered (passive) ability base class.
 
-    def __init__(self):
-        super().__init__()
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    """
+
+    def __init__(self, name):
+        super().__init__(name=name)
 
     def trigger(self):
         # TODO: Set some sort of internal event

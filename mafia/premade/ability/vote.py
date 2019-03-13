@@ -149,12 +149,16 @@ class VoteAction(Action):
 class VoteAbility(ActivatedAbility):
     """Allows an actor to vote.
     
-    Parameters
+    Attributes
     ----------
+    name : str
+        Ability name (human-readable).
     tally : VoteTally
         The tally the actor is allowed to vote in.
     """
-    def __init__(self, tally):
+
+    def __init__(self, name, tally):
+        super().__init__(name=name)
         self.tally = tally
 
     # TODO: Add "do the vote thing" here.
