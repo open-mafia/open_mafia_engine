@@ -125,7 +125,17 @@ class VoteTally(Subscriber):
 
 
 class VoteAction(Action):
-    """"""
+    """Action that causes voting.
+    
+    Attributes
+    ----------
+    tally : VoteTally
+        The vote tally to count on.
+    source : GameObject
+        Who/what is voting; usually an :class:`Actor`.
+    target : GameObject
+        Who/what is being voted for; usually an :class:`Actor`). 
+    """
 
     def __init__(self, tally, source, target):
         self.tally = tally
@@ -133,7 +143,7 @@ class VoteAction(Action):
         self.target = target
 
     def _execute(self):
-        pass  # Need to create a VoteCastRequestEvent somehow...   
+        pass  # TODO: Need to create a VoteCastRequestEvent somehow...   
 
 
 class VoteAbility(ActivatedAbility):
