@@ -25,7 +25,7 @@ class Alignment(GameObject):
     def __init__(self, name, members=[]):
         super().__init__()
         self.name = name
-        self.members = members
+        self.members = list(members)
 
     def add(self, member):
         """Adds member to this alignment, removing old one."""
@@ -78,11 +78,11 @@ class Actor(GameObject, Subscriber):
         Current status.
     """
 
-    def __init__(self, name, alignment, role, status):
+    def __init__(self, name, alignment, role, status={}):
         super().__init__()
         self.name = name
         self.role = role
-        self.status = status
+        self.status = dict(status)
         # self.alignment = None
         alignment.add(self)
 

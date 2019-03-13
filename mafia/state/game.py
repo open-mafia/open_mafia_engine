@@ -11,12 +11,18 @@ class GameState(GameObject):
     """Object that records game state."""
 
     def __init__(self, alignments=[]):
-        super().__init__(self)
-        self.alignments = alignments
+        super().__init__()
+        self.alignments = list(alignments)
 
     @property
     def actors(self):
+        """Returns all actor objects.
+        
+        TODO
+        ----
+        Shuffle or order by UUID.
+        """
         res = set()
         for align in self.alignments:
-            res += align.members
-        return res
+            res = res.union(align.members)
+        return sorted(res, key=lambda x: x.ID) 
