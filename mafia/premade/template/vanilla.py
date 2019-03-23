@@ -9,7 +9,7 @@ from mafia.state.role import Role
 from mafia.state.actor import Actor, Alignment
 # from mafia.state.actor import ActorControlEvent
 from mafia.state.game import GameState, PhaseState 
-from mafia.premade.ability.vote import VoteAbility, VoteTally 
+from mafia.premade.ability.vote import VoteAbility, VoteTally, LynchVoteTally 
 from mafia.premade.ability.kill import KillAbility  
 
 
@@ -70,7 +70,7 @@ class VanillaGame(GameState):
             n_mafia = int(N * n_mafia)
         
         # Create base objects 
-        vote_tally = VoteTally()
+        vote_tally = LynchVoteTally('daily-lynch-tally')
         align_town = Alignment(town_name) 
         align_mafia = Alignment(mafia_name)
 

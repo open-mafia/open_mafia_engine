@@ -35,4 +35,8 @@ class KillAbility(ActivatedAbility):
     def __init__(self, name):
         super().__init__(name=name)
 
-    # TODO: Add "do the thing" here. 
+    def activate(self, actor, target=None):
+        print("{} is killing {}".format(
+            actor.name, getattr(target, 'name'))
+        )
+        # TODO: Add "do the thing" here. 
