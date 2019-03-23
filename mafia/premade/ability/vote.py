@@ -41,7 +41,7 @@ class VoteTally(Subscriber):
     :meth:`_cast_vote()` (for example, a list, for multi-voting) 
     or possibly :meth:`_reset_tally()`.
     """
-    
+
     def __init__(self, name, votes_for={}):
         self.name = name
         EventManager.subscribe_me(
@@ -209,7 +209,7 @@ class PhaseLimitedVoteTally(VoteTally):
         )
 
     def __repr__(self):
-        return "{}({}, phases=[], votes_for={})".format(
+        return "{}({}, phases={}, votes_for={})".format(
             self.__class__.__name__, repr(self.name),
             repr(self.phases), repr(self.votes_for)
         )
