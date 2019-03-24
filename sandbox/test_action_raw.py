@@ -24,6 +24,7 @@ class TestAction(Action):
     def _execute(self):
         super()._execute()
         print("TestAction: %s" % self.phrase)
+        return True
 
 
 class TestListener(GameObject, Subscriber):
@@ -46,6 +47,7 @@ class TestListener(GameObject, Subscriber):
             )
             super()._execute()
             self.his_action.phrase = self.phrase
+            return True
 
     def respond_to_event(self, event):
         if isinstance(event, PreActionEvent):

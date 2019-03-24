@@ -22,6 +22,7 @@ class KillAction(Action):
         self.target = target
 
     def _execute(self):
+        # TODO: Need to cause death correctly - maybe rethink? 
         logging.debug("{} is killing {}".format(
             getattr(self.source, 'name'), 
             getattr(self.target, 'name'),
@@ -29,7 +30,9 @@ class KillAction(Action):
         t = self.target
         if hasattr(t, 'status'):
             t.status['alive'] = False
-        # TODO: Need to cause death correctly - maybe rethink? 
+            return True
+        # Otherwise, we just failed        
+        return False
 
 
 class KillAbility(ActivatedAbility):

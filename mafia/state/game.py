@@ -38,6 +38,7 @@ class PhaseChangeAction(Action):
 
     def _execute(self):
         self.phase_state.current = self.new_phase
+        return True
         
 
 class PhaseState(GameObject):

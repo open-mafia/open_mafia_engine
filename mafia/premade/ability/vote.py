@@ -113,6 +113,7 @@ class VoteTally(Subscriber):
 
         def _execute(self):
             self.tally._reset_tally()
+            return True
 
     def _reset_tally(self):
         """Resets the vote tally, unconditionally."""
@@ -153,6 +154,7 @@ class VoteTally(Subscriber):
 
         def _execute(self):
             self.tally._cast_vote(source=self.source, target=self.target)
+            return True
 
     def _cast_vote(self, source, target):
         """Casts a vote from source to target."""
@@ -230,9 +232,11 @@ class PhaseLimitedVoteTally(VoteTally):
         elif isinstance(event, PostActionEvent):
             if isinstance(event.action, PhaseChangeAction):
                 # If this applies to us, reset the vote
-                ps = event.action.phase_state
-                if ps.states[ps.current] in self.phases:
-                    return VoteTally.ResetAction(self)
+                # ps = event.action.phase_state
+                # if ps.states[ps.current] not in self.phases:
+
+                # Actually, we reset on every phase change.
+                return VoteTally.ResetAction(self)
         # Other events
         return super().respond_to_event(event)
 
