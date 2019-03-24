@@ -234,7 +234,7 @@ class PhaseLimitedVoteTally(VoteTally):
                 if ps.states[ps.current] in self.phases:
                     return VoteTally.ResetAction(self)
         # Other events
-        super().respond_to_event(event)
+        return super().respond_to_event(event)
 
 
 class LynchAction(KillAction):
@@ -317,6 +317,7 @@ class VoteAction(Action):
         VCRE = self.tally.VoteCastRequestEvent
         event = VCRE(self.tally, self.source, self.target)
         EventManager.handle_event(event)
+        return True
 
 
 class VoteAbility(ActivatedAbility):
@@ -338,4 +339,6 @@ class VoteAbility(ActivatedAbility):
         print("voting from {} to {}".format(
             actor.name, getattr(target, 'name'))
         )
+        action = VoteAction(self.tally, source=actor, target=target) 
+        action.execute()
         # TODO: Add "do the vote thing" here.

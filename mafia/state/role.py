@@ -8,7 +8,7 @@ a :class:`TriggeredAbility` is triggered by some external event. You can
 think of these as "active" and "passive/reactive" abilities respectively.
 """
 
-from copy import deepcopy
+from copy import copy as shallowcopy  # , deepcopy
 from mafia.core import GameObject
 # from mafia.core.event import EventManager  # , ExternalEvent, Subscriber, 
 
@@ -68,4 +68,4 @@ class Role(GameObject):
 
     def __init__(self, abilities=[]):
         super().__init__()
-        self.abilities = [deepcopy(a) for a in abilities]
+        self.abilities = [shallowcopy(a) for a in abilities]

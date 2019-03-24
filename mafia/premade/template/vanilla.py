@@ -70,7 +70,7 @@ class VanillaGame(GameState):
             n_mafia = int(N * n_mafia)
         
         # Create base objects 
-        vote_tally = LynchVoteTally('daily-lynch-tally')
+        vote_tally = LynchVoteTally('daily-lynch-tally', phases=['day'])
         align_town = Alignment(town_name) 
         align_mafia = Alignment(mafia_name)
 

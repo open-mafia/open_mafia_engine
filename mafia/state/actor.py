@@ -169,7 +169,7 @@ class Actor(GameObject, Subscriber):
         )
 
     def __str__(self):
-        return "{name}".format(self.__dict__)
+        return "[{}]".format(self.name)
 
     def respond_to_event(self, event):
         """Event handling mechanism."""
