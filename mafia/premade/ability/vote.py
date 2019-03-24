@@ -336,9 +336,6 @@ class VoteAbility(ActivatedAbility):
         self.tally = tally
 
     def activate(self, actor, target=None):
-        print("voting from {} to {}".format(
-            actor.name, getattr(target, 'name'))
-        )
+        """Causes actor to vote for target."""
         action = VoteAction(self.tally, source=actor, target=target) 
         action.execute()
-        # TODO: Add "do the vote thing" here.

@@ -80,7 +80,10 @@ class ActionQueue:
         """Executes all actions in queue, according to priority."""
 
         # sort members by priority
-        acts = sorted(self.members, key=lambda x: x.priority, reverse=True)        
+        def g(x):
+            return getattr(x, 'priority', 0) 
+            
+        acts = sorted(self.members, key=g, reverse=True)        
         # Alt, but I don't like it:
         # from operator import attrgetter
         # sorted(self.members, key=attrgetter('priority'))
