@@ -17,6 +17,7 @@ and :class:`InternalEvent`'s, which are caused by other components
 """
 
 from mafia.core import GameObject, singleton
+import logging
 
 
 class Event(GameObject):
@@ -79,7 +80,10 @@ class ActionQueue:
         """Executes all actions in queue, according to priority."""
 
         # sort members by priority
-        acts = sorted(self.members, key=lambda x: x.priority, reverse=True)        
+        def g(x):
+            return getattr(x, 'priority', 0) 
+            
+        acts = sorted(self.members, key=g, reverse=True)        
         # Alt, but I don't like it:
         # from operator import attrgetter
         # sorted(self.members, key=attrgetter('priority'))
@@ -156,6 +160,9 @@ class EventManagerType:
         event : Event
             Triggering event.
         """
+        
+        logging.debug("EM [Handling event: {}]".format(
+            event.__class__.__name__))
 
         # get set of subscribers (via isinstance())
         subscribers = []
@@ -170,6 +177,8 @@ class EventManagerType:
         # call subscribers to add to local queue
         for sub in subscribers:
             act = sub.respond_to_event(event)
+            logging.debug("EM [Subscr: {}, Action: {}]".format(
+                str(sub)[:10], str(act)[:10]))
             q.add(act)
 
         # execute local queue
