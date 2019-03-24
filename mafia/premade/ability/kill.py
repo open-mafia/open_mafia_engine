@@ -3,6 +3,8 @@
 from mafia.core.action import Action  # , PreActionEvent, PostActionEvent
 from mafia.state.role import ActivatedAbility
 
+import logging
+
 
 class KillAction(Action):
     """Action that causes death.
@@ -20,7 +22,14 @@ class KillAction(Action):
         self.target = target
 
     def _execute(self):
-        pass  # TODO: Need to cause death 
+        logging.debug("{} is killing {}".format(
+            getattr(self.source, 'name'), 
+            getattr(self.target, 'name'),
+        ))
+        t = self.target
+        if hasattr(t, 'status'):
+            t.status['alive'] = False
+        # TODO: Need to cause death correctly - maybe rethink? 
 
 
 class KillAbility(ActivatedAbility):
@@ -36,7 +45,6 @@ class KillAbility(ActivatedAbility):
         super().__init__(name=name)
 
     def activate(self, actor, target=None):
-        print("{} is killing {}".format(
-            actor.name, getattr(target, 'name'))
-        )
-        # TODO: Add "do the thing" here. 
+        if target is None:
+            return None
+        return KillAction(actor, target=target)

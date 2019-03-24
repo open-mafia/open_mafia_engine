@@ -7,6 +7,7 @@ This generally includes players and non-player characters.
 game-ending and/or alignment-winning behavior is TBD.
 """
 
+import logging
 from mafia.core import GameObject
 from mafia.core.event import Subscriber, ExternalEvent, EventManager
 # from mafia.state.role import Role
@@ -175,6 +176,17 @@ class Actor(GameObject, Subscriber):
         """Event handling mechanism."""
         if isinstance(event, ActorControlEvent) and event.actor is self:
             # TODO: Maybe check if self has that ability?..
+            if event.ability not in self.role.abilities:
+                logging.warning(
+                    "Attempted to use ability that doesn't belong "
+                    "to %s: %s" % (self, event.ability)
+                )
+                return None
+
+            if not self.status['alive']:
+                logging.warning(
+                    "Attempted to use ability for dead actor: %s" % self
+                )
 
             # Use the activated ability
-            event.ability.activate(self, **event.kwargs)
+            return event.ability.activate(self, **event.kwargs)

@@ -42,7 +42,7 @@ class ActivatedAbility(Ability):
     def activate(self, actor, **kwargs):
         # TODO: Set some sort of internal event
         print('activated')
-        pass
+        return None
 
 
 class TriggeredAbility(Ability):

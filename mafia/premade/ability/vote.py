@@ -337,5 +337,4 @@ class VoteAbility(ActivatedAbility):
 
     def activate(self, actor, target=None):
         """Causes actor to vote for target."""
-        action = VoteAction(self.tally, source=actor, target=target) 
-        action.execute()
+        return VoteAction(self.tally, source=actor, target=target) 
