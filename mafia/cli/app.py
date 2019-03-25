@@ -36,6 +36,13 @@ class GameMenu(object):
     """
 
     def __init__(self):
+        # Styling
+        self.style = Style([
+            ('output-field', 'bg:#000044 #ffffff'),
+            ('input-field', 'bg:#000000 #ffffff'),
+            ('line', '#004400'),
+        ])
+
         # Output fields
         self.out_player_status = TextArea(
             style='class:output-field', 
@@ -45,9 +52,9 @@ class GameMenu(object):
             style='class:output-field', 
             text="Game Status:",
         ) 
-        self.out_debug = TextArea(
+        self.out_options = TextArea(
             style='class:output-field', 
-            text="<Debug output>",
+            text="Options:",
         )
         
         # Input fields
@@ -68,7 +75,7 @@ class GameMenu(object):
                 VerticalLine(),
                 self.out_game_status,
                 VerticalLine(),
-                self.out_debug,
+                self.out_options,
             ]),
             HorizontalLine(),
             self.input_field, 
@@ -79,12 +86,6 @@ class GameMenu(object):
         self.kb = KeyBindings()
         self.kb.add('c-q')(self.do_exit)
 
-        self.style = Style([
-            ('output-field', 'bg:#000044 #ffffff'),
-            ('input-field', 'bg:#000000 #ffffff'),
-            ('line', '#004400'),
-        ])
-
         self.app = Application(
             layout=Layout(
                 self.root_container, 
@@ -94,34 +95,47 @@ class GameMenu(object):
             full_screen=True, mouse_support=True,
         )
 
+        # Just update the text
+        self.do_update_text()
+
     def do_exit(self, event):
         # get_app().exit()
         event.app.exit()
 
-    def update_player_status_text(self):
-        pass
+    def do_update_text(self):
+        """Updates text everywhere."""
 
-    def update_game_status_text(self):
-        pass
+        # update options text
+        options = []
+        self.out_options.buffer.document = Document(
+            "\n  ".join(["Options:"] + options + ["(Ctrl-Q to quit)"])
+        )
 
-    def update_debug_text(self):
-        input_text = self.input_field.text
-        new_debug_text = self.out_debug.text + "\n" + input_text
-        self.out_debug.buffer.document = Document(
-            text=new_debug_text,
-            cursor_position=len(new_debug_text),
+        # update player_status text
+        self.out_player_status.buffer.document = Document(
+            "\n  ".join(["Player Status"] + [ 
+                "No players.",
+            ])
+        )
+        
+        # update game_status text
+        self.out_game_status.buffer.document = Document(
+            "\n  ".join(["Game Status"] + [ 
+                "Awaiting players.",
+            ])
         )
 
     def cb_enter_pressed(self, buff):
         """Callback for input validation."""
 
+        input_text = self.input_field.text
+        input_text
+        
         # Do action
         # TODO: Implement
 
         # Update text everything
-        self.update_debug_text()
-        self.update_player_status_text()
-        self.update_game_status_text()
+        self.do_update_text()
 
 
 #
