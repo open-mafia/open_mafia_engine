@@ -25,11 +25,14 @@ class VanillaExecutor(object):
         res = {
             'phase': g.phase_state.states[g.phase_state.current], 
             'alignments': [a.name for a in g.alignments],
-            'vote_tally': g.vote_tally.votes_for, 
+            'vote_tally': {
+                k.name: v.name
+                for k, v in g.vote_tally.votes_for.items()
+            }, 
         }
         return res
 
-    def list_players(self, team=None, filt=None):
+    def _list_players(self, team=None, filt=None):
         """Returns (filtered) list of players. 
         
         If `team` is specified, filters by team name.
@@ -48,10 +51,19 @@ class VanillaExecutor(object):
                 return True
 
         act_alive = [
-            ac.name for ac in pool
+            ac for ac in pool
             if filt(ac)
         ]
         return act_alive
+
+    def list_players(self, team=None, filt=None):
+        """Returns (filtered) list of players. 
+        
+        If `team` is specified, filters by team name.
+        filt : <Actor> -> bool
+        """
+        z = self._list_players(team=team, filt=filt)
+        return [a.name for a in z] 
 
     def list_alive(self, team=None):
         """Returns list of alive players. 
@@ -97,11 +109,21 @@ class VanillaExecutor(object):
     def apply_ability(self, abil, src, trg):
         """Applies src's ability with given name to trg."""
 
-        abil = [
-            a for a in src.role.abilities 
+        source = [
+            ac for ac in self.game.actors
+            if ac.name == src
+        ][0]
+        target = [
+            ac for ac in self.game.actors
+            if ac.name == trg
+        ][0]
+
+        ability = [
+            a for a in source.role.abilities 
             if a.name == abil
         ][0]
-        ace = ActorControlEvent(src, abil, target=trg)
+        
+        ace = ActorControlEvent(source, ability, target=target)
         EventManager.handle_event(ace)
 
     def apply_vote_random(self):
