@@ -33,24 +33,34 @@ class MafiaAPI(APIRouter):
 
         # Status
         self.get("/")(self.root)
-        self.get("/players", response_model=List[str])(self.list_players)
-        self.get("/players/all", response_model=List[dict])(
+        self.get("/lobby", response_model=List[str], tags=['lobby'])(
+            self.get_lobby_players)
+        self.get("/game", response_model=dict, tags=['game'])(
+            self.get_game_status)
+        self.get("/game/winner", response_model=str, tags=['game'])(
+            self.get_winning_team)
+        self.get("/players", response_model=List[str], tags=['players'])(
+            self.list_players)
+        self.get("/players/all", response_model=List[dict], tags=['players'])(
             self.get_players_info_all)
-        self.get("/players/{player_name}", response_model=dict)(
-            self.get_player_info)
-        self.get("/game", response_model=dict)(self.get_game_status)
-        self.get("/game/winner", response_model=str)(self.get_winning_team)
-        self.get("/lobby", response_model=List[str])(self.get_lobby_players)
+        self.get(
+            "/players/{player_name}", 
+            response_model=dict, tags=['players']
+        )(self.get_player_info)
 
         # Action
-        self.post("/next-phase")(self.apply_next_phase)
-        self.post("/ability/{source}")(self.apply_ability)
-        self.post("/random/vote")(self.apply_vote_random)
-        self.post("/random/mkill")(self.apply_mkill_random)
-        self.post("/lobby/add")(self.add_player_to_lobby)
-        self.post("/lobby/remove")(self.remove_player_from_lobby)
-        self.post("/game/start")(self.start_game)
-        self.post("/game/end", response_model=str)(self.end_game)
+        self.post("/game/next-phase", tags=['game'])(self.apply_next_phase)
+        self.post("/ability/random/vote", tags=['ability'])(
+            self.apply_vote_random)
+        self.post("/ability/random/mkill", tags=['ability'])(
+            self.apply_mkill_random)
+        self.post("/ability/{source}", tags=['ability'])(self.apply_ability)
+        self.post("/lobby/add", tags=['lobby'])(self.add_player_to_lobby)
+        self.post("/lobby/remove", tags=['lobby'])(
+            self.remove_player_from_lobby)
+        self.post("/game/start", tags=['game'])(self.start_game)
+        self.post("/game/end", response_model=str, tags=['game'])(
+            self.end_game)
         
     @property
     def started(self):
@@ -238,6 +248,8 @@ class MafiaAPI(APIRouter):
         """Adds a random Mafia kill."""
 
         ability_name = 'mafia-kill'
-        source = random.choice(self.list_players(team_name='mafia', alive=True))
-        target = random.choice(self.list_players(team_name='town', alive=True))
+        source = random.choice(
+            self.list_players(team_name='mafia', alive=True))
+        target = random.choice(
+            self.list_players(team_name='town', alive=True))
         self.apply_ability(source, ability_name, target)
