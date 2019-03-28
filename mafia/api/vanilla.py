@@ -8,7 +8,7 @@ import random
 
 
 class VanillaExecutor(object):
-    """Holds main game, """
+    """Temporary main engine API object thing?"""
     
     @classmethod
     def generate(cls, players=5):

@@ -19,6 +19,7 @@ from prompt_toolkit.widgets import (
 from prompt_toolkit.styles import Style
 
 #
+from mafia.api.vanilla import VanillaExecutor
 
 
 class GameMenu(object):
@@ -36,6 +37,11 @@ class GameMenu(object):
     """
 
     def __init__(self):
+        # TEMP:
+        # Initialize engine copy
+        self.lobby = []
+        self.executor = None
+
         # Styling
         self.style = Style([
             ('output-field', 'bg:#000044 #ffffff'),
@@ -102,6 +108,9 @@ class GameMenu(object):
         # get_app().exit()
         event.app.exit()
 
+    #
+    VanillaExecutor.generate(5)
+
     def do_update_text(self):
         """Updates text everywhere."""
 
@@ -112,10 +121,18 @@ class GameMenu(object):
         )
 
         # update player_status text
+        if self.executor is None:
+            if len(self.lobby) == 0:
+                player_status = ['(No players)']
+            else:
+                player_status = self.lobby
+        else:
+                    
+
         self.out_player_status.buffer.document = Document(
-            "\n  ".join(["Player Status"] + [ 
-                "No players.",
-            ])
+            "\n  ".join(
+                ["Player Status"] + player_status
+            )
         )
         
         # update game_status text
