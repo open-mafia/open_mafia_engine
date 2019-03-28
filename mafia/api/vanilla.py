@@ -1,4 +1,5 @@
-# TODO: Force games to provide their own API, maybe?
+from typing import List
+from fastapi import APIRouter, HTTPException
 
 from mafia.premade.template.vanilla import VanillaGame 
 from mafia.core.event import EventManager
@@ -7,17 +8,37 @@ from mafia.state.actor import ActorControlEvent
 import random
 
 
-class VanillaExecutor(object):
-    """Temporary main engine API object thing?"""
-    
+class MafiaAPI(APIRouter):
+
     @classmethod
     def generate(cls, players=5):
         vg = VanillaGame.generate(players)
         ex = cls(vg)
         return ex
-
+    
     def __init__(self, game):
+        super().__init__()
+
         self.game = game
+
+        # Status
+        self.get("/")(self.root)
+        self.get("/players", response_model=List[str])(self.list_players)
+        self.get("/players/all", response_model=List[dict])(
+            self.get_players_info_all)
+        self.get("/players/{player_name}", response_model=dict)(
+            self.get_player_info)
+        self.get("/game", response_model=dict)(self.get_game_status)
+
+        # Action
+        self.post("/next-phase")(self.apply_next_phase)
+        self.post("/ability/{source}")(self.apply_ability)
+        self.post("/random/vote")(self.apply_vote_random)
+        self.post("/random/mkill")(self.apply_mkill_random)
+        
+    def root(self):
+        """Gets the API version."""
+        return {'api-version': 0.1}
 
     def get_game_status(self):
         """Returns dict of phase, alignments, votes."""
@@ -32,11 +53,41 @@ class VanillaExecutor(object):
         }
         return res
 
+    def list_players(
+        self, player_name: str = None, team_name: str = None, 
+        alive: bool = None,
+    ):
+        """Returns list of players. Filters by name or team name."""
+
+        def filt(a):
+            Q = True
+            if player_name is not None:
+                Q = Q & (a.name.lower() == player_name.lower())
+            if alive is not None:
+                Q = Q & (a.status['alive'] == alive)
+            return Q
+                
+        z = self._list_players(team=team_name, filt=filt)
+        return [a.name for a in z]     
+
+    def list_alive(self, team_name: str = None):
+        """Returns list of players (names) that are alive."""
+        return self.list_players(
+            team=team_name, 
+            filt=lambda ac: ac.status['alive']
+        )
+
     def _list_players(self, team=None, filt=None):
         """Returns (filtered) list of players. 
+
+        Internal function (not exposed as API).
         
-        If `team` is specified, filters by team name.
-        filt : <Actor> -> bool
+        Parameters
+        ----------
+        team : None or str
+            The Alignment to filter on.
+        filt : None or callable
+            Boolean function with argument :class:`Actor`.
         """
         if team is None:
             pool = self.game.actors
@@ -56,25 +107,19 @@ class VanillaExecutor(object):
         ]
         return act_alive
 
-    def list_players(self, team=None, filt=None):
-        """Returns (filtered) list of players. 
-        
-        If `team` is specified, filters by team name.
-        filt : <Actor> -> bool
-        """
-        z = self._list_players(team=team, filt=filt)
-        return [a.name for a in z] 
+    def get_player_info(self, player_name: str):
+        """Returns info for a single player, by their name."""
 
-    def list_alive(self, team=None):
-        """Returns list of alive players. 
-        
-        If `team` is specified, filters by team name.
-        """
-        return self.list_players(team=team, filt=lambda ac: ac.status['alive'])
+        found = [
+            a for a in self.game.actors 
+            if a.name.lower() == player_name.lower()
+        ]
+        if len(found) == 0:
+            raise HTTPException(404, "No such player.")
+        if len(found) > 1:
+            raise HTTPException(400, "Ambiguous name.")
 
-    def get_player_info(self, name):
-        """Gets information for one player."""
-        act = [a for a in self.game.actors if a.name == name][0]
+        act = found[0]
         aligns_names = [
             al.name for al in self.game.alignments 
             if act in al.members
@@ -87,7 +132,7 @@ class VanillaExecutor(object):
         }
         return res
 
-    def get_players_info(self):
+    def get_players_info_all(self):
         """Gets information for all players."""
         return [self.get_player_info(a.name) for a in self.game.actors]
 
@@ -106,40 +151,37 @@ class VanillaExecutor(object):
         """Bumps the phase."""
         next(self.game.phase_state)
 
-    def apply_ability(self, abil, src, trg):
-        """Applies src's ability with given name to trg."""
+    def apply_ability(self, source: str, ability_name: str, target: str):
+        """Applies source's ability with given name to target."""
 
-        source = [
+        source_actor = [
             ac for ac in self.game.actors
-            if ac.name == src
+            if ac.name.lower() == source.lower()
         ][0]
-        target = [
+        target_actor = [
             ac for ac in self.game.actors
-            if ac.name == trg
+            if ac.name.lower() == target.lower()
         ][0]
 
         ability = [
-            a for a in source.role.abilities 
-            if a.name == abil
+            a for a in source_actor.role.abilities 
+            if a.name.lower() == ability_name.lower()
         ][0]
         
-        ace = ActorControlEvent(source, ability, target=target)
+        ace = ActorControlEvent(source_actor, ability, target=target_actor)
         EventManager.handle_event(ace)
 
     def apply_vote_random(self):
         """Adds a random vote."""
 
-        abil = 'lynch-vote'
-        src, trg = random.choices(self.list_alive(), k=2)
-        self.apply_ability(abil, src, trg)
+        ability_name = 'lynch-vote'
+        source, target = random.choices(self.list_alive(), k=2)
+        self.apply_ability(source, ability_name, target)
 
     def apply_mkill_random(self):
         """Adds a random Mafia kill."""
 
-        abil = 'mafia-kill'
-        src = random.choice(self.list_alive(team='mafia'))
-        trg = random.choice(self.list_alive(team='town'))
-        self.apply_ability(abil, src, trg)
-        
-
-# 
+        ability_name = 'mafia-kill'
+        source = random.choice(self.list_alive(team='mafia'))
+        target = random.choice(self.list_alive(team='town'))
+        self.apply_ability(source, ability_name, target)
