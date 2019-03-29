@@ -120,10 +120,10 @@ class CliApp(object):
                             lambda x: x.lower() not in players
                         )
                     )
-                    to_add = p_add.prompt().lower()
-                    if to_add != '':
+                    to_add = p_add.prompt().lower().split()
+                    for name in to_add:
                         requests.post(
-                            url + '/add?player_name={}'.format(to_add)
+                            url + '/add?player_name={}'.format(name)
                         )
                 elif r == 'remove':
                     p_rem = PromptSession(
@@ -133,13 +133,25 @@ class CliApp(object):
                             lambda x: x.lower() in players + ['']
                         ),
                     )
-                    to_remove = p_rem.prompt().lower()
-                    if to_remove != '':
+                    to_remove = p_rem.prompt().lower().split()
+                    for name in to_remove:
                         requests.post(
-                            url + '/remove?player_name={}'.format(to_remove)
+                            url + '/remove?player_name={}'.format(name)
                         )
                 else:
                     print(r)
+
+    def print_player_info(self):
+        all_info = requests.get(
+            self.base_url + '/players/all'
+        ).json()
+        for pi in all_info:
+            z = "{nm} {team} - {alive} | {abils}".format(
+                nm=pi['name'], team=pi['alignments'],
+                alive=('ALIVE' if pi['status']['alive'] else 'DEAD'),
+                abils=pi['abilities'],
+            )
+            print(z)
 
     def m_game(self):
         url = self.base_url + '/game'
@@ -147,7 +159,6 @@ class CliApp(object):
         while True:
             try:
                 print("\n")                
-                print("Status:", self.game_status)
 
                 if self.game_started:
                     winner = self.game_winner
@@ -159,14 +170,16 @@ class CliApp(object):
                         ).json()
                         print("Winning players:", [p for p in w_players])
                     
-                        options = ['back', 'end']
+                        options = ['back', 'players', 'end']
                     else:  # game in progress
+                        print("Phase:", self.game_phase)
                         options = [
                             'back', 'next-phase', 
                             'players', 'ability', 
                             'end',
                         ]
                 else:  # need to start game
+                    print("Not started.")
                     options = ['back', 'start']
 
                 p = PromptSession(
@@ -189,19 +202,99 @@ class CliApp(object):
                 elif r == 'end':
                     requests.post(url + '/end')
                 elif r == 'next-phase':
-                    requests.post(url + '/next-phase')
+                    self.bump_phase()
                 elif r == 'players':
-                    self.m_players()                    
+                    self.print_player_info()
                 elif r == 'ability':
-                    self.m_ability()
+                    self.m_ability()                    
                 else:
                     print(r)
 
-    def m_players(self):
-        pass
+    def bump_phase(self):
+        """Bumps to the next phase."""
+        requests.post(self.base_url + '/game/next-phase')
+
+    # def get_players(self, team=None, alive=None):
 
     def m_ability(self):
-        pass
+        url = self.base_url + '/ability'
+
+        while True:
+            try:
+                if not self.game_started:
+                    return
+
+                if self.game_winner:
+                    print("\n")
+                    print("Game finished! Winner:", self.game_winner)
+                    return
+
+                phase = self.game_phase
+
+                alive_players = requests.get(
+                    self.base_url + '/players?alive=True'
+                ).json()
+
+                options = ['back', 'random', 'next-phase']
+
+                if phase == 'day':
+                    active_players = alive_players
+                    active_abil = 'lynch-vote'
+                else:  # night
+                    active_players = requests.get(
+                        self.base_url + '/players?alive=True&team_name=mafia'
+                    ).json()
+                    active_abil = 'mafia-kill'
+
+                p = PromptSession(
+                    message="players > ",
+                    completer=WordCompleter(options + active_players),            
+                    validator=Validator.from_callable(
+                        lambda x: x.lower() in options + active_players),
+                )
+                    
+                print("\n")
+                print("Phase:", phase)
+                print("Alive Players:", alive_players)
+                print("Active Players:", active_players)
+                print("Ability:", active_abil)
+                if phase == 'day':
+                    print("Votes:", self.game_status['vote_tally'])
+                print("Options:", options + active_players)
+
+                r = p.prompt().lower()
+            except KeyboardInterrupt:
+                continue
+            except EOFError:
+                break
+            else:
+                if r == 'back':
+                    return
+                elif r == 'next-phase':
+                    self.bump_phase()
+                elif r == 'random':
+                    if phase == 'day':
+                        requests.post(url + '/random/vote')
+                    else:
+                        requests.post(url + '/random/mkill')
+                        self.bump_phase()
+                else:
+                    targ = PromptSession(
+                        message="target: ",
+                        completer=WordCompleter(alive_players),            
+                        validator=Validator.from_callable(
+                            lambda x: x.lower() in alive_players),
+                    ).prompt()
+                    requests.post(
+                        url + '/{}?ability_name={}&target={}'.format(
+                            r, active_abil, targ
+                        )
+                    )
+                    if phase == 'night':
+                        self.bump_phase()
+
+              
+#
 
 
 if __name__ == "__main__":
