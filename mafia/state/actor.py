@@ -10,9 +10,10 @@ game-ending and/or alignment-winning behavior is TBD.
 import logging
 from mafia.core import GameObject
 from mafia.core.event import Subscriber, ExternalEvent, EventManager
+
 # from mafia.state.role import Role
 
-from collections.abc import MutableMapping  
+from collections.abc import MutableMapping
 
 
 class BaseStatus(GameObject, MutableMapping):
@@ -36,12 +37,12 @@ class BaseStatus(GameObject, MutableMapping):
     defaults = {}
 
     def __init__(self, **kwargs):
-        super().__init__() 
+        super().__init__()
         for k, v in kwargs.items():
-            setattr(self, k, v) 
+            setattr(self, k, v)
 
     def __iter__(self):
-        return iter(self.__dict__) 
+        return iter(self.__dict__)
 
     def __len__(self):
         return len(set(self.keys()))
@@ -50,7 +51,7 @@ class BaseStatus(GameObject, MutableMapping):
         try:
             super().__getattr__(k)
         except Exception:
-            return self.defaults.get(k, None) 
+            return self.defaults.get(k, None)
 
     def __getitem__(self, k):
         return getattr(self, k, self.defaults.get(k, None))
@@ -59,7 +60,7 @@ class BaseStatus(GameObject, MutableMapping):
         setattr(self, k, value)
 
     def __delitem__(self, k):
-        delattr(self, k) 
+        delattr(self, k)
 
 
 class Alignment(GameObject):
@@ -72,6 +73,7 @@ class Alignment(GameObject):
     members : list
         List of members of the alignment.
     """
+
     def __init__(self, name, members=[]):
         super().__init__()
         self.name = name
@@ -79,17 +81,17 @@ class Alignment(GameObject):
 
     def add(self, member):
         """Adds member to this alignment, removing old one."""
-        if hasattr(member, 'alignment'):
+        if hasattr(member, "alignment"):
             old_align = member.alignment
             if old_align is not None:
                 old_align.remove(member)
-        setattr(member, 'alignment', self)
+        setattr(member, "alignment", self)
         self.members.append(member)
 
     def remove(self, member):
         """Removes member from this alignment."""
         self.members.remove(member)
-        if hasattr(member, 'alignment'):
+        if hasattr(member, "alignment"):
             member.alignment = None
 
 
@@ -133,12 +135,10 @@ class ActorStatus(BaseStatus):
         Default values. If not given, they are None. 
     """
 
-    defaults = {
-        'alive': True
-    }
+    defaults = {"alive": True}
 
     def __init__(self, alive=True, **kwargs):
-        super().__init__(alive=alive, **kwargs) 
+        super().__init__(alive=alive, **kwargs)
 
 
 class Actor(GameObject, Subscriber):
@@ -165,7 +165,8 @@ class Actor(GameObject, Subscriber):
         alignment.add(self)
 
         EventManager.subscribe_me(
-            self, ActorControlEvent,
+            self,
+            ActorControlEvent,
             # TODO: other event types here
         )
 
@@ -183,10 +184,8 @@ class Actor(GameObject, Subscriber):
                 )
                 return None
 
-            if not self.status['alive']:
-                logging.warning(
-                    "Attempted to use ability for dead actor: %s" % self
-                )
+            if not self.status["alive"]:
+                logging.warning("Attempted to use ability for dead actor: %s" % self)
 
             # Use the activated ability
             return event.ability.activate(self, **event.kwargs)

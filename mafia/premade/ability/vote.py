@@ -1,10 +1,9 @@
-
 # from mafia.core import GameObject  # , singleton
 from mafia.core.event import InternalEvent, Subscriber, EventManager
 from mafia.core.action import Action, PreActionEvent, PostActionEvent
 from mafia.state.role import ActivatedAbility
 from mafia.state.game import PhaseChangeAction
-from mafia.premade.ability.kill import KillAction 
+from mafia.premade.ability.kill import KillAction
 
 
 class VoteBaseEvent(InternalEvent):
@@ -15,6 +14,7 @@ class VoteBaseEvent(InternalEvent):
     tally : VoteTally
         The tally to reset.
     """
+
     def __init__(self, tally):
         self.tally = tally
 
@@ -45,9 +45,7 @@ class VoteTally(Subscriber):
     def __init__(self, name, votes_for={}):
         self.name = name
         EventManager.subscribe_me(
-            self, 
-            VoteTally.ResetRequestEvent, 
-            VoteTally.VoteCastRequestEvent
+            self, VoteTally.ResetRequestEvent, VoteTally.VoteCastRequestEvent
         )
         self.votes_for = dict(votes_for)
 
@@ -96,6 +94,7 @@ class VoteTally(Subscriber):
         tally : VoteTally
             The tally to reset.
         """
+
         def __init__(self, tally):
             super().__init__(tally=tally)
 
@@ -107,6 +106,7 @@ class VoteTally(Subscriber):
         tally : VoteTally
             The tally to reset.
         """
+
         def __init__(self, tally):
             super().__init__()  # priority?
             self.tally = tally
@@ -131,6 +131,7 @@ class VoteTally(Subscriber):
         source, target : object
             The source votes for the target.
         """
+
         def __init__(self, tally, source, target):
             super().__init__(tally=tally)
             self.source = source
@@ -146,6 +147,7 @@ class VoteTally(Subscriber):
         source, target : object
             The source votes for the target.
         """
+
         def __init__(self, tally, source, target):
             super().__init__()  # priority?
             self.tally = tally
@@ -164,18 +166,14 @@ class VoteTally(Subscriber):
 
     def __repr__(self):
         return "{}({}, votes_for={})".format(
-            self.__class__.__name__, repr(self.name),
-            repr(self.votes_for), 
+            self.__class__.__name__, repr(self.name), repr(self.votes_for)
         )
 
     def __str__(self):
         return "{0}[{1}]({{{2}}})".format(
-            self.__class__.__name__, 
-            self.name, 
-            ", ".join(
-                str(a) + "->" + str(b) 
-                for a, b in self.votes_for.items()
-            )
+            self.__class__.__name__,
+            self.name,
+            ", ".join(str(a) + "->" + str(b) for a, b in self.votes_for.items()),
         )
 
 
@@ -204,16 +202,16 @@ class PhaseLimitedVoteTally(VoteTally):
     """
 
     def __init__(self, name, phases=[], votes_for={}):
-        self.phases = list(phases) 
+        self.phases = list(phases)
         super().__init__(name=name, votes_for=votes_for)
-        EventManager.subscribe_me(
-            self, PreActionEvent, PostActionEvent
-        )
+        EventManager.subscribe_me(self, PreActionEvent, PostActionEvent)
 
     def __repr__(self):
         return "{}({}, phases={}, votes_for={})".format(
-            self.__class__.__name__, repr(self.name),
-            repr(self.phases), repr(self.votes_for)
+            self.__class__.__name__,
+            repr(self.name),
+            repr(self.phases),
+            repr(self.votes_for),
         )
 
     def _create_action(self):
@@ -222,7 +220,7 @@ class PhaseLimitedVoteTally(VoteTally):
         Override this!"""
         return None
 
-    def respond_to_event(self, event):        
+    def respond_to_event(self, event):
         if isinstance(event, PreActionEvent):
             if isinstance(event.action, PhaseChangeAction):
                 # If this applies to us, process the vote
@@ -294,7 +292,8 @@ class LynchVoteTally(PhaseLimitedVoteTally):
             return None
         return LynchAction(self, target)
 
-# 
+
+#
 
 
 class VoteAction(Action):
@@ -341,4 +340,4 @@ class VoteAbility(ActivatedAbility):
 
     def activate(self, actor, target=None):
         """Causes actor to vote for target."""
-        return VoteAction(self.tally, source=actor, target=target) 
+        return VoteAction(self.tally, source=actor, target=target)

@@ -2,10 +2,11 @@ from typing import List, Callable
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from mafia.premade.template.vanilla import VanillaGame 
+from mafia.premade.template.vanilla import VanillaGame
 from mafia.core.event import EventManager
 from mafia.state.actor import ActorControlEvent
-# import multiprocessing as mp 
+
+# import multiprocessing as mp
 import random
 
 
@@ -16,7 +17,6 @@ class Lobby(BaseModel):
 
 
 class MafiaAPI(APIRouter):
-
     @classmethod
     def generate(cls, players=5):
         vg = VanillaGame.generate(players)
@@ -24,7 +24,7 @@ class MafiaAPI(APIRouter):
         lb = Lobby(players=player_names)
         ex = cls(lb, vg)
         return ex
-    
+
     def __init__(self, lobby: Lobby = Lobby(), game=None):
         super().__init__()
 
@@ -33,52 +33,50 @@ class MafiaAPI(APIRouter):
 
         # Status
         self.get("/")(self.root)
-        self.get("/lobby", response_model=List[str], tags=['lobby'])(
-            self.get_lobby_players)
-        self.get("/game", response_model=dict, tags=['game'])(
-            self.get_game_status)
-        self.get("/game/winner", response_model=str, tags=['game'])(
-            self.get_winning_team)
-        self.get("/players", response_model=List[str], tags=['players'])(
-            self.list_players)
-        self.get("/players/all", response_model=List[dict], tags=['players'])(
-            self.get_players_info_all)
-        self.get(
-            "/players/{player_name}", 
-            response_model=dict, tags=['players']
-        )(self.get_player_info)
+        self.get("/lobby", response_model=List[str], tags=["lobby"])(
+            self.get_lobby_players
+        )
+        self.get("/game", response_model=dict, tags=["game"])(self.get_game_status)
+        self.get("/game/winner", response_model=str, tags=["game"])(
+            self.get_winning_team
+        )
+        self.get("/players", response_model=List[str], tags=["players"])(
+            self.list_players
+        )
+        self.get("/players/all", response_model=List[dict], tags=["players"])(
+            self.get_players_info_all
+        )
+        self.get("/players/{player_name}", response_model=dict, tags=["players"])(
+            self.get_player_info
+        )
 
         # Action
-        self.post("/game/next-phase", tags=['game'])(self.apply_next_phase)
-        self.post("/ability/random/vote", tags=['ability'])(
-            self.apply_vote_random)
-        self.post("/ability/random/mkill", tags=['ability'])(
-            self.apply_mkill_random)
-        self.post("/ability/{source}", tags=['ability'])(self.apply_ability)
-        self.post("/lobby/add", tags=['lobby'])(self.add_player_to_lobby)
-        self.post("/lobby/remove", tags=['lobby'])(
-            self.remove_player_from_lobby)
-        self.post("/game/start", tags=['game'])(self.start_game)
-        self.post("/game/end", response_model=str, tags=['game'])(
-            self.end_game)
-        
+        self.post("/game/next-phase", tags=["game"])(self.apply_next_phase)
+        self.post("/ability/random/vote", tags=["ability"])(self.apply_vote_random)
+        self.post("/ability/random/mkill", tags=["ability"])(self.apply_mkill_random)
+        self.post("/ability/{source}", tags=["ability"])(self.apply_ability)
+        self.post("/lobby/add", tags=["lobby"])(self.add_player_to_lobby)
+        self.post("/lobby/remove", tags=["lobby"])(self.remove_player_from_lobby)
+        self.post("/game/start", tags=["game"])(self.start_game)
+        self.post("/game/end", response_model=str, tags=["game"])(self.end_game)
+
     @property
     def started(self):
-        return (self._game is not None)
+        return self._game is not None
 
     @property
     def game(self):
         if not self.started:
             raise HTTPException(400, "Game not yet started.")
         return self._game
-    
+
     @game.setter
     def game(self, value):
         self._game = value
 
     def root(self):
         """Gets the API version."""
-        return {'api-version': 0.1}
+        return {"api-version": 0.1}
 
     def get_lobby_players(self):
         """Lists players in the lobby."""
@@ -110,25 +108,21 @@ class MafiaAPI(APIRouter):
     def get_game_status(self):
         """Returns dict of phase, alignments, votes."""
         if self.started:
-            g = self.game 
+            g = self.game
             res = {
-                'started': True, 
-                'phase': g.phase_state.states[g.phase_state.current], 
-                'alignments': [a.name for a in g.alignments],
-                'vote_tally': {
-                    k.name: v.name
-                    for k, v in g.vote_tally.votes_for.items()
-                }, 
+                "started": True,
+                "phase": g.phase_state.states[g.phase_state.current],
+                "alignments": [a.name for a in g.alignments],
+                "vote_tally": {
+                    k.name: v.name for k, v in g.vote_tally.votes_for.items()
+                },
             }
         else:
-            res = {
-                'started': False, 
-            }
+            res = {"started": False}
         return res
 
     def list_players(
-        self, player_name: str = None, team_name: str = None, 
-        alive: bool = None,
+        self, player_name: str = None, team_name: str = None, alive: bool = None
     ):
         """Returns list of players. Filters by name or team name."""
 
@@ -137,12 +131,12 @@ class MafiaAPI(APIRouter):
             if player_name is not None:
                 Q = Q & (a.name.lower() == player_name.lower())
             if alive is not None:
-                Q = Q & (a.status['alive'] == alive)
+                Q = Q & (a.status["alive"] == alive)
             return Q
-                
+
         z = self._list_players(team_name=team_name, filt=filt)
-        return [a.name for a in z]     
-    
+        return [a.name for a in z]
+
     def _list_players(self, team_name: str = None, filt: Callable = None):
         """Returns (filtered) list of players. 
 
@@ -159,42 +153,35 @@ class MafiaAPI(APIRouter):
             pool = self.game.actors
         else:
             pool = [
-                al for al in self.game.alignments
+                al
+                for al in self.game.alignments
                 if al.name.lower() == team_name.lower()
             ][0].members
 
         if filt is None:
+
             def filt(x):
                 return True
 
-        act_alive = [
-            ac for ac in pool
-            if filt(ac)
-        ]
+        act_alive = [ac for ac in pool if filt(ac)]
         return act_alive
 
     def get_player_info(self, player_name: str):
         """Returns info for a single player, by their name."""
 
-        found = [
-            a for a in self.game.actors 
-            if a.name.lower() == player_name.lower()
-        ]
+        found = [a for a in self.game.actors if a.name.lower() == player_name.lower()]
         if len(found) == 0:
             raise HTTPException(404, "No such player.")
         if len(found) > 1:
             raise HTTPException(400, "Ambiguous name.")
 
         act = found[0]
-        aligns_names = [
-            al.name for al in self.game.alignments 
-            if act in al.members
-        ]
+        aligns_names = [al.name for al in self.game.alignments if act in al.members]
         res = {
-            'name': act.name, 
-            'alignments': aligns_names, 
-            'abilities': [abil.name for abil in act.role.abilities], 
-            'status': dict(act.status),
+            "name": act.name,
+            "alignments": aligns_names,
+            "abilities": [abil.name for abil in act.role.abilities],
+            "status": dict(act.status),
         }
         return res
 
@@ -205,12 +192,12 @@ class MafiaAPI(APIRouter):
     def get_winning_team(self):
         """Returns name of winning team, or None if no winner."""
 
-        if len(self.list_players(team_name='town', alive=True)) == 0:
-            return 'mafia'
-        
-        if len(self.list_players(team_name='mafia', alive=True)) == 0:
-            return 'town'
-        
+        if len(self.list_players(team_name="town", alive=True)) == 0:
+            return "mafia"
+
+        if len(self.list_players(team_name="mafia", alive=True)) == 0:
+            return "town"
+
         return None
 
     def apply_next_phase(self):
@@ -221,35 +208,32 @@ class MafiaAPI(APIRouter):
         """Applies source's ability with given name to target."""
 
         source_actor = [
-            ac for ac in self.game.actors
-            if ac.name.lower() == source.lower()
+            ac for ac in self.game.actors if ac.name.lower() == source.lower()
         ][0]
         target_actor = [
-            ac for ac in self.game.actors
-            if ac.name.lower() == target.lower()
+            ac for ac in self.game.actors if ac.name.lower() == target.lower()
         ][0]
 
         ability = [
-            a for a in source_actor.role.abilities 
+            a
+            for a in source_actor.role.abilities
             if a.name.lower() == ability_name.lower()
         ][0]
-        
+
         ace = ActorControlEvent(source_actor, ability, target=target_actor)
         EventManager.handle_event(ace)
 
     def apply_vote_random(self):
         """Adds a random vote."""
 
-        ability_name = 'lynch-vote'
+        ability_name = "lynch-vote"
         source, target = random.choices(self.list_players(alive=True), k=2)
         self.apply_ability(source, ability_name, target)
 
     def apply_mkill_random(self):
         """Adds a random Mafia kill."""
 
-        ability_name = 'mafia-kill'
-        source = random.choice(
-            self.list_players(team_name='mafia', alive=True))
-        target = random.choice(
-            self.list_players(team_name='town', alive=True))
+        ability_name = "mafia-kill"
+        source = random.choice(self.list_players(team_name="mafia", alive=True))
+        target = random.choice(self.list_players(team_name="town", alive=True))
         self.apply_ability(source, ability_name, target)

@@ -1,4 +1,3 @@
-
 # from mafia.core.event import InternalEvent, Subscriber, EventManager
 from mafia.core.action import Action  # , PreActionEvent, PostActionEvent
 from mafia.state.role import ActivatedAbility
@@ -22,16 +21,17 @@ class KillAction(Action):
         self.target = target
 
     def _execute(self):
-        # TODO: Need to cause death correctly - maybe rethink? 
-        logging.debug("{} is killing {}".format(
-            getattr(self.source, 'name'), 
-            getattr(self.target, 'name'),
-        ))
+        # TODO: Need to cause death correctly - maybe rethink?
+        logging.debug(
+            "{} is killing {}".format(
+                getattr(self.source, "name"), getattr(self.target, "name")
+            )
+        )
         t = self.target
-        if hasattr(t, 'status'):
-            t.status['alive'] = False
+        if hasattr(t, "status"):
+            t.status["alive"] = False
             return True
-        # Otherwise, we just failed        
+        # Otherwise, we just failed
         return False
 
 
