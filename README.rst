@@ -54,3 +54,6 @@ The plan for the future is a *rewrite* to fix many limiting factors:
 
 * No native way to limit "visibility" of information.
 
+Oh yeah, and the docs still suck. 
+I see no reason to improve them before stability comes... 
+However, they should at least build properly, so I fixed that.
