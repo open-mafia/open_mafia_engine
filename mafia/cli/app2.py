@@ -297,6 +297,10 @@ class CliApp(object):
 #
 
 
-if __name__ == "__main__":
+def main():
     app = CliApp()
     app.main()
+
+
+if __name__ == "__main__":
+    main()

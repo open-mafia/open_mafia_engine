@@ -45,4 +45,7 @@ setup(
         ]
     },
     packages=find_packages(),
+    entry_points={
+        'console_scripts': ['vanilla-mafia=mafia.cli.app2:main']
+    }
 )
