@@ -1,4 +1,6 @@
-# TODO: Force games to provide their own API, maybe?
+from typing import List, Callable
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from mafia.premade.template.vanilla import VanillaGame 
 from mafia.core.event import EventManager
@@ -7,43 +9,158 @@ from mafia.state.actor import ActorControlEvent
 import random
 
 
-class VanillaExecutor(object):
-    """Temporary main engine API object thing?"""
-    
+class Lobby(BaseModel):
+    """"""
+
+    players: List[str] = []
+
+
+class MafiaAPI(APIRouter):
+
     @classmethod
     def generate(cls, players=5):
         vg = VanillaGame.generate(players)
-        ex = cls(vg)
+        player_names = [a.name.lower() for a in vg.actors]
+        lb = Lobby(players=player_names)
+        ex = cls(lb, vg)
         return ex
+    
+    def __init__(self, lobby: Lobby = Lobby(), game=None):
+        super().__init__()
 
-    def __init__(self, game):
-        self.game = game
+        self.lobby = lobby
+        self._game = game
+
+        # Status
+        self.get("/")(self.root)
+        self.get("/lobby", response_model=List[str], tags=['lobby'])(
+            self.get_lobby_players)
+        self.get("/game", response_model=dict, tags=['game'])(
+            self.get_game_status)
+        self.get("/game/winner", response_model=str, tags=['game'])(
+            self.get_winning_team)
+        self.get("/players", response_model=List[str], tags=['players'])(
+            self.list_players)
+        self.get("/players/all", response_model=List[dict], tags=['players'])(
+            self.get_players_info_all)
+        self.get(
+            "/players/{player_name}", 
+            response_model=dict, tags=['players']
+        )(self.get_player_info)
+
+        # Action
+        self.post("/game/next-phase", tags=['game'])(self.apply_next_phase)
+        self.post("/ability/random/vote", tags=['ability'])(
+            self.apply_vote_random)
+        self.post("/ability/random/mkill", tags=['ability'])(
+            self.apply_mkill_random)
+        self.post("/ability/{source}", tags=['ability'])(self.apply_ability)
+        self.post("/lobby/add", tags=['lobby'])(self.add_player_to_lobby)
+        self.post("/lobby/remove", tags=['lobby'])(
+            self.remove_player_from_lobby)
+        self.post("/game/start", tags=['game'])(self.start_game)
+        self.post("/game/end", response_model=str, tags=['game'])(
+            self.end_game)
+        
+    @property
+    def started(self):
+        return (self._game is not None)
+
+    @property
+    def game(self):
+        if not self.started:
+            raise HTTPException(400, "Game not yet started.")
+        return self._game
+    
+    @game.setter
+    def game(self, value):
+        self._game = value
+
+    def root(self):
+        """Gets the API version."""
+        return {'api-version': 0.1}
+
+    def get_lobby_players(self):
+        """Lists players in the lobby."""
+        return self.lobby.players
+
+    def add_player_to_lobby(self, player_name: str):
+        """Adds the player to the lobby."""
+        self.lobby.players.append(player_name)
+
+    def remove_player_from_lobby(self, player_name: str):
+        """Removes the player from the lobby."""
+        try:
+            self.lobby.players.remove(player_name)
+        except ValueError:
+            raise HTTPException(400, "No such player in lobby.")
+
+    def start_game(self):
+        if self.started:
+            raise HTTPException(400, "Game already in progress.")
+        self.game = VanillaGame.generate(players=self.lobby.players)
+
+    def end_game(self):
+        if not self.started:
+            raise HTTPException(400, "Game not started yet.")
+        winner = self.get_winning_team()
+        self.game = None
+        return winner
 
     def get_game_status(self):
         """Returns dict of phase, alignments, votes."""
-        g = self.game 
-        res = {
-            'phase': g.phase_state.states[g.phase_state.current], 
-            'alignments': [a.name for a in g.alignments],
-            'vote_tally': {
-                k.name: v.name
-                for k, v in g.vote_tally.votes_for.items()
-            }, 
-        }
+        if self.started:
+            g = self.game 
+            res = {
+                'started': True, 
+                'phase': g.phase_state.states[g.phase_state.current], 
+                'alignments': [a.name for a in g.alignments],
+                'vote_tally': {
+                    k.name: v.name
+                    for k, v in g.vote_tally.votes_for.items()
+                }, 
+            }
+        else:
+            res = {
+                'started': False, 
+            }
         return res
 
-    def _list_players(self, team=None, filt=None):
+    def list_players(
+        self, player_name: str = None, team_name: str = None, 
+        alive: bool = None,
+    ):
+        """Returns list of players. Filters by name or team name."""
+
+        def filt(a):
+            Q = True
+            if player_name is not None:
+                Q = Q & (a.name.lower() == player_name.lower())
+            if alive is not None:
+                Q = Q & (a.status['alive'] == alive)
+            return Q
+                
+        z = self._list_players(team_name=team_name, filt=filt)
+        return [a.name for a in z]     
+    
+    def _list_players(self, team_name: str = None, filt: Callable = None):
         """Returns (filtered) list of players. 
+
+        Internal function (not exposed as API).
         
-        If `team` is specified, filters by team name.
-        filt : <Actor> -> bool
+        Parameters
+        ----------
+        team : None or str
+            The Alignment to filter on.
+        filt : None or callable
+            Boolean function with argument :class:`Actor`.
         """
-        if team is None:
+        if team_name is None:
             pool = self.game.actors
         else:
             pool = [
                 al for al in self.game.alignments
-                if al.name == team
+                if al.name.lower() == team_name.lower()
             ][0].members
 
         if filt is None:
@@ -56,25 +173,19 @@ class VanillaExecutor(object):
         ]
         return act_alive
 
-    def list_players(self, team=None, filt=None):
-        """Returns (filtered) list of players. 
-        
-        If `team` is specified, filters by team name.
-        filt : <Actor> -> bool
-        """
-        z = self._list_players(team=team, filt=filt)
-        return [a.name for a in z] 
+    def get_player_info(self, player_name: str):
+        """Returns info for a single player, by their name."""
 
-    def list_alive(self, team=None):
-        """Returns list of alive players. 
-        
-        If `team` is specified, filters by team name.
-        """
-        return self.list_players(team=team, filt=lambda ac: ac.status['alive'])
+        found = [
+            a for a in self.game.actors 
+            if a.name.lower() == player_name.lower()
+        ]
+        if len(found) == 0:
+            raise HTTPException(404, "No such player.")
+        if len(found) > 1:
+            raise HTTPException(400, "Ambiguous name.")
 
-    def get_player_info(self, name):
-        """Gets information for one player."""
-        act = [a for a in self.game.actors if a.name == name][0]
+        act = found[0]
         aligns_names = [
             al.name for al in self.game.alignments 
             if act in al.members
@@ -87,17 +198,17 @@ class VanillaExecutor(object):
         }
         return res
 
-    def get_players_info(self):
+    def get_players_info_all(self):
         """Gets information for all players."""
         return [self.get_player_info(a.name) for a in self.game.actors]
 
     def get_winning_team(self):
         """Returns name of winning team, or None if no winner."""
 
-        if len(self.list_alive(team='town')) == 0:
+        if len(self.list_players(team_name='town', alive=True)) == 0:
             return 'mafia'
         
-        if len(self.list_alive(team='mafia')) == 0:
+        if len(self.list_players(team_name='mafia', alive=True)) == 0:
             return 'town'
         
         return None
@@ -106,40 +217,39 @@ class VanillaExecutor(object):
         """Bumps the phase."""
         next(self.game.phase_state)
 
-    def apply_ability(self, abil, src, trg):
-        """Applies src's ability with given name to trg."""
+    def apply_ability(self, source: str, ability_name: str, target: str):
+        """Applies source's ability with given name to target."""
 
-        source = [
+        source_actor = [
             ac for ac in self.game.actors
-            if ac.name == src
+            if ac.name.lower() == source.lower()
         ][0]
-        target = [
+        target_actor = [
             ac for ac in self.game.actors
-            if ac.name == trg
+            if ac.name.lower() == target.lower()
         ][0]
 
         ability = [
-            a for a in source.role.abilities 
-            if a.name == abil
+            a for a in source_actor.role.abilities 
+            if a.name.lower() == ability_name.lower()
         ][0]
         
-        ace = ActorControlEvent(source, ability, target=target)
+        ace = ActorControlEvent(source_actor, ability, target=target_actor)
         EventManager.handle_event(ace)
 
     def apply_vote_random(self):
         """Adds a random vote."""
 
-        abil = 'lynch-vote'
-        src, trg = random.choices(self.list_alive(), k=2)
-        self.apply_ability(abil, src, trg)
+        ability_name = 'lynch-vote'
+        source, target = random.choices(self.list_players(alive=True), k=2)
+        self.apply_ability(source, ability_name, target)
 
     def apply_mkill_random(self):
         """Adds a random Mafia kill."""
 
-        abil = 'mafia-kill'
-        src = random.choice(self.list_alive(team='mafia'))
-        trg = random.choice(self.list_alive(team='town'))
-        self.apply_ability(abil, src, trg)
-        
-
-# 
+        ability_name = 'mafia-kill'
+        source = random.choice(
+            self.list_players(team_name='mafia', alive=True))
+        target = random.choice(
+            self.list_players(team_name='town', alive=True))
+        self.apply_ability(source, ability_name, target)
