@@ -10,7 +10,8 @@ think of these as "active" and "passive/reactive" abilities respectively.
 
 from copy import copy as shallowcopy  # , deepcopy
 from mafia.core import GameObject
-# from mafia.core.event import EventManager  # , ExternalEvent, Subscriber, 
+
+# from mafia.core.event import EventManager  # , ExternalEvent, Subscriber,
 
 
 class Ability(GameObject):
@@ -24,7 +25,7 @@ class Ability(GameObject):
 
     def __init__(self, name):
         super().__init__()
-        self.name = name 
+        self.name = name
 
 
 class ActivatedAbility(Ability):
@@ -41,7 +42,7 @@ class ActivatedAbility(Ability):
 
     def activate(self, actor, **kwargs):
         # TODO: Set some sort of internal event
-        print('activated')
+        print("activated")
         return None
 
 
@@ -59,7 +60,7 @@ class TriggeredAbility(Ability):
 
     def trigger(self):
         # TODO: Set some sort of internal event
-        print('triggered')
+        print("triggered")
         pass
 
 

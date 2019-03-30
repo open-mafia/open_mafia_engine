@@ -42,7 +42,17 @@ setup(
         ],
         'tests': [
             'nose',
-        ]
+        ],
+        'api': [        
+            'fastapi[all]',
+        ],
+        'cli': [
+            'fastapi[all]',        
+            'prompt_toolkit',
+        ],
     },
     packages=find_packages(),
+    entry_points={
+        'console_scripts': ['vanilla-mafia=mafia.cli.app2:main']
+    }
 )

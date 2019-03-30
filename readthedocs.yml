@@ -17,3 +17,5 @@ python:
   extra_requirements:
     - tests
     - docs
+    - api
+    - cli

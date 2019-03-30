@@ -12,10 +12,7 @@ class GameObject:
 
     def __repr__(self):
         its = self.__dict__.items()
-        kw = ", ".join(
-            "{}={}".format(k, repr(v)) for k, v in its
-            if k[0] != "_"
-        )
+        kw = ", ".join("{}={}".format(k, repr(v)) for k, v in its if k[0] != "_")
         return "{}({})".format(self.__class__.__name__, kw)
 
 
@@ -25,12 +22,12 @@ def singleton(cls):
     TODO: Possibly, redo as a metaclass."""
 
     instance = None
- 
+
     @functools.wraps(cls)
     def wrapper(*args, **kwargs):
         nonlocal instance
         if instance is None:
             instance = cls(*args, **kwargs)
         return instance
- 
+
     return wrapper

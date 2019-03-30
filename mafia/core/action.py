@@ -56,7 +56,7 @@ class Action(GameObject):
         
         In most cases, to change the behavior, you only 
         need to override :meth:`_execute()`."""
-                
+
         # send pre-event
         pae = PreActionEvent(self)
         EventManager.handle_event(pae)

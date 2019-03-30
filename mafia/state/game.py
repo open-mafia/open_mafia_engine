@@ -6,7 +6,8 @@ about current state, possibly including queued up actions.
 
 from mafia.core import GameObject
 from mafia.core.action import Action
-# from mafia.core.event import EventManager 
+
+# from mafia.core.event import EventManager
 
 
 class PhaseChangeAction(Action):
@@ -39,7 +40,7 @@ class PhaseChangeAction(Action):
     def _execute(self):
         self.phase_state.current = self.new_phase
         return True
-        
+
 
 class PhaseState(GameObject):
     """Specifies current "phase" of the game state and progression.
@@ -52,13 +53,13 @@ class PhaseState(GameObject):
         Index of current phase. Defaults to 0. 
     """
 
-    def __init__(self, states=['day', 'night'], current=0):
+    def __init__(self, states=["day", "night"], current=0):
         states = list(states)
-        self.current = current % len(states) 
-        self.states = states 
+        self.current = current % len(states)
+        self.states = states
 
     def __next__(self):
-        self.try_change_phase() 
+        self.try_change_phase()
 
     def try_change_phase(self, new_phase=None):
         """Attempts to change phase to new one.
@@ -70,7 +71,7 @@ class PhaseState(GameObject):
         """
 
         if new_phase is None:
-            action = PhaseChangeAction.next_phase(self) 
+            action = PhaseChangeAction.next_phase(self)
         else:
             action = PhaseChangeAction(self, new_phase)
         action.execute()
@@ -89,7 +90,7 @@ class GameState(GameObject):
 
     def __init__(self, phase_state, alignments=[]):
         super().__init__()
-        self.phase_state = phase_state 
+        self.phase_state = phase_state
         self.alignments = list(alignments)
 
     @property
@@ -98,4 +99,4 @@ class GameState(GameObject):
         res = set()
         for align in self.alignments:
             res = res.union(align.members)
-        return sorted(res, key=lambda x: x.ID) 
+        return sorted(res, key=lambda x: x.ID)

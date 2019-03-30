@@ -81,9 +81,9 @@ class ActionQueue:
 
         # sort members by priority
         def g(x):
-            return getattr(x, 'priority', 0) 
-            
-        acts = sorted(self.members, key=g, reverse=True)        
+            return getattr(x, "priority", 0)
+
+        acts = sorted(self.members, key=g, reverse=True)
         # Alt, but I don't like it:
         # from operator import attrgetter
         # sorted(self.members, key=attrgetter('priority'))
@@ -137,7 +137,7 @@ class EventManagerType:
         event_classes : list
             List of Event classes to unsubscribe from.
         """
-        
+
         # TODO: Unsubscribe from parent classes too?
 
         for event_class in event_classes:
@@ -160,9 +160,8 @@ class EventManagerType:
         event : Event
             Triggering event.
         """
-        
-        logging.debug("EM [Handling event: {}]".format(
-            event.__class__.__name__))
+
+        logging.debug("EM [Handling event: {}]".format(event.__class__.__name__))
 
         # get set of subscribers (via isinstance())
         subscribers = []
@@ -177,8 +176,9 @@ class EventManagerType:
         # call subscribers to add to local queue
         for sub in subscribers:
             act = sub.respond_to_event(event)
-            logging.debug("EM [Subscr: {}, Action: {}]".format(
-                str(sub)[:10], str(act)[:10]))
+            logging.debug(
+                "EM [Subscr: {}, Action: {}]".format(str(sub)[:10], str(act)[:10])
+            )
             q.add(act)
 
         # execute local queue

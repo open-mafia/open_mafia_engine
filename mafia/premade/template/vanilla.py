@@ -4,13 +4,14 @@ These typically have
 """
 
 # from mafia.core.event import EventManager
-import random 
+import random
 from mafia.state.role import Role
 from mafia.state.actor import Actor, Alignment
+
 # from mafia.state.actor import ActorControlEvent
-from mafia.state.game import GameState, PhaseState 
-from mafia.premade.ability.vote import VoteAbility, VoteTally, LynchVoteTally 
-from mafia.premade.ability.kill import KillAbility  
+from mafia.state.game import GameState, PhaseState
+from mafia.premade.ability.vote import VoteAbility, VoteTally, LynchVoteTally
+from mafia.premade.ability.kill import KillAbility
 
 
 class VanillaGame(GameState):
@@ -26,16 +27,12 @@ class VanillaGame(GameState):
 
     def __init__(self, phase_state=[], alignments=[], vote_tally=None):
         if not isinstance(vote_tally, VoteTally):
-            raise TypeError(
-                "vote_tally must be a VoteTally, got %r" % vote_tally)
-        self.vote_tally = vote_tally 
+            raise TypeError("vote_tally must be a VoteTally, got %r" % vote_tally)
+        self.vote_tally = vote_tally
         super().__init__(phase_state=phase_state, alignments=alignments)
 
     @classmethod
-    def generate(
-        cls, players, n_mafia=None, 
-        mafia_name='mafia', town_name='town', 
-    ):
+    def generate(cls, players, n_mafia=None, mafia_name="mafia", town_name="town"):
         """Generates a random Vanilla game.
         
         Parameters
@@ -57,44 +54,39 @@ class VanillaGame(GameState):
         try:
             players = list(players)
         except Exception:
-            players = ['Player_%s' % k for k in range(players)] 
+            players = ["Player_%s" % k for k in range(players)]
         random.shuffle(players)
 
-        N = len(players) 
+        N = len(players)
 
         if n_mafia is None:
             # Approx
-            n_mafia = int(N**0.5)
+            n_mafia = int(N ** 0.5)
         elif n_mafia < 1:
             # Portion
             n_mafia = int(N * n_mafia)
-        
-        # Create base objects 
-        vote_tally = LynchVoteTally('daily-lynch-tally', phases=['day'])
-        align_town = Alignment(town_name) 
+
+        # Create base objects
+        vote_tally = LynchVoteTally("daily-lynch-tally", phases=["day"])
+        align_town = Alignment(town_name)
         align_mafia = Alignment(mafia_name)
 
         for i, player in enumerate(players):
-            abils = [VoteAbility('lynch-vote', tally=vote_tally)] 
+            abils = [VoteAbility("lynch-vote", tally=vote_tally)]
 
             if i < n_mafia:
-                abils += [KillAbility('mafia-kill')]  # TODO: Add NightKill
+                abils += [KillAbility("mafia-kill")]  # TODO: Add NightKill
                 align = align_mafia
             else:
-                align = align_town 
+                align = align_town
 
-            # Create Actor 
-            z = Actor(
-                name=player, 
-                alignment=align, 
-                role=Role(abils),
-                status={}
-            )
+            # Create Actor
+            z = Actor(name=player, alignment=align, role=Role(abils), status={})
             z
 
         res = cls(
-            phase_state=PhaseState(['day', 'night']), 
-            alignments=[align_town, align_mafia], 
+            phase_state=PhaseState(["day", "night"]),
+            alignments=[align_town, align_mafia],
             vote_tally=vote_tally,
         )
-        return res 
+        return res
