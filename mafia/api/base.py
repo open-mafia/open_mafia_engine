@@ -1,10 +1,35 @@
+"""REST API base for the Mafia Engine.
+
+Still to-be-written, however required functionality is mostly understood.
+
+
+User Actions (TODO)
+-------------------
+
+Players and Moderator::
+    * get lobby info: /lobby/...
+    * get game info: /game/...
+    * get user (actor) info: /user/{username|'me'}/role/ alignment, actions, ...
+    * post action: /user/{username|'me'}/action/{action_name}?target={ABC}
+
+Moderator only::
+    * post game action: /game/action/ game-start, phase-change, game-end, ...
+    * post lobby action: /lobby/action/ replace-player, ...
+"""
+
 from fastapi import APIRouter
 from pydantic import BaseModel
+from typing import List
 
 
-class User(BaseModel):
+class BaseUser(BaseModel):
     """Base API user class."""
     username: str
+
+
+class Lobby(BaseModel):
+    """Pre-game lobby information (mostly just holding players)."""
+    users: List[BaseUser] = []
 
 
 class MafiaAPI(APIRouter):
@@ -31,13 +56,3 @@ class MafiaAPI(APIRouter):
     * Add user info discoverability (e.g. self role, ally's role).
     * Add action creation.
     """
-
-    # Players and Moderator
-    #  get lobby info: /lobby/...
-    #  get game info: /game/...
-    #  get user (actor) info: /user/{username|'me'}/role/ alignment, actions, ...
-    #  post action: /user/{username|'me'}/action/{action_name}?target={ABC}
-
-    # Moderator only
-    #  post game action: /game/action/ game-start, phase-change, game-end, ...
-    #  post lobby action: /lobby/action/ replace-player, ...
