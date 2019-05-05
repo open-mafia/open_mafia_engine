@@ -40,7 +40,7 @@ class Action(ReprMixin):
     :class:`Action`'s are "stored" actions which can be executed. 
     Note that creating the object doesn't automatically execute - that has 
     to be called explicitly. In order to create custom behavior, you 
-    only need to override :meth:`__init__()` and :meth:`__execute__()`.
+    only need to override :meth:`__init__` and :meth:`__execute__`.
 
     Comparison operations implemented for priority only.
     """
@@ -112,7 +112,7 @@ class ActionQueue(MutableSequence):
     This code isn't very efficient, O(N**2).
     """
 
-    def __init__(self, items=[]):
+    def __init__(self, items: list = []):
         self.items = self._prune_sort(items)
 
     @classmethod
@@ -146,7 +146,7 @@ class ActionQueue(MutableSequence):
 class Subscriber(object):
     """Mixin that indicates object can act as a subscriber."""
 
-    def respond_to_event(self, event) -> Optional[Action]:
+    def respond_to_event(self, event: Event) -> Optional[Action]:
         """Responds to an event with an Action, or None.
 
         Override this!
