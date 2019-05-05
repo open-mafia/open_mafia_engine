@@ -10,6 +10,7 @@ think of these as "active" and "passive/reactive" abilities respectively.
 
 from typing import Optional
 from mafia.util import ReprMixin
+from mafia.core.errors import MafiaError
 from mafia.core.event import Action, Subscriber, Event
 
 
@@ -77,6 +78,7 @@ class ActivatedAbility(Ability, Subscriber):
 
         This is used to pre-filter possible targets and improve 
         user experience (i.e. preventing impossible actions).
+        Ideally, this is a lightweight operation.
         
         Parameters
         ----------
@@ -93,7 +95,12 @@ class ActivatedAbility(Ability, Subscriber):
     def activate(self, **kwargs) -> Optional[Action]:
         """Actual activation method. Override this.
         
-        This 
+        This should return an Action or None.
+        If the activation is illegal, it should raise 
+        an :class:`IllegalAbilityActivation` error.
+
+        When overriding, you might want to use 
+        `super().activate(**kwargs)` to avoid formatting this error. 
 
         Parameters
         ----------
@@ -104,7 +111,16 @@ class ActivatedAbility(Ability, Subscriber):
         -------
         action : Action or None
             Resulting Action to put on the queue.
+
+        Raises
+        ------
+        IllegalAbilityActivation
+            If not `self.is_legal`.
         """
+        if not self.is_legal(**kwargs):
+            raise IllegalAbilityActivation(
+                "Ability activation is not legal.", self, kwargs
+            )
         return None
 
     def respond_to_event(self, event: Event) -> Optional[Action]:
@@ -116,6 +132,22 @@ class ActivatedAbility(Ability, Subscriber):
                 return None
             return self.activate(**kw)
         return None
+
+
+class IllegalAbilityActivation(MafiaError):
+    """This ability activation was illegal."""
+
+    def __init__(self, message, ability: ActivatedAbility = None, kw: dict = {}):
+        super().__init__(message)
+        self.ability = ability
+        self.kw = dict(kw)
+
+    def __str__(self):
+        return "{}\nAttempted activation:\n{}.activate({})".format(
+            super().__str__(),
+            repr(self.ability),
+            ", ".join("%s=%r" % v for v in self.kw.items()),
+        )
 
 
 class TriggeredAbility(Ability, Subscriber):
