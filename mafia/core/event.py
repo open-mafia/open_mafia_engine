@@ -22,7 +22,10 @@ from mafia.util import ReprMixin
 from collections.abc import MutableSequence
 from typing import Optional, List
 import functools
+
 import logging
+
+logger = logging.getLogger(__name__)
 
 
 """Active `EventManager` contexts."""
@@ -253,7 +256,7 @@ class EventManager(object):
             Triggering event.
         """
 
-        logging.debug(f"EM [Handling event: {event}]")
+        logger.debug(f"EM [Handling event: {event}]")
 
         # get set of subscribers (via isinstance())
         subscribers = []
