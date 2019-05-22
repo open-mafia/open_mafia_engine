@@ -91,7 +91,7 @@ class Actor(Accessor, Subscriber):
     
     Attributes
     ----------
-    access : list
+    access_levels : list
         List of all access levels available for this actor.
     """
 
@@ -121,6 +121,6 @@ class Actor(Accessor, Subscriber):
                 raise AbilityAlreadyBound(abil, self)
 
     @property
-    def access(self) -> typing.List[str]:
+    def access_levels(self) -> typing.List[str]:
         """Access levels."""
         return ["public", self.name] + [a.name for a in self.alignments]
