@@ -12,17 +12,17 @@ class AccessError(MafiaError):
     
     Attributes
     ----------
-    visibility : list
+    required : list
         Available visibility levels for the object.
-    level : str
-        Attempted access level.
+    given : str
+        Attempted access levels.
     """
 
-    def __init__(self, visibility: typing.List[str] = [], level: str = "public"):
-        msg = "Got level %r, allowed levels: %r." % (level, visibility)
+    def __init__(self, required: typing.List[str] = [], given: str = "public"):
+        msg = "Got levels %r, requires levels: %r." % (given, required)
         super().__init__(msg)
-        self.visibility = list(visibility)
-        self.level = level
+        self.required = list(required)
+        self.given = list(given)
 
 
 class Accessor(ReprMixin):

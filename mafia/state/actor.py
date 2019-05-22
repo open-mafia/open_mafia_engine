@@ -3,14 +3,11 @@
 """
 
 import typing
-
-# from copy import deepcopy
-
 from mafia.util import ReprMixin
-from mafia.core.errors import MafiaError
-from mafia.state.access import Accessor
 from mafia.core.event import Subscriber
-from mafia.core.ability import Ability
+from mafia.core.ability import Ability, AbilityAlreadyBound
+from mafia.state.access import Accessor
+from mafia.state.status import Status
 
 
 class Alignment(ReprMixin):
@@ -64,17 +61,23 @@ class Alignment(ReprMixin):
         actor.alignments.remove(self)
 
 
-class AbilityAlreadyBound(MafiaError):
-    """Ability has already been bound to another owner."""
+class ActorStatus(Status):
+    """Status of an Actor.
 
-    def __init__(self, ability, new_owner):
-        msg = "Cannot add owner %r to ability %r, already has owner." % (
-            new_owner,
-            ability,
-        )
-        super().__init__(msg)
-        self.ability = ability
-        self.new_owner = new_owner
+    This acts like a mutable dotted-dict, however it isn't recursive 
+    (not meant to be) and it stores values as :class:`StatusItem`'s.
+    
+    Parameters
+    ----------
+    alive : bool
+        Whether the actor is alive or not.
+    kwargs : dict
+        Keyword arguments to set.
+    """
+
+    def __init__(self, alive: bool = True, **kwargs):
+        super().__init__(**kwargs)
+        self.alive = alive
 
 
 class Actor(Accessor, Subscriber):
@@ -88,6 +91,8 @@ class Actor(Accessor, Subscriber):
         Linked alignments.
     abilities : list
         Abilities, both activated and triggered.
+    status : ActorStatus
+        Dotted-dict for status information. 
     
     Attributes
     ----------
@@ -100,6 +105,7 @@ class Actor(Accessor, Subscriber):
         name: str,
         alignments: typing.List[Alignment] = [],
         abilities: typing.List[Ability] = [],
+        status: typing.Mapping[str, object] = {"alive": True},
     ):
         self.name = name
 
@@ -119,6 +125,8 @@ class Actor(Accessor, Subscriber):
                 self.abilities.append(abil)
             else:
                 raise AbilityAlreadyBound(abil, self)
+
+        self.status = ActorStatus(**status)
 
     @property
     def access_levels(self) -> typing.List[str]:

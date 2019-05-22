@@ -34,6 +34,19 @@ class Ability(ReprMixin):
         self.owner = owner
 
 
+class AbilityAlreadyBound(MafiaError):
+    """Ability has already been bound to another owner."""
+
+    def __init__(self, ability, new_owner):
+        msg = "Cannot add owner %r to ability %r, already has owner." % (
+            new_owner,
+            ability,
+        )
+        super().__init__(msg)
+        self.ability = ability
+        self.new_owner = new_owner
+
+
 class TryActivateAbility(Event):
     """Event for signalling intent to activate an ability.
     
