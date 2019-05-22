@@ -12,6 +12,7 @@ from mafia.core.ability import (
     IllegalAbilityActivation,
 )
 from mafia.state.actor import Alignment, Actor
+from mafia.state.game import Game
 
 
 class VoteAction(Action):
@@ -45,9 +46,16 @@ with em:
     mafia = Alignment("mafia")
     town = Alignment("town")
 
-    alice = Actor("Alice", alignments=[mafia], abilities=[VoteAbility("alice-vote")])
+    alice = Actor(
+        "Alice",
+        alignments=[mafia],
+        abilities=[VoteAbility("alice-vote")],
+        status={"baddie": True},
+    )
     bob = Actor("Bob", alignments=[town], abilities=[VoteAbility("bob-vote")])
     charlie = Actor("Charles", alignments=[town], abilities=[VoteAbility("c-vote")])
+
+    game = Game(actors=[alice, bob, charlie], alignments=[mafia, town])
 
     def vote(src, trg):
         taa = TryActivateAbility(src.abilities[0], target=trg)
