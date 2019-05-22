@@ -277,7 +277,7 @@ class EventManager(object):
         # execute local queue
         for act in q:
             # send pre-event
-            pae = PreActionEvent(self)
+            pae = PreActionEvent(act)
             self.handle_event(pae)
 
             # actually do it, and report success
@@ -287,5 +287,5 @@ class EventManager(object):
                 return
 
             # send post-event
-            poe = PostActionEvent(self)
+            poe = PostActionEvent(act)
             self.handle_event(poe)

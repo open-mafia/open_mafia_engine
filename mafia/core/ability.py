@@ -22,16 +22,16 @@ class Ability(ReprMixin):
     
     Attributes
     ----------
-    owner : object
-        The object that owns the ability.
     name : str
         Ability name (human-readable).
+    owner : object
+        The object that owns the ability.
     """
 
-    def __init__(self, owner, name: str):
+    def __init__(self, name: str, owner=None):
         super().__init__()
-        self.owner = owner
         self.name = name
+        self.owner = owner
 
 
 class TryActivateAbility(Event):
@@ -63,14 +63,14 @@ class ActivatedAbility(Ability, Subscriber):
     
     Attributes
     ----------
-    owner : object
-        The object that owns the ability.
     name : str
         Ability name (human-readable).
+    owner : object
+        The object that owns the ability.
     """
 
-    def __init__(self, owner, name: str):
-        super().__init__(owner, name)
+    def __init__(self, name: str, owner=None):
+        super().__init__(name=name, owner=owner)
         self.subscribe_to(TryActivateAbility)
 
     def is_legal(self, **kwargs) -> bool:
@@ -159,14 +159,14 @@ class TriggeredAbility(Ability, Subscriber):
 
     Attributes
     ----------
-    owner : object
-        The object that owns the ability.
     name : str
         Ability name (human-readable).
+    owner : object
+        The object that owns the ability.
     """
 
-    def __init__(self, owner, name: str):
-        super().__init__(owner, name)
+    def __init__(self, name: str, owner=None):
+        super().__init__(name=name, owner=owner)
         # Add self.subscribe_to(YourEventHere)
 
     def respond_to_event(self, event: Event) -> Optional[Action]:
