@@ -182,14 +182,14 @@ class Subscriber(object):
 class EventManager(object):
     """Object that manages event-related things.
 
-    Functions as a context manager
+    Functions as a context manager.
     
     Subscriptions:
     { EventType : set([subscribers]) }
     """
 
     def __init__(self):
-        self.members = {}
+        self.listeners = {}
 
     def __enter__(self):
         global active_contexts
@@ -214,17 +214,13 @@ class EventManager(object):
         """
 
         for event_class in event_classes:
-            if event_class not in self.members:
-                self.members[event_class] = set()
-            self.members[event_class].add(obj)
+            if event_class not in self.listeners:
+                self.listeners[event_class] = set()
+            self.listeners[event_class].add(obj)
 
     def unsubscribe_me(self, obj: Subscriber, *event_classes) -> None:
         """Removes `obj` from subscriptions for specific events.
         
-        Currently doesn't look for parent classes of `event_classes.
-        Probably should (so you could unsub from all Events 
-        via the base class), but not implemented yet.
-
         Parameters
         ----------
         obj : Subscriber
@@ -233,13 +229,11 @@ class EventManager(object):
             List of Event classes to unsubscribe from.
         """
 
-        # TODO: Unsubscribe from parent classes too?
-
         for event_class in event_classes:
             try:
-                self.members[event_class].remove(obj)
+                self.listeners[event_class].remove(obj)
             except KeyError:
-                # could be error in members (no key 'event_class')
+                # could be error in listeners (no key 'event_class')
                 # or could be error in the set (no key 'obj')
                 # Maybe, warn that there was a subscription thing?
                 pass
@@ -260,9 +254,9 @@ class EventManager(object):
 
         # get set of subscribers (via isinstance())
         subscribers = []
-        for event_class in self.members:
+        for event_class in self.listeners:
             if isinstance(event, event_class):
-                new_subs = self.members[event_class]
+                new_subs = self.listeners[event_class]
                 subscribers.extend(new_subs)
 
         # make local action queue

@@ -10,7 +10,7 @@ from mafia.state.access import Accessor
 from mafia.state.status import Status
 
 
-class Alignment(ReprMixin):
+class Alignment(ReprMixin, Subscriber):
     """Represents an alignment (team).
 
     Attributes
@@ -24,6 +24,8 @@ class Alignment(ReprMixin):
     def __init__(self, name: str, members: list = []):
         self.name = name
         self.members = list(members)
+        # Fake a subscription to get picked up by Game
+        self.subscribe_to()
 
     # add, remove
     def add(self, actor):
@@ -127,6 +129,9 @@ class Actor(Accessor, Subscriber):
                 raise AbilityAlreadyBound(abil, self)
 
         self.status = ActorStatus(**status)
+
+        # Fake a subscription to be auto-added to a Game
+        self.subscribe_to()
 
     @property
     def access_levels(self) -> typing.List[str]:

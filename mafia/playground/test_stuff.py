@@ -40,9 +40,9 @@ class VoteAbility(ActivatedAbility):
         return VoteAction(self.owner, target)
 
 
-em = EventManager()
+game = Game()
 
-with em:
+with game:
     mafia = Alignment("mafia")
     town = Alignment("town")
 
@@ -55,11 +55,11 @@ with em:
     bob = Actor("Bob", alignments=[town], abilities=[VoteAbility("bob-vote")])
     charlie = Actor("Charles", alignments=[town], abilities=[VoteAbility("c-vote")])
 
-    game = Game(actors=[alice, bob, charlie], alignments=[mafia, town])
+    # game = Game(actors=[alice, bob, charlie], alignments=[mafia, town])
 
     def vote(src, trg):
         taa = TryActivateAbility(src.abilities[0], target=trg)
-        em.handle_event(taa)
+        game.handle_event(taa)
 
 
 vote(alice, bob)  # this should work!
