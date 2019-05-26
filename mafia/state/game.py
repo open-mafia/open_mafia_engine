@@ -8,28 +8,109 @@ from mafia.util import ReprMixin
 
 # from mafia.core.errors import MafiaError
 from mafia.core.event import EventManager, Subscriber
-from mafia.core.ability import Ability, AbilityAlreadyBound
+from mafia.core.ability import Ability, AbilityAlreadyBound, Action
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
 
 
+class PhaseChangeAction(Action):
+    """Action that changes phases.
+    
+    Attributes
+    ----------
+    phase_state : PhaseState
+        The target state that will be changed.
+    new_phase : int
+        The phase being changed to.
+    """
+
+    def __init__(self, phase_state, new_phase: int):
+        if not isinstance(phase_state, PhaseState):
+            raise TypeError("Expected PhaseState, got %r" % phase_state)
+        self.phase_state = phase_state
+        self.new_phase = new_phase
+
+    @classmethod
+    def next_phase(cls, phase_state):
+        """Creates action that increments the phase (with wrap-around).
+        
+        Parameters
+        ----------
+        phase_state : PhaseState
+            The target state that will be changed.
+        """
+        new_phase = (phase_state.current + 1) % len(phase_state.states)
+        return cls(phase_state, new_phase)
+
+    def __execute__(self):
+        self.phase_state.current = self.new_phase
+        return True
+
+
+class PhaseState(ReprMixin):
+    """Specifies current "phase" of the game state and progression.
+    
+    Attributes
+    ----------
+    states : list
+        List of phases. Defaults to `['day', 'night']`.
+    current : int
+        Index of current phase. Defaults to 0. 
+    """
+
+    def __init__(self, states=["day", "night"], current=0):
+        states = list(states)
+        self.current = current % len(states)
+        self.states = states
+
+    def __repr__(self):
+        return "%s(states=%r, current=%r)" % (
+            self.__class__.__name__,
+            self.states,
+            self.current,
+        )
+
+    def __next__(self) -> PhaseChangeAction:
+        return self.try_change_phase()
+
+    def try_change_phase(self, new_phase: int = None) -> PhaseChangeAction:
+        """Attempts to change phase to new one.
+        
+        Parameters
+        ----------
+        new_phase : int or None
+            The new phase. If None, tries to increment. 
+
+        Returns
+        -------
+        action : PhaseChangeAction
+            The actual action that changes the phase.
+        """
+
+        if new_phase is None:
+            action = PhaseChangeAction.next_phase(self)
+        else:
+            action = PhaseChangeAction(self, new_phase)
+        return action
+
+
 class GameStatus(Status):
-    """Status of an Actor.
+    """Status of an Game.
 
     This acts like a mutable dotted-dict, however it isn't recursive 
     (not meant to be) and it stores values as :class:`StatusItem`'s.
     
     Parameters
     ----------
-    alive : bool
-        Whether the actor is alive or not.
+    phase : PhaseState
+        The current phase, cycle, etc.
     kwargs : dict
         Keyword arguments to set.
     """
 
-    def __init__(self, alive: bool = True, **kwargs):
+    def __init__(self, phase: PhaseState = PhaseState(), **kwargs):
         super().__init__(**kwargs)
-        self.alive = alive
+        self.phase = phase
 
 
 class Game(EventManager, ReprMixin, Subscriber):
@@ -63,7 +144,7 @@ class Game(EventManager, ReprMixin, Subscriber):
         actors: typing.List[Actor] = [],
         alignments: typing.List[Alignment] = [],
         abilities: typing.List[Ability] = [],
-        status: typing.Mapping[str, object] = {},
+        status: typing.Mapping[str, object] = GameStatus(),
         # listeners: typing.Mapping[object, type] = {},
     ):
 
@@ -106,4 +187,3 @@ class Game(EventManager, ReprMixin, Subscriber):
             self.actors.append(obj)
         elif isinstance(obj, Alignment):
             self.alignments.append(obj)
-

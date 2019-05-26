@@ -12,7 +12,7 @@ from mafia.core.ability import (
     IllegalAbilityActivation,
 )
 from mafia.state.actor import Alignment, Actor
-from mafia.state.game import Game
+from mafia.state.game import Game, PhaseState, PhaseChangeAction
 
 
 class VoteAction(Action):
@@ -58,7 +58,8 @@ with game:
     # game = Game(actors=[alice, bob, charlie], alignments=[mafia, town])
 
     def vote(src, trg):
-        taa = TryActivateAbility(src.abilities[0], target=trg)
+        va = [a for a in src.abilities if isinstance(a, VoteAbility)]
+        taa = TryActivateAbility(va[0], target=trg)
         game.handle_event(taa)
 
 

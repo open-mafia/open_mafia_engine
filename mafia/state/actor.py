@@ -107,7 +107,7 @@ class Actor(Accessor, Subscriber):
         name: str,
         alignments: typing.List[Alignment] = [],
         abilities: typing.List[Ability] = [],
-        status: typing.Mapping[str, object] = {"alive": True},
+        status: typing.Mapping[str, object] = ActorStatus(),
     ):
         self.name = name
 
