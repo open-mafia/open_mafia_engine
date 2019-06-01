@@ -21,18 +21,18 @@ class PhaseChangeAction(Action):
     ----------
     phase_state : PhaseState
         The target state that will be changed.
-    new_phase : int
-        The phase being changed to.
+    new_phase : int or None
+        The phase being changed to. If None, signifies next phase.
     """
 
-    def __init__(self, phase_state, new_phase: int):
+    def __init__(self, phase_state, new_phase: typing.Optional[int] = None):
         if not isinstance(phase_state, PhaseState):
             raise TypeError("Expected PhaseState, got %r" % phase_state)
         self.phase_state = phase_state
         self.new_phase = new_phase
 
     @classmethod
-    def next_phase(cls, phase_state):
+    def next_phase(cls, phase_state) -> Action:  # actually PhaseChangeAction
         """Creates action that increments the phase (with wrap-around).
         
         Parameters
@@ -40,11 +40,15 @@ class PhaseChangeAction(Action):
         phase_state : PhaseState
             The target state that will be changed.
         """
-        new_phase = (phase_state.current + 1) % len(phase_state.states)
-        return cls(phase_state, new_phase)
+        return cls(phase_state, None)
 
-    def __execute__(self):
-        self.phase_state.current = self.new_phase
+    def __execute__(self) -> bool:
+        if self.new_phase is None:
+            self.phase_state.current = (self.phase_state.current + 1) % len(
+                self.phase_state.states
+            )
+        else:
+            self.phase_state.current = self.new_phase
         return True
 
 
