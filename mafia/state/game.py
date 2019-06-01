@@ -8,9 +8,10 @@ from mafia.util import ReprMixin
 
 # from mafia.core.errors import MafiaError
 from mafia.core.event import EventManager, Subscriber
-from mafia.core.ability import Ability, AbilityAlreadyBound, Action, ActivatedAbility
+from mafia.core.ability import Action, ActivatedAbility
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
+from mafia.state.access import Accessor
 
 
 class PhaseChangeAction(Action):
@@ -64,8 +65,9 @@ class PhaseChangeAbility(ActivatedAbility):
         if not isinstance(phase_state, PhaseState):
             raise TypeError("phase_state should be a PhaseState, got %r" % phase_state)
         super().__init__(name=name, owner=owner)
+        self.phase_state = phase_state
 
-    def is_legal(self, phase_state, new_phase: typing.Optional[int] = None) -> bool:
+    def is_legal(self, new_phase: typing.Optional[int] = None) -> bool:
         """Check whether the phase change ability usage is legal.
 
         The constructor prevents using phase change on a non-phase-state. 
@@ -83,9 +85,7 @@ class PhaseChangeAbility(ActivatedAbility):
         """
         return True
 
-    def activate(
-        self, new_phase: typing.Optional[int] = None
-    ) -> PhaseChangeAction:
+    def activate(self, new_phase: typing.Optional[int] = None) -> PhaseChangeAction:
         """Creates a PhaseChangeAction.
         
         If the activation is illegal, it will raise 
@@ -179,14 +179,15 @@ class GameStatus(Status):
         super().__init__(phase=phase, **kwargs)
 
 
-class Game(EventManager, ReprMixin, Subscriber):
+class Game(EventManager, Subscriber, Accessor):
     """Represents an entire game.
 
     This class works as an :class:`EventManager` and also as 
     a collection of :class:`Actor`'s and :class:`Alignment`'s.
 
     Use as a context manager to automatically pick up objects 
-    within the context.
+    within the context. This works for Actors, Alignments, and 
+    also Moderators.
     
     Parameters
     ----------
@@ -194,8 +195,6 @@ class Game(EventManager, ReprMixin, Subscriber):
         All actors in the game.
     alignments : list
         All alignments in the game.
-    abilities : list
-        Game-wide Abilities, both activated and triggered.
     status : GameStatus
         Dotted-dict for status information. 
     
@@ -203,35 +202,25 @@ class Game(EventManager, ReprMixin, Subscriber):
     ----------
     listeners : dict
         Dictionary of listeners for events (from EventManager).
+    access_levels : list
+        List of all access levels available for this actor.
     """
 
     def __init__(
         self,
         actors: typing.List[Actor] = [],
         alignments: typing.List[Alignment] = [],
-        abilities: typing.List[Ability] = [],
         status: typing.Mapping[str, object] = GameStatus(),
-        # listeners: typing.Mapping[object, type] = {},
     ):
 
         EventManager.__init__(self)
 
         # Just remember these in the game
+        # Note that they are auto-added when subscribed
         self.actors = list(actors)
         self.alignments = list(alignments)
 
-        # Associate abilities ()
-        self.abilities = []
-        for abil in abilities:
-            if abil.owner is self:
-                self.abilities.append(abil)
-            elif abil.owner is None:
-                # Take ownership :)
-                abil.owner = self
-                self.abilities.append(abil)
-            else:
-                raise AbilityAlreadyBound(abil, self)
-
+        # Game status
         self.status = GameStatus(**status)
 
     def subscribe_me(self, obj: Subscriber, *event_classes) -> None:
@@ -253,3 +242,11 @@ class Game(EventManager, ReprMixin, Subscriber):
             self.actors.append(obj)
         elif isinstance(obj, Alignment):
             self.alignments.append(obj)
+
+    @property
+    def access_levels(self) -> typing.List[str]:
+        """Access levels of all the actors and alignments."""
+        res = ["public"]
+        for a in self.actors + self.alignments:
+            res.extend(set(a.access_levels).difference(res))
+        return res
