@@ -78,8 +78,7 @@ class ActorStatus(Status):
     """
 
     def __init__(self, alive: bool = True, **kwargs):
-        super().__init__(**kwargs)
-        self.alive = alive
+        super().__init__(alive=alive, **kwargs)
 
 
 class Actor(Accessor, Subscriber):

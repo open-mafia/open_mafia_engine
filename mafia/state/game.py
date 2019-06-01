@@ -109,8 +109,7 @@ class GameStatus(Status):
     """
 
     def __init__(self, phase: PhaseState = PhaseState(), **kwargs):
-        super().__init__(**kwargs)
-        self.phase = phase
+        super().__init__(phase=phase, **kwargs)
 
 
 class Game(EventManager, ReprMixin, Subscriber):
