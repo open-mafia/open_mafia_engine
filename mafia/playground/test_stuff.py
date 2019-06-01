@@ -14,53 +14,35 @@ from mafia.core.ability import (
 from mafia.state.actor import Alignment, Actor, Moderator
 from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
-
-class VoteAction(Action):
-    """Fake vote action."""
-
-    def __init__(self, source: Actor, target: Actor):
-        self.source = source
-        self.target = target
-
-    def __execute__(self) -> bool:
-        print("%s voted for %s" % (self.source.name, self.target.name))
-        return True
+from mafia.mechanics.vote import VoteTally, VoteAbility
 
 
-class VoteAbility(ActivatedAbility):
-    """Fake vote ability."""
-
-    def is_legal(self, target: Actor):
-        if not isinstance(target, Actor):
-            return False
-        return True
-
-    def activate(self, target: Actor) -> VoteAction:
-        super().activate(target=target)
-        return VoteAction(self.owner, target)
-
-
-game = Game()
+lynch_tally = VoteTally("lynch-tally")
+phase_state = PhaseState()
+game = Game(status={"tally": lynch_tally, "phase": phase_state})
 
 with game:
     mafia = Alignment("mafia")
     town = Alignment("town")
 
     mod = Moderator(
-        "Mod",
-        abilities=[
-            PhaseChangeAbility("change-phase", phase_state=game.status.phase.value)
-        ],
+        "Mod", abilities=[PhaseChangeAbility("change-phase", phase_state=phase_state)]
     )
 
     alice = Actor(
         "Alice",
         alignments=[mafia],
-        abilities=[VoteAbility("alice-vote")],
+        abilities=[VoteAbility("alice-vote", tally=lynch_tally)],
         status={"baddie": True},
     )
-    bob = Actor("Bob", alignments=[town], abilities=[VoteAbility("bob-vote")])
-    charlie = Actor("Charles", alignments=[town], abilities=[VoteAbility("c-vote")])
+    bob = Actor(
+        "Bob", alignments=[town], abilities=[VoteAbility("bob-vote", tally=lynch_tally)]
+    )
+    charlie = Actor(
+        "Charles",
+        alignments=[town],
+        abilities=[VoteAbility("charles-vote", tally=lynch_tally)],
+    )
 
     def vote(src, trg):
         va = [a for a in src.abilities if isinstance(a, VoteAbility)]
@@ -74,14 +56,16 @@ with game:
 
 
 # Start of game
-print(game.status.phase.value)
+print(phase_state)
 
 # Day 1 votes
 vote(alice, bob)
+print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
 change_phase()
-print(game.status.phase.value)
+print(phase_state)
 
 # Night 1 stuff
 # TODO
 change_phase()
-print(game.status.phase.value)
+print(phase_state)
+# print(game.status.phase.value)
