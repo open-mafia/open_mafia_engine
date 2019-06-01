@@ -136,3 +136,27 @@ class Actor(Accessor, Subscriber):
     def access_levels(self) -> typing.List[str]:
         """Access levels."""
         return ["public", self.name] + [a.name for a in self.alignments]
+
+
+class Moderator(Actor):
+    """Represents a moderator (game master, admin).
+
+    Currently this is just an Actor. 
+    Mods can be players too, theoretically...
+    
+    Parameters
+    ----------
+    name : str
+        Human-readable name.
+    alignments : list
+        Linked alignments.
+    abilities : list
+        Abilities, both activated and triggered.
+    status : ActorStatus
+        Dotted-dict for status information. 
+    
+    Attributes
+    ----------
+    access_levels : list
+        List of all access levels available for this actor.
+    """
