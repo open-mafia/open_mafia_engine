@@ -8,7 +8,7 @@ from mafia.util import ReprMixin
 
 # from mafia.core.errors import MafiaError
 from mafia.core.event import EventManager, Subscriber
-from mafia.core.ability import Ability, AbilityAlreadyBound, Action
+from mafia.core.ability import Ability, AbilityAlreadyBound, Action, ActivatedAbility
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
 
@@ -45,6 +45,73 @@ class PhaseChangeAction(Action):
     def __execute__(self):
         self.phase_state.current = self.new_phase
         return True
+
+
+class PhaseChangeAbility(ActivatedAbility):
+    """Ability to change phases. Usually just given to the moderator.
+    
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    owner : object
+        The object that owns the ability.
+    phase_state : PhaseState
+        The phase object that this ability allows changing.
+    """
+
+    def __init__(self, name: str, owner=None, phase_state=None):
+        if not isinstance(phase_state, PhaseState):
+            raise TypeError("phase_state should be a PhaseState, got %r" % phase_state)
+        super().__init__(name=name, owner=owner)
+
+    def is_legal(self, phase_state, new_phase: typing.Optional[int] = None) -> bool:
+        """Check whether the phase change ability usage is legal.
+
+        The constructor prevents using phase change on a non-phase-state. 
+        You may want to override/extend this with stricter checks. 
+
+        Parameters
+        ----------
+        new_phase : int or None
+            The index of the phase you want. If None, just takes next phase.
+
+        Returns
+        -------
+        can_use : bool
+            Whether the ability usage is legal.
+        """
+        return True
+
+    def activate(
+        self, new_phase: typing.Optional[int] = None
+    ) -> PhaseChangeAction:
+        """Creates a PhaseChangeAction.
+        
+        If the activation is illegal, it will raise 
+        an :class:`IllegalAbilityActivation` error.
+
+        Parameters
+        ----------
+        new_phase : int or None
+            The index of the phase you want. If None, just takes next phase.
+
+        Returns
+        -------
+        action : Action or None
+            Resulting Action to put on the queue.
+
+        Raises
+        ------
+        IllegalAbilityActivation
+            If not `self.is_legal`.
+        """
+        super().activate(new_phase=new_phase)
+
+        if new_phase is None:
+            return PhaseChangeAction.next_phase(self.phase_state)
+
+        return PhaseChangeAction(phase_state=self.phase_state, new_phase=new_phase)
 
 
 class PhaseState(ReprMixin):
