@@ -246,7 +246,7 @@ class Game(EventManager, Subscriber, Accessor):
     @property
     def access_levels(self) -> typing.List[str]:
         """Access levels of all the actors and alignments."""
-        res = ["public"]
+        res = ["public", "game"]
         for a in self.actors + self.alignments:
             res.extend(set(a.access_levels).difference(res))
         return res
