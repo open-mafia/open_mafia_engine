@@ -157,7 +157,7 @@ class VoteAbility(ActivatedAbility):
         self.tally = tally
 
     def is_legal(self, target=None) -> bool:
-        """Check whether the phase change ability usage is legal.
+        """Check whether the vote ability usage is legal.
 
         The constructor prevents using this on a non-VoteTally. 
         You may want to override/extend this with stricter checks. 
