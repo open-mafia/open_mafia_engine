@@ -1,5 +1,8 @@
-"""
+"""Voting mechanics module.
 
+A :class:`VoteTally` keeps the votes (who voted for whom).
+Typically this is used to decide who is lynched each day, however 
+this is not always the case. 
 """
 
 import typing
@@ -7,7 +10,6 @@ from mafia.util import ReprMixin
 from mafia.core.ability import Action, ActivatedAbility
 
 # from mafia.core.event import Subscriber
-
 # from mafia.state.status import Status
 
 
@@ -60,6 +62,18 @@ class VoteTally(ReprMixin):
         """
         del self.votes_for[source]
 
+    def resolve(self) -> typing.Optional[Action]:
+        """Resolves the vote tally.
+        
+        Override to have any practical use!
+        
+        Returns
+        -------
+        resolution : None or Action
+            The action to run upon resolution.
+        """
+        return None
+
     @property
     def voted_by(self) -> dict:
         """Dict of {target: [sources]}"""
@@ -95,16 +109,22 @@ class VoteAction(Action):
         The object that is voting.
     target : object or None
         The object being voted for. If None, resets source's vote.
+    canceled : bool
+        Whether the action is canceled. Default is False.
     """
 
-    def __init__(self, tally: VoteTally, source, target=None):
+    def __init__(self, tally: VoteTally, source, target=None, canceled: bool = False):
         if not isinstance(tally, VoteTally):
-            raise TypeError("Expected VoteTally, got %r" % tally)
+            raise TypeError(f"Expected VoteTally, got {type(tally)}")
+        super().__init__(canceled=canceled)
         self.tally = tally
         self.source = source
         self.target = target
 
     def __execute__(self) -> bool:
+        if self.canceled:
+            return False
+
         if self.target is None:
             self.tally.remove_vote(self.source)
         else:
@@ -127,7 +147,7 @@ class VoteAbility(ActivatedAbility):
 
     def __init__(self, name: str, owner=None, tally: VoteTally = None):
         if not isinstance(tally, VoteTally):
-            raise TypeError("tally should be a VoteTally, got %r" % tally)
+            raise TypeError(f"tally should be a VoteTally, got {type(tally)}")
         super().__init__(name=name, owner=owner)
         self.tally = tally
 
