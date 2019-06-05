@@ -14,10 +14,10 @@ from mafia.core.ability import (
 from mafia.state.actor import Alignment, Actor, Moderator
 from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
-from mafia.mechanics.vote import VoteTally, VoteAbility
+from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 
 
-lynch_tally = VoteTally("lynch-tally")
+lynch_tally = LynchTally("lynch-tally")
 phase_state = PhaseState()
 game = Game(status={"tally": lynch_tally, "phase": phase_state})
 
@@ -26,7 +26,11 @@ with game:
     town = Alignment("town")
 
     mod = Moderator(
-        "Mod", abilities=[PhaseChangeAbility("change-phase", phase_state=phase_state)]
+        "Mod",
+        abilities=[
+            PhaseChangeAbility("change-phase", phase_state=phase_state),
+            ResolveVotesAbility("resolve-votes", tally=lynch_tally),
+        ],
     )
 
     alice = Actor(
@@ -51,8 +55,11 @@ with game:
 
     def change_phase(new_phase=None):
         pca = [a for a in mod.abilities if isinstance(a, PhaseChangeAbility)]
-        taa = TryActivateAbility(pca[0], new_phase=new_phase)
-        game.handle_event(taa)
+        rva = [a for a in mod.abilities if isinstance(a, ResolveVotesAbility)]
+        t1 = TryActivateAbility(rva[0])
+        t2 = TryActivateAbility(pca[0], new_phase=new_phase)
+        game.handle_event(t1)
+        game.handle_event(t2)
 
 
 # Start of game
