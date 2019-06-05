@@ -15,6 +15,7 @@ from mafia.state.actor import Alignment, Actor, Moderator
 from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
+from mafia.mechanics.kill import KillAbility
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -36,7 +37,10 @@ with game:
     alice = Actor(
         "Alice",
         alignments=[mafia],
-        abilities=[VoteAbility("alice-vote", tally=lynch_tally)],
+        abilities=[
+            VoteAbility("alice-vote", tally=lynch_tally),
+            KillAbility("mafia-kill"),
+        ],
         status={"baddie": True},
     )
     bob = Actor(
@@ -52,6 +56,11 @@ with game:
         va = [a for a in src.abilities if isinstance(a, VoteAbility)]
         taa = TryActivateAbility(va[0], target=trg)
         game.handle_event(taa)
+
+    def mafiakill(src, trg):
+        mk = [a for a in src.abilities if isinstance(a, KillAbility)]
+        t = TryActivateAbility(mk[0], target=trg)
+        game.handle_event(t)
 
     def change_phase(new_phase=None):
         pca = [a for a in mod.abilities if isinstance(a, PhaseChangeAbility)]
@@ -69,10 +78,14 @@ print(phase_state)
 vote(alice, bob)
 print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
 change_phase()
+
+print("Bob status:", bob.status)
 print(phase_state)
 
 # Night 1 stuff
-# TODO
+mafiakill(alice, charlie)
 change_phase()
+print("Charlie status:", charlie.status)
 print(phase_state)
 # print(game.status.phase.value)
+
