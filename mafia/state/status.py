@@ -73,10 +73,12 @@ class Status(MutableMapping, ReprMixin):
         if not isinstance(key, str):
             raise KeyError(key)
 
+        setattr(self, key, value)
+
+    def __setattr__(self, name, value):
         if not isinstance(value, StatusItem):
             value = StatusItem(value)
-
-        setattr(self, key, value)
+        super().__setattr__(name, value)
 
     def __delitem__(self, key):
         try:
