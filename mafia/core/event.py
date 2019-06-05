@@ -46,23 +46,31 @@ class Action(ReprMixin):
     only need to override :meth:`__init__` and :meth:`__execute__`.
 
     Comparison operations implemented for priority only.
+
+    Attributes
+    ----------
+    canceled : bool
+        Whether the action is canceled. Default is False.
     """
+
+    def __init__(self, canceled: bool = False):
+        self.canceled = canceled
 
     def __execute__(self) -> bool:
         """Actually performs the action.
 
         Override this!
 
-        This should also figure out whether the action should be 
-        cancelled, explicitly (e.g. by other actions modifying 
-        it) or implicitly (e.g. because the target is invalid).
+        This should also figure out whether the action was canceled, 
+        explicitly by checking self.canceled (e.g. because some other action 
+        modified it) or implicitly (e.g. because the target is invalid).
         
         Returns
         -------
         success : bool
             Returns True if the action was completed.
         """
-        return True
+        return bool(self.canceled)
 
     @property
     def priority(self) -> float:
@@ -275,7 +283,7 @@ class EventManager(object):
             self.handle_event(pae)
 
             # actually do it, and report success
-            # To change behavior, override Action._execute()
+            # To change behavior, override Action.__execute__()
             success = act.__execute__()
             if not success:
                 return

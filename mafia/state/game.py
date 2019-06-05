@@ -23,11 +23,19 @@ class PhaseChangeAction(Action):
         The target state that will be changed.
     new_phase : int or None
         The phase being changed to. If None, signifies next phase.
+    canceled : bool
+        Whether the action is canceled. Default is False.
     """
 
-    def __init__(self, phase_state, new_phase: typing.Optional[int] = None):
+    def __init__(
+        self,
+        phase_state,
+        new_phase: typing.Optional[int] = None,
+        canceled: bool = False,
+    ):
         if not isinstance(phase_state, PhaseState):
             raise TypeError("Expected PhaseState, got %r" % phase_state)
+        super().__init__(canceled=canceled)
         self.phase_state = phase_state
         self.new_phase = new_phase
 
@@ -43,6 +51,9 @@ class PhaseChangeAction(Action):
         return cls(phase_state, None)
 
     def __execute__(self) -> bool:
+        if self.canceled:
+            return False
+
         if self.new_phase is None:
             self.phase_state.current = (self.phase_state.current + 1) % len(
                 self.phase_state.states
