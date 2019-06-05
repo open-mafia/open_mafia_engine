@@ -5,6 +5,7 @@
 
 import typing
 from mafia.core.event import Action, Event, Subscriber, PreActionEvent
+from mafia.core.ability import ActivatedAbility
 from mafia.state.actor import Actor
 from mafia.mechanics.prevent import PreventAction
 
@@ -75,3 +76,60 @@ class KillPreventer(Subscriber):
                 if event.action.target == self.target:
                     return PreventAction(target=event.action)
         return None
+
+
+class KillAbility(ActivatedAbility):
+    """Ability to kill Actors.
+    
+    Attributes
+    ----------
+    name : str
+        Ability name (human-readable).
+    owner : object
+        The object that owns the ability. This will also be the source
+    """
+
+    # default __init__ works
+
+    def is_legal(self, target: Actor = None) -> bool:
+        """Check whether the kill use is legal.
+
+        You may want to override/extend this with stricter checks. 
+
+        Parameters
+        ----------
+        target : Actor or None
+            The target of the vote. If None, does removes all votes (unvote all).
+
+        Returns
+        -------
+        can_use : bool
+            Whether the ability usage is legal.
+        """
+        if not isinstance(target, Actor):
+            return False
+        return True
+
+    def activate(self, target: Actor = None) -> KillAction:
+        """Creates a KillAction.
+        
+        If the activation is illegal, it will raise 
+        an :class:`IllegalAbilityActivation` error.
+
+        Parameters
+        ----------
+        target : Actor
+            The target of the vote. If None, the activation fails.
+
+        Returns
+        -------
+        action : KillAction
+            Resulting Action to put on the queue.
+
+        Raises
+        ------
+        IllegalAbilityActivation
+            If not `self.is_legal`.
+        """
+        super().activate(target=target)
+        return KillAction(source=self.owner, target=target)
