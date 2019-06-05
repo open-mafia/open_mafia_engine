@@ -8,6 +8,11 @@ this is not always the case.
 import typing
 from mafia.util import ReprMixin
 from mafia.core.ability import Action, ActivatedAbility
+from mafia.state.actor import Actor
+from mafia.mechanics.kill import KillAction
+
+import warnings
+
 
 # from mafia.core.event import Subscriber
 # from mafia.state.status import Status
@@ -75,7 +80,7 @@ class VoteTally(ReprMixin):
         return None
 
     @property
-    def voted_by(self) -> dict:
+    def voted_by(self) -> typing.Dict[object, typing.List[object]]:
         """Dict of {target: [sources]}"""
         res = {}
         for src, targ in self.votes_for.items():
@@ -133,7 +138,7 @@ class VoteAction(Action):
 
 
 class VoteAbility(ActivatedAbility):
-    """Ability to change phases. Usually just given to the moderator.
+    """Ability to cast votes.
     
     Attributes
     ----------
@@ -192,3 +197,135 @@ class VoteAbility(ActivatedAbility):
         """
         super().activate(target=target)
         return VoteAction(tally=self.tally, source=self.owner, target=target)
+
+
+class ResolveVotesAbility(ActivatedAbility):
+    """Ability to resolve a VoteTally. Usually just given to the moderator.
+    
+    Attributes
+    ----------
+    tally : VoteTally
+        The target state that will be changed.
+    """
+
+    def __init__(self, tally: VoteTally):
+        if not isinstance(tally, VoteTally):
+            raise TypeError(f"tally should be a VoteTally, got {type(tally)}")
+
+    def is_legal(self) -> bool:
+        """Check whether the phase change ability usage is legal.
+
+        The constructor prevents using this on a non-VoteTally. 
+        You may want to override/extend this with stricter checks. 
+
+        Returns
+        -------
+        can_use : bool
+            Whether the ability usage is legal.
+        """
+        return True
+
+    def activate(self) -> Action:
+        """Resolves the associated tally.
+        
+        If the activation is illegal, it will raise 
+        an :class:`IllegalAbilityActivation` error.
+
+        Returns
+        -------
+        action : Action
+            Resulting Action to put on the queue.
+
+        Raises
+        ------
+        IllegalAbilityActivation
+            If not `self.is_legal`.
+        """
+        super().activate()
+        return self.tally.resolve()
+
+
+class LynchAction(KillAction):
+    """Lynches a single target, then resets the tally.
+
+    Parameters
+    ----------
+    source : LynchTally
+        The vote tally that caused the lynch.
+    target : Actor
+        The target being killed.
+    canceled : bool
+        Whether the action is canceled. Default is False.
+
+    Attributes
+    ----------
+    voted_for_target : list
+        List of objects that voted for the target.
+    """
+
+    def __init__(self, source: VoteTally, target: Actor, canceled: bool = False):
+        if not isinstance(source, LynchTally):
+            raise TypeError(f"Expected LynchTally, got {type(source)}")
+        super().__init__(source=source, target=target, canceled=canceled)
+
+    @property
+    def voted_for_target(self) -> typing.List:
+        """List of objects that voted for the target."""
+
+        tally = self.source
+        try:
+            return tally.voted_by[self.target]
+        except KeyError:
+            # This probably shouldn't happen...
+            warnings.warn("Lynch target had no entry, but it was requested.")
+            return []
+
+    def __execute__(self) -> bool:
+        kill_ok = super().__execute__()
+
+        # NOTE: we still reset, even if the kill was stopped
+        self.source.votes_for = {}
+
+        if not kill_ok:
+            warnings.warn("The lynch kill did not run, however tally was reset.")
+
+        return True
+
+
+class LynchTally(VoteTally):
+    """Handles who voted for whom to be lynched.
+
+    Parameters
+    ----------
+    name : str
+        Name of the tally.
+    votes_for : dict
+        Dictionary of {source: target} voting.
+        If creating from scratch, leave this empty.
+
+    Attributes
+    ----------
+    voted_by : dict
+        Dictionary of {target: [sources]} voting. (Property)
+    vote_leaders : list
+        List of targets with the most votes. (Property)
+    """
+
+    def resolve(self) -> typing.Optional[Action]:
+        """Resolves the vote tally with a possible lynch.
+        
+        In case of a tie, no lynch is performed.
+        
+        Returns
+        -------
+        resolution : None or Action
+            The action to run upon resolution.
+        """
+        leaders = self.vote_leaders
+
+        if len(leaders) == 1:
+            # Single vote leader, so we kill them
+            return KillAction(source=self, target=leaders[0])
+
+        # Otherwise, we have a tie or no votes, so no lynch
+        return None
