@@ -208,9 +208,11 @@ class ResolveVotesAbility(ActivatedAbility):
         The target state that will be changed.
     """
 
-    def __init__(self, tally: VoteTally):
+    def __init__(self, name: str, owner=None, tally: VoteTally = None):
         if not isinstance(tally, VoteTally):
             raise TypeError(f"tally should be a VoteTally, got {type(tally)}")
+        super().__init__(name=name, owner=owner)
+        self.tally = tally
 
     def is_legal(self) -> bool:
         """Check whether the phase change ability usage is legal.
