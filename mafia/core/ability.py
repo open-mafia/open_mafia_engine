@@ -8,7 +8,7 @@ a :class:`TriggeredAbility` is triggered by some external event. You can
 think of these as "active" and "passive/reactive" abilities respectively.
 """
 
-from typing import Optional
+import typing
 from mafia.util import ReprMixin
 from mafia.core.errors import MafiaError
 from mafia.core.event import Action, Subscriber, Event
@@ -64,6 +64,37 @@ class TryActivateAbility(Event):
         self.kwargs = kwargs
 
 
+class Restriction(ReprMixin):
+    """Ability restriction that prevents use. Base class.
+    
+    To subclass, override :meth:`__init__` and :meth:`is_legal`.
+    """
+
+    def is_legal(self, ability: Ability, **kwargs) -> bool:
+        """Check whether the ability usage is legal.
+
+        This is used to pre-filter possible targets and improve 
+        user experience (i.e. preventing impossible actions).
+        Ideally, this is a lightweight operation.
+
+        All restrictions are checked in the method 
+        :meth:`ActivatedAbility.is_legal` 
+        
+        Parameters
+        ----------
+        ability : ActivatedAbility
+            The ability you want to use.
+        kwargs : dict
+            Keyword arguments of the ability usage.
+
+        Returns
+        -------
+        can_use : bool
+            Whether the ability usage is legal.
+        """
+        return True
+
+
 class ActivatedAbility(Ability, Subscriber):
     """Activated ability base class.
 
@@ -82,12 +113,17 @@ class ActivatedAbility(Ability, Subscriber):
         The object that owns the ability.
     """
 
-    def __init__(self, name: str, owner=None):
+    def __init__(
+        self, name: str, owner=None, restrictions: typing.List[Restriction] = []
+    ):
         super().__init__(name=name, owner=owner)
+        self.restrictions = list(restrictions)
         self.subscribe_to(TryActivateAbility)
 
     def is_legal(self, **kwargs) -> bool:
         """Check whether the ability usage is legal. Override this.
+
+        Call :meth:`super().is_legal` when subclassing to auto-check restrictions.
 
         This is used to pre-filter possible targets and improve 
         user experience (i.e. preventing impossible actions).
@@ -103,9 +139,9 @@ class ActivatedAbility(Ability, Subscriber):
         can_use : bool
             Whether the ability usage is legal.
         """
-        return True
+        return all(r.is_legal(self, **kwargs) for r in self.restrictions)
 
-    def activate(self, **kwargs) -> Optional[Action]:
+    def activate(self, **kwargs) -> typing.Optional[Action]:
         """Actual activation method. Override this.
         
         This should return an Action or None.
@@ -136,7 +172,7 @@ class ActivatedAbility(Ability, Subscriber):
             )
         return None
 
-    def respond_to_event(self, event: Event) -> Optional[Action]:
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
         """Automatic response to TryActivateAbility events."""
 
         if isinstance(event, TryActivateAbility) and event.ability is self:
@@ -182,7 +218,7 @@ class TriggeredAbility(Ability, Subscriber):
         super().__init__(name=name, owner=owner)
         # Add self.subscribe_to(YourEventHere)
 
-    def respond_to_event(self, event: Event) -> Optional[Action]:
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
         """Override to respond to your event type.
         
         Parameters

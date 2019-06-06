@@ -106,6 +106,9 @@ class KillAbility(ActivatedAbility):
         can_use : bool
             Whether the ability usage is legal.
         """
+        if not super().is_legal(target=target):
+            return False
+            
         if not isinstance(target, Actor):
             return False
         return True

@@ -7,7 +7,7 @@ this is not always the case.
 
 import typing
 from mafia.util import ReprMixin
-from mafia.core.ability import Action, ActivatedAbility
+from mafia.core.ability import Action, ActivatedAbility, Restriction
 from mafia.state.actor import Actor
 from mafia.mechanics.kill import KillAction
 
@@ -150,10 +150,16 @@ class VoteAbility(ActivatedAbility):
         The vote tally that records this ability's votes.
     """
 
-    def __init__(self, name: str, owner=None, tally: VoteTally = None):
+    def __init__(
+        self,
+        name: str,
+        owner=None,
+        restrictions: typing.List[Restriction] = [],
+        tally: VoteTally = None,
+    ):
         if not isinstance(tally, VoteTally):
             raise TypeError(f"tally should be a VoteTally, got {type(tally)}")
-        super().__init__(name=name, owner=owner)
+        super().__init__(name=name, owner=owner, restrictions=restrictions)
         self.tally = tally
 
     def is_legal(self, target=None) -> bool:
@@ -172,8 +178,8 @@ class VoteAbility(ActivatedAbility):
         can_use : bool
             Whether the ability usage is legal.
         """
-        return True
-
+        return super().is_legal(target=target)
+        
     def activate(self, target=None) -> VoteAction:
         """Creates a VoteAction.
         
@@ -208,10 +214,16 @@ class ResolveVotesAbility(ActivatedAbility):
         The target state that will be changed.
     """
 
-    def __init__(self, name: str, owner=None, tally: VoteTally = None):
+    def __init__(
+        self,
+        name: str,
+        owner=None,
+        restrictions: typing.List[Restriction] = [],
+        tally: VoteTally = None,
+    ):
         if not isinstance(tally, VoteTally):
             raise TypeError(f"tally should be a VoteTally, got {type(tally)}")
-        super().__init__(name=name, owner=owner)
+        super().__init__(name=name, owner=owner, restrictions=restrictions)
         self.tally = tally
 
     def is_legal(self) -> bool:
@@ -225,7 +237,7 @@ class ResolveVotesAbility(ActivatedAbility):
         can_use : bool
             Whether the ability usage is legal.
         """
-        return True
+        return super().is_legal()
 
     def activate(self) -> Action:
         """Resolves the associated tally.

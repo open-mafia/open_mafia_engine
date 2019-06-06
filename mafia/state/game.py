@@ -8,7 +8,7 @@ from mafia.util import ReprMixin
 
 # from mafia.core.errors import MafiaError
 from mafia.core.event import EventManager, Subscriber
-from mafia.core.ability import Action, ActivatedAbility
+from mafia.core.ability import Action, ActivatedAbility, Restriction
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
 from mafia.state.access import Accessor
@@ -76,10 +76,16 @@ class PhaseChangeAbility(ActivatedAbility):
         The phase object that this ability allows changing.
     """
 
-    def __init__(self, name: str, owner=None, phase_state=None):
+    def __init__(
+        self,
+        name: str,
+        owner=None,
+        restrictions: typing.List[Restriction] = [],
+        phase_state=None,
+    ):
         if not isinstance(phase_state, PhaseState):
             raise TypeError("phase_state should be a PhaseState, got %r" % phase_state)
-        super().__init__(name=name, owner=owner)
+        super().__init__(name=name, owner=owner, restrictions=restrictions)
         self.phase_state = phase_state
 
     def is_legal(self, new_phase: typing.Optional[int] = None) -> bool:
@@ -98,7 +104,7 @@ class PhaseChangeAbility(ActivatedAbility):
         can_use : bool
             Whether the ability usage is legal.
         """
-        return True
+        return super().is_legal(new_phase=new_phase)
 
     def activate(self, new_phase: typing.Optional[int] = None) -> PhaseChangeAction:
         """Creates a PhaseChangeAction.
