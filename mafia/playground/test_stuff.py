@@ -16,7 +16,7 @@ from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 from mafia.mechanics.kill import KillAbility
-from mafia.mechanics.restriction import PhaseUse, NUse
+from mafia.mechanics.restriction import PhaseUse, NUse, NUsePerPhase
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -48,7 +48,9 @@ with game:
         "Alice",
         alignments=[mafia],
         abilities=[
-            VoteAbility("alice-vote", tally=lynch_tally, restrictions=[day()]),
+            VoteAbility(
+                "alice-vote", tally=lynch_tally, restrictions=[day(), NUsePerPhase(1)]
+            ),
             KillAbility("mafia-kill", restrictions=[night(), NUse(1)]),
         ],
         status={"baddie": True},
@@ -89,9 +91,9 @@ with game:
 print(phase_state)
 
 # Day 1 votes
-vote(alice, charlie)
 vote(alice, bob)
-print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
+vote(alice, charlie)  # second won't work, b/c of NUsePerPhase restriction
+print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])  # should be Bob
 change_phase()
 
 print("Bob is alive:", bob.status.alive.value)
@@ -103,5 +105,8 @@ mafiakill(alice, alice)  # this gets ignored, since there's a 1-kill restriction
 change_phase()
 print("Charlie is alive:", charlie.status.alive.value)
 print(phase_state)
-# print(game.status.phase.value)
 
+# TODO: Fix lynch tally not being reset!
+
+# vote(alice, alice)  # first will work, b/c phase reset the restriction
+# vote(alice, bob)  # second won't work, b/c of NUsePerPhase restriction

@@ -2,9 +2,9 @@
 
 import typing
 from mafia.core.ability import Restriction, ActivatedAbility, TryActivateAbility
-from mafia.state.game import PhaseState
+from mafia.state.game import PhaseState, PhaseChangeAction
 
-from mafia.core.event import Subscriber, Event, Action
+from mafia.core.event import Subscriber, Event, Action, PostActionEvent
 
 
 class PhaseUse(Restriction):
@@ -63,6 +63,21 @@ class NUse(Restriction, Subscriber):
             self.n_use_restriction.current_uses += 1
             return True
 
+    class ResetUses(Action):
+        """Resets the use count of the parent restriction."""
+
+        def __init__(self, n_use_restriction):
+            self.n_use_restriction = n_use_restriction
+
+        @property
+        def priority(self) -> float:
+            """Minimum possible priority to always be at end of stack."""
+            return float("-inf")
+
+        def __execute__(self) -> bool:
+            self.n_use_restriction.current_uses = 0
+            return True
+
     def __init__(
         self, max_uses: int = 1, current_uses: int = 0, owner: ActivatedAbility = None
     ):
@@ -82,3 +97,31 @@ class NUse(Restriction, Subscriber):
 
     def is_legal(self, ability: ActivatedAbility, **kwargs) -> bool:
         return self.current_uses < self.max_uses
+
+
+class NUsePerPhase(NUse):
+    """Allows limited number of uses per phase.
+
+    After each successful :class:`PhaseChangeAction`, the number of uses resets.
+
+    Attributes
+    ----------
+    max_uses : int
+        The maximum number of uses. Default is 1.
+    current_uses : int
+        The current number of uses. Default is 0.
+
+    Note
+    ----
+    This restriction listens to use attempts (:class:`TryActivateAbility`) 
+    rather than checks for legality (:meth:`is_legal`) or successful uses.
+    """
+
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
+        r1 = super().respond_to_event(event)
+        if r1 is not None:
+            return r1
+
+        if isinstance(event, PostActionEvent):
+            if isinstance(event.action, PhaseChangeAction):
+                return self.ResetUses(self)
