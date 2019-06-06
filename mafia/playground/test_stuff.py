@@ -79,13 +79,13 @@ vote(alice, bob)
 print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
 change_phase()
 
-print("Bob status:", bob.status)
+print("Bob is alive:", bob.status.alive.value)
 print(phase_state)
 
 # Night 1 stuff
 mafiakill(alice, charlie)
 change_phase()
-print("Charlie status:", charlie.status)
+print("Charlie is alive:", charlie.status.alive.value)
 print(phase_state)
 # print(game.status.phase.value)
 
