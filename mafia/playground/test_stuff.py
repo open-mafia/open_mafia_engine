@@ -16,7 +16,7 @@ from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 from mafia.mechanics.kill import KillAbility
-from mafia.mechanics.restriction import PhaseUse
+from mafia.mechanics.restriction import PhaseUse, NUse
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -49,7 +49,7 @@ with game:
         alignments=[mafia],
         abilities=[
             VoteAbility("alice-vote", tally=lynch_tally, restrictions=[day()]),
-            KillAbility("mafia-kill", restrictions=[night()]),
+            KillAbility("mafia-kill", restrictions=[night(), NUse(1)]),
         ],
         status={"baddie": True},
     )
@@ -89,8 +89,8 @@ with game:
 print(phase_state)
 
 # Day 1 votes
+vote(alice, charlie)
 vote(alice, bob)
-# vote(alice, charlie)
 print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
 change_phase()
 
@@ -99,6 +99,7 @@ print(phase_state)
 
 # Night 1 stuff
 mafiakill(alice, charlie)
+mafiakill(alice, alice)  # this gets ignored, since there's a 1-kill restriction
 change_phase()
 print("Charlie is alive:", charlie.status.alive.value)
 print(phase_state)
