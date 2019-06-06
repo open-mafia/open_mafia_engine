@@ -2,9 +2,7 @@
 Open Mafia Engine
 #################
 
-.. image:: https://readthedocs.org/projects/open-mafia-engine/badge/?version=latest
-    :target: https://open-mafia-engine.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
+|GitHub release| |Documentation Status| |GitHub license|
 
 Open-source, extendable mafia engine, written in Python.
 
@@ -77,3 +75,17 @@ The plan for the future is a *rewrite* to fix many limiting factors:
 Oh yeah, and the docs still suck. 
 I see no reason to improve them before stability comes... 
 However, they should at least build properly, so I fixed that.
+
+
+
+.. |Documentation Status| image:: https://readthedocs.org/projects/open-mafia-engine/badge/?version=latest
+    :target: https://open-mafia-engine.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+.. |GitHub license| image:: https://img.shields.io/github/license/open-mafia/open_mafia_engine.svg
+   :target: https://github.com/open-mafia/open_mafia_engine/blob/master/LICENSE
+   :alt: GitHub license
+
+.. |GitHub release| image:: https://img.shields.io/github/release/open-mafia/open_mafia_engine.svg
+   :target: https://github.com/open-mafia/open_mafia_engine/releases
+   :alt: GitHub release
