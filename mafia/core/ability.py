@@ -70,6 +70,9 @@ class Restriction(ReprMixin):
     To subclass, override :meth:`__init__` and :meth:`is_legal`.
     """
 
+    def __init__(self, owner: Ability = None):
+        self.owner = owner
+
     def is_legal(self, ability: Ability, **kwargs) -> bool:
         """Check whether the ability usage is legal.
 
@@ -90,9 +93,24 @@ class Restriction(ReprMixin):
         Returns
         -------
         can_use : bool
-            Whether the ability usage is legal.
+            Whether the ability usage is legal, according to 
+            this specific restriction (it may be illegal for 
+            some other reason).
         """
         return True
+
+
+class RestrictionAlreadyBound(MafiaError):
+    """Restriction has already been bound to another owner."""
+
+    def __init__(self, restriction, new_owner):
+        msg = "Cannot add owner %r to restriction %r, already has owner." % (
+            new_owner,
+            restriction,
+        )
+        super().__init__(msg)
+        self.restriction = restriction
+        self.new_owner = new_owner
 
 
 class ActivatedAbility(Ability, Subscriber):
@@ -117,7 +135,17 @@ class ActivatedAbility(Ability, Subscriber):
         self, name: str, owner=None, restrictions: typing.List[Restriction] = []
     ):
         super().__init__(name=name, owner=owner)
-        self.restrictions = list(restrictions)
+
+        # Associate restrictions
+        self.restrictions = []
+        for r in restrictions:
+            if r.owner is self:
+                self.restrictions.append(r)
+            elif r.owner is None:
+                r.owner = self
+                self.restrictions.append(r)
+            else:
+                raise RestrictionAlreadyBound(r, self)
         self.subscribe_to(TryActivateAbility)
 
     def is_legal(self, **kwargs) -> bool:

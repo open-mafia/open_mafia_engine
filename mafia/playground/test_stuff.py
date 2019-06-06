@@ -16,11 +16,21 @@ from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 from mafia.mechanics.kill import KillAbility
+from mafia.mechanics.restriction import PhaseUse
 
 
 lynch_tally = LynchTally("lynch-tally")
 phase_state = PhaseState()
 game = Game(status={"tally": lynch_tally, "phase": phase_state})
+
+
+def day():
+    return PhaseUse(phase_state=phase_state, allowed_phases=[0])
+
+
+def night():
+    return PhaseUse(phase_state=phase_state, allowed_phases=[1])
+
 
 with game:
     mafia = Alignment("mafia")
@@ -38,18 +48,22 @@ with game:
         "Alice",
         alignments=[mafia],
         abilities=[
-            VoteAbility("alice-vote", tally=lynch_tally),
-            KillAbility("mafia-kill"),
+            VoteAbility("alice-vote", tally=lynch_tally, restrictions=[day()]),
+            KillAbility("mafia-kill", restrictions=[night()]),
         ],
         status={"baddie": True},
     )
     bob = Actor(
-        "Bob", alignments=[town], abilities=[VoteAbility("bob-vote", tally=lynch_tally)]
+        "Bob",
+        alignments=[town],
+        abilities=[VoteAbility("bob-vote", tally=lynch_tally, restrictions=[day()])],
     )
     charlie = Actor(
         "Charles",
         alignments=[town],
-        abilities=[VoteAbility("charles-vote", tally=lynch_tally)],
+        abilities=[
+            VoteAbility("charles-vote", tally=lynch_tally, restrictions=[day()])
+        ],
     )
 
     def vote(src, trg):
@@ -76,6 +90,7 @@ print(phase_state)
 
 # Day 1 votes
 vote(alice, bob)
+# vote(alice, charlie)
 print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
 change_phase()
 

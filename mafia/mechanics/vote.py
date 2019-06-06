@@ -179,7 +179,7 @@ class VoteAbility(ActivatedAbility):
             Whether the ability usage is legal.
         """
         return super().is_legal(target=target)
-        
+
     def activate(self, target=None) -> VoteAction:
         """Creates a VoteAction.
         
