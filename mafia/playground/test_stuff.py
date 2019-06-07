@@ -16,7 +16,7 @@ from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 from mafia.mechanics.kill import KillAbility
-from mafia.mechanics.restriction import PhaseUse, NUse, NUsePerPhase
+from mafia.mechanics.restriction import PhaseUse, NUse, UseTracker, UseTrackerPerPhase
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -49,9 +49,11 @@ with game:
         alignments=[mafia],
         abilities=[
             VoteAbility(
-                "alice-vote", tally=lynch_tally, restrictions=[day(), NUsePerPhase(1)]
+                "alice-vote",
+                tally=lynch_tally,
+                restrictions=[day(), NUse(tracker=UseTrackerPerPhase(1))],
             ),
-            KillAbility("mafia-kill", restrictions=[night(), NUse(1)]),
+            KillAbility("mafia-kill", restrictions=[night(), NUse(max_uses=1)]),
         ],
         status={"baddie": True},
     )

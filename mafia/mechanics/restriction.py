@@ -1,6 +1,7 @@
 """Various ability restrictions."""
 
 import typing
+from mafia.util import ReprMixin
 from mafia.core.ability import Restriction, ActivatedAbility, TryActivateAbility
 from mafia.state.game import PhaseState, PhaseChangeAction
 
@@ -34,25 +35,44 @@ class PhaseUse(Restriction):
         return False
 
 
-class NUse(Restriction, Subscriber):
-    """Allows limited number of uses.
-
-    Note that this listens to use attempts (:class:`TryActivateAbility`) 
-    rather than checks for legality (:meth:`is_legal`) or successful uses.
+class UseTracker(ReprMixin):
+    """Object that tracks uses. Used in tandem with restrictions.
 
     Attributes
     ----------
-    max_uses : int
-        The maximum number of uses. Default is 1.
+    max_uses : int or None
+        The maximum number of uses. Default is 1. 
+        If None, there is no restriction.
     current_uses : int
         The current number of uses. Default is 0.
+    can_use : bool
+        Whether you can use it (i.e. False iff the max was reached).
+
+    Actions
+    -------
+    IncrementUses - increments the count (at end of stack).
+    ResetUses - resets the count (at end of stack).
     """
+
+    def __init__(self, max_uses: typing.Optional[int] = 1, current_uses: int = 0):
+        super().__init__()
+        self.max_uses = max_uses
+        self.current_uses = current_uses
+
+    @property
+    def can_use(self):
+        """Returns False if the maximum has been reached."""
+        if self.max_uses is None:
+            return True
+        return self.current_uses < self.max_uses
 
     class IncrementUses(Action):
         """Increments the use count of the parent restriction."""
 
-        def __init__(self, n_use_restriction):
-            self.n_use_restriction = n_use_restriction
+        def __init__(self, tracker):
+            if not isinstance(tracker, UseTracker):
+                raise TypeError(f"Expected UseTracker, got {type(tracker)}")
+            self.tracker = tracker
 
         @property
         def priority(self) -> float:
@@ -60,14 +80,20 @@ class NUse(Restriction, Subscriber):
             return float("-inf")
 
         def __execute__(self) -> bool:
-            self.n_use_restriction.current_uses += 1
+            self.tracker.current_uses += 1
             return True
+
+    def increment(self):
+        """Returns an Action that increments self.current_uses."""
+        return UseTracker.IncrementUses(self)
 
     class ResetUses(Action):
         """Resets the use count of the parent restriction."""
 
-        def __init__(self, n_use_restriction):
-            self.n_use_restriction = n_use_restriction
+        def __init__(self, tracker):
+            if not isinstance(tracker, UseTracker):
+                raise TypeError(f"Expected UseTracker, got {type(tracker)}")
+            self.tracker = tracker
 
         @property
         def priority(self) -> float:
@@ -75,40 +101,57 @@ class NUse(Restriction, Subscriber):
             return float("-inf")
 
         def __execute__(self) -> bool:
-            self.n_use_restriction.current_uses = 0
+            self.tracker.current_uses = 0
             return True
 
-    def __init__(
-        self, max_uses: int = 1, current_uses: int = 0, owner: ActivatedAbility = None
-    ):
-        super().__init__(owner=owner)
-        self.max_uses = max_uses
-        self.current_uses = current_uses
-
-        self.subscribe_to(TryActivateAbility)
-
-    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
-        if isinstance(event, TryActivateAbility):
-            if event.ability is self.owner:
-                # If our owner ability is being used, we increment our use count
-                # This will run at the end of all actions, so we increment at the end
-                return self.IncrementUses(self)
-        return None
-
-    def is_legal(self, ability: ActivatedAbility, **kwargs) -> bool:
-        return self.current_uses < self.max_uses
+    def reset(self):
+        """Returns an Action that resets self.current_uses to 0."""
+        return UseTracker.ResetUses(self)
 
 
-class NUsePerPhase(NUse):
-    """Allows limited number of uses per phase.
-
-    After each successful :class:`PhaseChangeAction`, the number of uses resets.
+class UseTrackerPerPhase(UseTracker, Subscriber):
+    """Object that tracks uses, but resets with each phase. Used in tandem with restrictions.
 
     Attributes
     ----------
-    max_uses : int
-        The maximum number of uses. Default is 1.
+    max_uses : int or None
+        The maximum number of uses. Default is 1. 
+        If None, there is no restriction.
     current_uses : int
+        The current number of uses. Default is 0.
+    can_use : bool
+        Whether you can use it (i.e. False iff the max was reached).
+
+    Actions
+    -------
+    IncrementUses - increments the count (at end of stack).
+    ResetUses - resets the count (at end of stack).
+    """
+
+    def __init__(self, max_uses: typing.Optional[int] = 1, current_uses: int = 0):
+        super().__init__()
+        self.subscribe_to(PostActionEvent)
+
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
+        if isinstance(event, PostActionEvent):
+            if isinstance(event.action, PhaseChangeAction):
+                return self.reset()
+
+
+class NUse(Restriction, Subscriber):
+    """Allows limited number of uses.
+
+    Attributes
+    ----------
+    tracker : UseTracker or None
+        The tracking object to use. This can be shared with another restriction.
+        If None, constructs one from the max_uses and current_uses arguments.
+    max_uses : None or int
+        Ignored if `tracker` is given.
+        The maximum number of uses. If None, there is no restriction.
+        Default is 1.
+    current_uses : int
+        Ignored if `tracker` is given.
         The current number of uses. Default is 0.
 
     Note
@@ -117,11 +160,35 @@ class NUsePerPhase(NUse):
     rather than checks for legality (:meth:`is_legal`) or successful uses.
     """
 
-    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
-        r1 = super().respond_to_event(event)
-        if r1 is not None:
-            return r1
+    def __init__(
+        self,
+        tracker: typing.Optional[UseTracker] = None,
+        max_uses: typing.Optional[int] = 1,
+        current_uses: int = 0,
+        owner: ActivatedAbility = None,
+    ):
+        super().__init__(owner=owner)
+        if tracker is None:
+            tracker = UseTracker(max_uses=max_uses, current_uses=current_uses)
+        self.tracker = tracker
 
-        if isinstance(event, PostActionEvent):
-            if isinstance(event.action, PhaseChangeAction):
-                return self.ResetUses(self)
+        self.subscribe_to(TryActivateAbility)
+
+    @property
+    def max_uses(self):
+        return self.tracker.max_uses
+
+    @property
+    def current_uses(self):
+        return self.tracker.current_uses
+
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
+        if isinstance(event, TryActivateAbility):
+            if event.ability is self.owner:
+                # If our owner ability is being used, we increment our use count
+                # This will run at the end of all actions, so we increment at the end
+                return self.tracker.increment()
+        return None
+
+    def is_legal(self, ability: ActivatedAbility, **kwargs) -> bool:
+        return self.tracker.can_use
