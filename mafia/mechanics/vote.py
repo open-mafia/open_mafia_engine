@@ -339,7 +339,7 @@ class LynchTally(VoteTally):
 
         if len(leaders) == 1:
             # Single vote leader, so we kill them
-            return KillAction(source=self, target=leaders[0])
+            return LynchAction(source=self, target=leaders[0])
 
         # Otherwise, we have a tie or no votes, so no lynch
         return None
