@@ -94,7 +94,7 @@ print(phase_state)
 
 # Day 1 votes
 vote(alice, bob)
-vote(alice, charlie)  # second won't work, b/c of NUsePerPhase restriction
+vote(alice, charlie)  # second won't work, b/c of NUse (per phase) restriction
 print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])  # should be Bob
 change_phase()
 
@@ -103,7 +103,7 @@ print(phase_state)
 
 # Night 1 stuff
 mafiakill(alice, charlie)
-mafiakill(alice, alice)  # this gets ignored, since there's a 1-kill restriction
+mafiakill(alice, alice)  # this gets ignored, b/c of NUse (per game) restriction
 change_phase()
 print("Charlie is alive:", charlie.status.alive.value)
 print(phase_state)
