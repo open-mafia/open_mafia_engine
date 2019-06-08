@@ -38,7 +38,6 @@ game = Game(status={"tally": lynch_tally, "phase": phase_state})
 with game:
     # Create aux objects
     mafia_kill_tracker = UseTrackerPerPhase(1)
-    game_end_checker = GameEndChecker(game)
 
     def day():
         return PhaseUse(phase_state=phase_state, allowed_phases=["day"])
@@ -74,6 +73,9 @@ with game:
     )
     # NOTE: Temp, not actually jester
     oc_jester = WhenEliminated(jester, watched=jester, victory=True)
+
+    # Automatically determine game end from the results of all the selected alignments
+    game_end_checker = GameEndChecker(game, check_alignments=[mafia, town])
 
     # Add players
     # (moderator can be a player too, btw, but here he's without alignment)

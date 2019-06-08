@@ -4,21 +4,19 @@ This module contains sample victory and losing conditions.
 
 TODO
 ----
-Figure out how to signal "game has ended".
-
 Game-end-dependent wincons
-
-    How to check if the game has finished? Can't just check 
-    "all (other) alignments have won" because there can be multiple "undecided" ones.
 
 Still need:
 
 * Survivor (lose if killed, win when alive at end of game)
 
-* Jester (win when lynched, lose when killed otherwise, lose when alive)
-
 * Serial Killer (win when all non-SK are dead, lose when one is alive at end of game)
 
+* Actual Jester (win when lynched, lose when killed otherwise, lose when alive)
+
+* Actual Martyr (Jester but kill/lynch reversed)
+
+* Watcher (?)
 """
 
 import logging
@@ -74,22 +72,32 @@ class FinalizeOutcome(Action):
 
 class GameEndChecker(Subscriber):
     """Automatically checks whether the game has ended.
+
+    Only the selected alignments are checked, becuase some of the game 
+    alignments might depend on game ending before figuring out.
     
     Attributes
     ----------
     game : Game
         The game that will be checked.
+    check_alignments : list
+        List of alignments to check.
     """
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Game, check_alignments: typing.List[Alignment] = []):
         self.game = game
+        self.check_alignments = list(check_alignments)
         self.subscribe_to(PostActionEvent)
 
     def respond_to_event(self, event: Event) -> typing.Optional[Action]:
         if isinstance(event, PostActionEvent):
             if isinstance(event.action, FinalizeOutcome):
                 # one more outcome was finalized, check if all are
-                for align in self.game.alignments:
+                # HACK: This is actually incorrect!
+                # We should redo this, because some might require game to end.
+                # Maybe add "alignments to check" to this object, so that
+                # non-checked alignments could go "after" the main ones?
+                for align in self.check_alignments:
                     if align.victory is None:
                         return None
                 # All are set, so we end the game
