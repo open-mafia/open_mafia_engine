@@ -1,6 +1,26 @@
 """Game-ending mechanics.
 
 This module contains sample victory and losing conditions. 
+
+TODO
+----
+Figure out how to keep track of wins and prevent constant "X has won" notifications.
+
+Figure out how to signal "game has ended".
+
+Game-end-dependent wincons
+
+    How to check if the game has finished? Can't just check 
+    "all (other) alignments have won" because there can be multiple "undecided" ones.
+
+Still need:
+
+* Survivor (lose if killed, win when alive at end of game)
+
+* Jester (win when lynched, lose when killed otherwise, lose when alive)
+
+* Serial Killer (win when all non-SK are dead, lose when one is alive at end of game)
+
 """
 
 import logging
