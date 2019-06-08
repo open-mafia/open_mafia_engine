@@ -59,31 +59,39 @@ class OutcomeChecker(Subscriber):
 
 
 class WhenEliminated(OutcomeChecker):
-    """My (parent) alignment wins/loses if watched alignment is eliminated.
+    """My (parent) alignment wins/loses if watched alignments are eliminated.
     
     Attributes
     ----------
     parent : Alignment
         The alignment that gets the result.
-    watched : Alignment
-        The alignment whose well-being is checked.
+    watched : Alignment or list
+        The alignment(s) whose well-being is checked.
     victory : bool
         Whether `parent` wins or loses when `watched` is eliminated.
         If True, they win. Default is True.
     """
 
-    def __init__(self, parent: Alignment, watched: Alignment, victory: bool = True):
+    def __init__(
+        self,
+        parent: Alignment,
+        watched: typing.Union[Alignment, typing.List[Alignment]],
+        victory: bool = True,
+    ):
         super().__init__(parent=parent)
-        self.watched = watched
+        if isinstance(watched, Alignment):
+            watched = [watched]
+        self.watched = list(watched)
         self.victory = victory
         self.subscribe_to(PostActionEvent)
 
     def respond_to_event(self, event: Event) -> typing.Optional[Action]:
         if isinstance(event, PostActionEvent) and isinstance(event.action, KillAction):
             # check the 'watched' alignment
-            for a in self.watched.members:
-                if a.status.alive.value:
-                    return None
+            for w in self.watched:
+                for a in w.members:
+                    if a.status.alive.value:
+                        return None
             return FinalizeOutcome(alignment=self.parent, victory=self.victory)
 
 
@@ -118,7 +126,7 @@ class WhenHasOutcome(OutcomeChecker):
     def respond_to_event(self, event: Event) -> typing.Optional[Action]:
         if isinstance(event, PostActionEvent):
             fo = event.action
-            if isinstance(fo, FinalizeOutcome):
+            if isinstance(fo, FinalizeOutcome) and (fo.alignment is self.watched):
                 res = self.when_victory if fo.victory else self.when_defeat
                 if res is True:
                     return FinalizeOutcome(alignment=self.parent, victory=True)

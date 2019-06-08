@@ -23,7 +23,7 @@ from mafia.mechanics.restriction import (
     UseTrackerPerPhase,
     MustBeAlive,
 )
-from mafia.mechanics.outcome import WhenEliminated
+from mafia.mechanics.outcome import WhenEliminated, WhenHasOutcome
 
 import logging
 
@@ -59,16 +59,26 @@ def a_mkill():
 
 
 with game:
+    # Create alignments
     mafia = Alignment("mafia")
     town = Alignment("town")
+    mafia_ally = Alignment("mafia-ally")
+    jester = Alignment("jester")
 
     # Add outcome checkers
     oc_mafia_win = WhenEliminated(mafia, watched=town, victory=True)
     oc_mafia_lose = WhenEliminated(mafia, watched=mafia, victory=False)
-    oc_town_win = WhenEliminated(town, watched=mafia, victory=True)
-    oc_town_lose = WhenEliminated(town, watched=town, victory=False)
+    # oc_town_win = WhenEliminated(town, watched=[mafia, mafia_ally], victory=True)
+    # oc_town_lose = WhenEliminated(town, watched=town, victory=False)
+    oc_town = WhenHasOutcome(town, watched=mafia, when_victory=False, when_defeat=True)
+    oc_mally = WhenHasOutcome(
+        mafia_ally, watched=mafia, when_victory=True, when_defeat=False
+    )
+    # NOTE: Temp, not actually jester
+    oc_jester = WhenEliminated(jester, watched=jester, victory=True)
 
-    # Add players (moderator can be a player too, btw, but here he's without alignment)
+    # Add players
+    # (moderator can be a player too, btw, but here he's without alignment)
     mod = Moderator(
         "Mod",
         abilities=[
@@ -77,7 +87,7 @@ with game:
         ],
     )
 
-    # 2 mafia, 3 town
+    # 2 mafia
     players = []
     for _name in ["Alice", "Bob"]:
         _p = Actor(
@@ -88,11 +98,20 @@ with game:
         )
         players.append(_p)
 
+    # 3 vanilla town
     for _name in ["Charles", "Dave", "Emily"]:
         _p = Actor(_name, alignments=[town], abilities=[a_vote()])
         players.append(_p)
 
-    a, b, c, d, e = players
+    # 1 mafia-ally
+    players.append(Actor("Fred", alignments=[mafia_ally], abilities=[a_vote()]))
+
+    # 1 jester
+    players.append(Actor("Gwen", alignments=[jester], abilities=[a_vote()]))
+
+    #
+
+    a, b, c, d, e, f, g = players
 
     def vote(src, trg):
         va = [a for a in src.abilities if isinstance(a, VoteAbility)]
@@ -140,9 +159,16 @@ change_phase()
 print_status()
 
 # Day 2 votes
-vote(a, d)
-vote(d, a)
+# (lynching the jester)
+vote(a, g)
+vote(d, g)
 vote(b, d)
+vote(g, g)
 
 change_phase()
+print_status()
+
+# Night 2 mafia kill
+# (kill the final townie)
+mafiakill(b, d)  # Hey, this didn't work, bugged?
 print_status()
