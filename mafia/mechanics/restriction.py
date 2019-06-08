@@ -87,7 +87,7 @@ class PhaseUse(Restriction):
     def __init__(
         self,
         phase_state: PhaseState,
-        allowed_phases: typing.List = [],
+        allowed_phases: typing.List[str] = [],
         owner: ActivatedAbility = None,
     ):
         super().__init__(owner=owner)

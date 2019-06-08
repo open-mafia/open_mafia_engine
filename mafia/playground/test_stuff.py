@@ -31,11 +31,11 @@ game = Game(status={"tally": lynch_tally, "phase": phase_state})
 
 
 def day():
-    return PhaseUse(phase_state=phase_state, allowed_phases=[0])
+    return PhaseUse(phase_state=phase_state, allowed_phases=["day"])
 
 
 def night():
-    return PhaseUse(phase_state=phase_state, allowed_phases=[1])
+    return PhaseUse(phase_state=phase_state, allowed_phases=["night"])
 
 
 def a_vote():
@@ -100,8 +100,9 @@ with game:
         game.handle_event(t2)
 
     def print_status():
-        print(phase_state)
-        if phase_state.current == 0:
+        print("----------------")
+        print("Phase:", phase_state)
+        if phase_state.current == "day":
             print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
         print("Alive players: ", [a.name for a in game.actors if a.status.alive.value])
 

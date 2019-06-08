@@ -21,7 +21,7 @@ class PhaseChangeAction(Action):
     ----------
     phase_state : PhaseState
         The target state that will be changed.
-    new_phase : int or None
+    new_phase : int or str or None
         The phase being changed to. If None, signifies next phase.
     canceled : bool
         Whether the action is canceled. Default is False.
@@ -30,14 +30,22 @@ class PhaseChangeAction(Action):
     def __init__(
         self,
         phase_state,
-        new_phase: typing.Optional[int] = None,
+        new_phase: typing.Optional[typing.Union[int, str]] = None,
         canceled: bool = False,
     ):
         if not isinstance(phase_state, PhaseState):
             raise TypeError("Expected PhaseState, got %r" % phase_state)
         super().__init__(canceled=canceled)
+
+        if new_phase is None:
+            self.new_phase = None
+        elif isinstance(new_phase, int):
+            self.new_phase = phase_state.states[new_phase]
+        elif isinstance(new_phase, str):
+            self.new_phase = new_phase
+        else:
+            raise TypeError(f"Expected int, str, or None, got {type(new_phase)}")
         self.phase_state = phase_state
-        self.new_phase = new_phase
 
     @classmethod
     def next_phase(cls, phase_state) -> Action:  # actually PhaseChangeAction
@@ -54,12 +62,16 @@ class PhaseChangeAction(Action):
         if self.canceled:
             return False
 
-        if self.new_phase is None:
-            self.phase_state.current = (self.phase_state.current + 1) % len(
+        np = self.new_phase
+
+        if np is None:
+            self.phase_state.current_index = (self.phase_state.current_index + 1) % len(
                 self.phase_state.states
             )
-        else:
-            self.phase_state.current = self.new_phase
+        elif isinstance(np, str):
+            self.phase_state.current = np
+        elif isinstance(np, int):
+            self.phase_state.current_index = np
         return True
 
 
@@ -141,22 +153,37 @@ class PhaseState(ReprMixin):
     Attributes
     ----------
     states : list
-        List of phases. Defaults to `['day', 'night']`.
-    current : int
+        List of phase names. Defaults to `['day', 'night']`.
+    current_index : int
         Index of current phase. Defaults to 0. 
+    current : str
+        The current phase. Property.
     """
 
-    def __init__(self, states=["day", "night"], current=0):
+    def __init__(self, states=["day", "night"], current_index=0):
         states = list(states)
-        self.current = current % len(states)
+        self.current_index = current_index % len(states)
         self.states = states
 
-    def __repr__(self):
-        return "%s(states=%r, current=%r)" % (
-            self.__class__.__name__,
-            self.states,
-            self.current,
-        )
+    @property
+    def current(self):
+        return self.states[self.current_index]
+
+    @current.setter
+    def current(self, new_phase: typing.Union[str, int]):
+        if isinstance(new_phase, int):
+            self.current_index = new_phase % len(self.states)
+        elif isinstance(new_phase, str):
+            try:
+                idx = [i for i, k in enumerate(self.states) if k == new_phase][0]
+            except IndexError:
+                raise KeyError(f"No phase {repr(new_phase)} found in {self.states}.")
+            self.current_index = idx
+        else:
+            raise TypeError("Bad phase type passed, expected int or str.")
+
+    def __str__(self):
+        return f"{self.current} (of {self.states})"
 
     def __next__(self) -> PhaseChangeAction:
         return self.try_change_phase()
