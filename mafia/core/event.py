@@ -286,7 +286,7 @@ class EventManager(object):
             # To change behavior, override Action.__execute__()
             success = act.__execute__()
             if not success:
-                return
+                continue
 
             # send post-event
             poe = PostActionEvent(act)
