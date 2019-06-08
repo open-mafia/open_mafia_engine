@@ -23,6 +23,12 @@ from mafia.mechanics.restriction import (
     UseTrackerPerPhase,
     MustBeAlive,
 )
+from mafia.mechanics.outcome import WhenEliminated
+
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -56,6 +62,13 @@ with game:
     mafia = Alignment("mafia")
     town = Alignment("town")
 
+    # Add outcome checkers
+    oc_mafia_win = WhenEliminated(mafia, watched=town, victory=True)
+    oc_mafia_lose = WhenEliminated(mafia, watched=mafia, victory=False)
+    oc_town_win = WhenEliminated(town, watched=mafia, victory=True)
+    oc_town_lose = WhenEliminated(town, watched=town, victory=False)
+
+    # Add players (moderator can be a player too, btw, but here he's without alignment)
     mod = Moderator(
         "Mod",
         abilities=[
@@ -128,5 +141,8 @@ print_status()
 
 # Day 2 votes
 vote(a, d)
-vote(b, a)
+vote(d, a)
 vote(b, d)
+
+change_phase()
+print_status()
