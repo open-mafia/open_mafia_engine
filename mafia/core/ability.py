@@ -68,6 +68,11 @@ class Restriction(ReprMixin):
     """Ability restriction that prevents use. Base class.
     
     To subclass, override :meth:`__init__` and :meth:`is_legal`.
+
+    Attributes
+    ----------
+    owner : ActivatedAbility
+        The ability that this restriction refers to.
     """
 
     def __init__(self, owner: Ability = None):

@@ -4,8 +4,73 @@ import typing
 from mafia.util import ReprMixin
 from mafia.core.ability import Restriction, ActivatedAbility, TryActivateAbility
 from mafia.state.game import PhaseState, PhaseChangeAction
-
+from mafia.state.status import Status
 from mafia.core.event import Subscriber, Event, Action, PostActionEvent
+
+
+class StatusRestriction(Restriction):
+    """Ability requires specific status conditions.
+
+    Attributes
+    ----------
+    required : Status
+        Required attribute values.
+    owner : ActivatedAbility
+        The ability that this restriction refers to.
+    
+    TODO
+    ----
+    Figure out how to set "required", "allowed", w/e conditions.
+    """
+
+    def __init__(
+        self,
+        required: typing.Mapping[str, object] = {},
+        # allowed: typing.Optional[typing.Mapping[str, object]] = None,
+        owner: ActivatedAbility = None,
+    ):
+        super().__init__(owner=owner)
+        self.required = Status(**required)
+
+    """
+    @property
+    def abil_owner(self):
+        return self.owner.owner
+    """
+
+    def is_legal(self, ability: ActivatedAbility, **kwargs) -> bool:
+        """Check whether the ability usage is legal.
+
+        This is used to pre-filter possible targets and improve 
+        user experience (i.e. preventing impossible actions).
+        Ideally, this is a lightweight operation.
+
+        All restrictions are checked in the method 
+        :meth:`ActivatedAbility.is_legal` 
+        
+        Parameters
+        ----------
+        ability : ActivatedAbility
+            The ability you want to use.
+        kwargs : dict
+            Keyword arguments of the ability usage.
+
+        Returns
+        -------
+        can_use : bool
+            Whether the ability usage is legal, according to 
+            this specific restriction (it may be illegal for 
+            some other reason).
+        """
+        for key, stat in self.required.items():
+            v2 = ability.owner.status.get(key, None)
+            if (v2 is None) or (v2.value != stat.value):
+                return False
+        return True
+
+
+def MustBeAlive() -> StatusRestriction:
+    return StatusRestriction(required={"alive": True})
 
 
 class PhaseUse(Restriction):

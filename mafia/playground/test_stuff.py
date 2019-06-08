@@ -16,7 +16,13 @@ from mafia.state.game import Game, PhaseState, PhaseChangeAbility
 
 from mafia.mechanics.vote import LynchTally, VoteAbility, ResolveVotesAbility
 from mafia.mechanics.kill import KillAbility
-from mafia.mechanics.restriction import PhaseUse, NUse, UseTracker, UseTrackerPerPhase
+from mafia.mechanics.restriction import (
+    PhaseUse,
+    NUse,
+    UseTracker,
+    UseTrackerPerPhase,
+    MustBeAlive,
+)
 
 
 lynch_tally = LynchTally("lynch-tally")
@@ -51,22 +57,34 @@ with game:
             VoteAbility(
                 "alice-vote",
                 tally=lynch_tally,
-                restrictions=[day(), NUse(tracker=UseTrackerPerPhase(1))],
+                restrictions=[
+                    MustBeAlive(),
+                    day(),
+                    NUse(tracker=UseTrackerPerPhase(1)),
+                ],
             ),
-            KillAbility("mafia-kill", restrictions=[night(), NUse(max_uses=1)]),
+            KillAbility(
+                "mafia-kill", restrictions=[MustBeAlive(), night(), NUse(max_uses=1)]
+            ),
         ],
         status={"baddie": True},
     )
     bob = Actor(
         "Bob",
         alignments=[town],
-        abilities=[VoteAbility("bob-vote", tally=lynch_tally, restrictions=[day()])],
+        abilities=[
+            VoteAbility(
+                "bob-vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()]
+            )
+        ],
     )
     charlie = Actor(
         "Charles",
         alignments=[town],
         abilities=[
-            VoteAbility("charles-vote", tally=lynch_tally, restrictions=[day()])
+            VoteAbility(
+                "charles-vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()]
+            )
         ],
     )
 
