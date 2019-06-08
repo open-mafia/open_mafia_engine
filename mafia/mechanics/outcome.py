@@ -56,10 +56,16 @@ class FinalizeOutcome(Action):
         if self.canceled:
             return False
 
+        if self.alignment.victory is not None:
+            # We already know they won/lost, no use repeating it
+            return False
+
         result = "won" if self.victory else "lost"
         logging.getLogger(__name__).info(
             f"Alignment {self.alignment.name} has {result}."
         )
+
+        self.alignment.victory = self.victory
         return True
 
 

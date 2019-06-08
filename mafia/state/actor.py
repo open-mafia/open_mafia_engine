@@ -19,11 +19,17 @@ class Alignment(ReprMixin, Subscriber):
         A human-readable name.
     members : list
         List of alignment members.
+    victory : None or bool
+        Whether the alignment has won. If None, this hasn't been determined yet.
+        Default is None.
     """
 
-    def __init__(self, name: str, members: list = []):
+    def __init__(
+        self, name: str, members: list = [], victory: typing.Optional[bool] = None
+    ):
         self.name = name
         self.members = list(members)
+        self.victory = victory
         # Fake a subscription to get picked up by Game
         self.subscribe_to()
 
