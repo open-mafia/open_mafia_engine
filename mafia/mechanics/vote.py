@@ -41,6 +41,10 @@ class VoteTally(ReprMixin):
         self.name = name
         self.votes_for = dict(votes_for)
 
+    def __str__(self):
+        # TODO: Maybe add compact representation?
+        return f"{self.name}"
+
     def add_vote(self, source, target) -> None:
         """Adds a vote from source to target.
         

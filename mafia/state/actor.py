@@ -27,6 +27,9 @@ class Alignment(ReprMixin, Subscriber):
         # Fake a subscription to get picked up by Game
         self.subscribe_to()
 
+    def __str__(self):
+        return self.name
+
     # add, remove
     def add(self, actor):
         """Adds actor to this alignment.
@@ -131,6 +134,9 @@ class Actor(Accessor, Subscriber):
 
         # Fake a subscription to be auto-added to a Game
         self.subscribe_to()
+
+    def __str__(self):
+        return self.name
 
     @property
     def access_levels(self) -> typing.List[str]:
