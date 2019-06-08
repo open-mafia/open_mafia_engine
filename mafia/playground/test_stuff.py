@@ -134,38 +134,38 @@ with game:
         if phase_state.current == "day":
             print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
         print("Alive players: ", [a.name for a in game.actors if a.status.alive.value])
+        print("----------------")
 
 
-# Start of game
+# Day 1
 print_status()
-
-# Day 1 votes
+# lynch a townie
 vote(a, b)
 vote(b, c)
 vote(d, c)
-print_status()
 
 change_phase()
-print_status()
 
-# Night 1 mafia kill
+# Night 1
+print_status()
+# mafia kill
 mafiakill(a, e)
 mafiakill(b, d)  # this will fail, correctly
 
 change_phase()
-print_status()
 
 # Day 2 votes
-# (lynching the jester)
+print_status()
+# lynch the jester
 vote(a, g)
 vote(d, g)
 vote(b, d)
 vote(g, g)
 
 change_phase()
-print_status()
 
-# Night 2 mafia kill
-# (kill the final townie)
-mafiakill(b, d)
+# Night 2
 print_status()
+# mafia kill the final townie
+mafiakill(b, d)
+# print_status()
