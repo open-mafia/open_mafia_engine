@@ -38,6 +38,20 @@ def night():
     return PhaseUse(phase_state=phase_state, allowed_phases=[1])
 
 
+def a_vote():
+    return VoteAbility("vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()])
+
+
+mafia_kill_tracker = UseTrackerPerPhase(1)
+
+
+def a_mkill():
+    return KillAbility(
+        "mafia-kill",
+        restrictions=[MustBeAlive(), night(), NUse(tracker=mafia_kill_tracker)],
+    )
+
+
 with game:
     mafia = Alignment("mafia")
     town = Alignment("town")
@@ -50,43 +64,22 @@ with game:
         ],
     )
 
-    alice = Actor(
-        "Alice",
-        alignments=[mafia],
-        abilities=[
-            VoteAbility(
-                "alice-vote",
-                tally=lynch_tally,
-                restrictions=[
-                    MustBeAlive(),
-                    day(),
-                    NUse(tracker=UseTrackerPerPhase(1)),
-                ],
-            ),
-            KillAbility(
-                "mafia-kill", restrictions=[MustBeAlive(), night(), NUse(max_uses=1)]
-            ),
-        ],
-        status={"baddie": True},
-    )
-    bob = Actor(
-        "Bob",
-        alignments=[town],
-        abilities=[
-            VoteAbility(
-                "bob-vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()]
-            )
-        ],
-    )
-    charlie = Actor(
-        "Charles",
-        alignments=[town],
-        abilities=[
-            VoteAbility(
-                "charles-vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()]
-            )
-        ],
-    )
+    # 2 mafia, 3 town
+    players = []
+    for _name in ["Alice", "Bob"]:
+        _p = Actor(
+            _name,
+            alignments=[mafia],
+            abilities=[a_vote(), a_mkill()],
+            status={"baddie": True},
+        )
+        players.append(_p)
+
+    for _name in ["Charles", "Dave", "Emily"]:
+        _p = Actor(_name, alignments=[town], abilities=[a_vote()])
+        players.append(_p)
+
+    a, b, c, d, e = players
 
     def vote(src, trg):
         va = [a for a in src.abilities if isinstance(a, VoteAbility)]
@@ -106,27 +99,33 @@ with game:
         game.handle_event(t1)
         game.handle_event(t2)
 
+    def print_status():
+        print(phase_state)
+        if phase_state.current == 0:
+            print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])
+        print("Alive players: ", [a.name for a in game.actors if a.status.alive.value])
+
 
 # Start of game
-print(phase_state)
+print_status()
 
 # Day 1 votes
-vote(alice, bob)
-vote(alice, charlie)  # second won't work, b/c of NUse (per phase) restriction
-print("Vote leaders:", [a.name for a in lynch_tally.vote_leaders])  # should be Bob
+vote(a, b)
+vote(b, c)
+vote(d, c)
+print_status()
+
 change_phase()
+print_status()
 
-print("Bob is alive:", bob.status.alive.value)
-print(phase_state)
+# Night 1 mafia kill
+mafiakill(a, e)
+mafiakill(b, d)  # this will fail, correctly
 
-# Night 1 stuff
-mafiakill(alice, charlie)
-mafiakill(alice, alice)  # this gets ignored, b/c of NUse (per game) restriction
 change_phase()
-print("Charlie is alive:", charlie.status.alive.value)
-print(phase_state)
+print_status()
 
-# TODO: Fix lynch tally not being reset!
-
-# vote(alice, alice)  # first will work, b/c phase reset the restriction
-# vote(alice, bob)  # second won't work, b/c of NUsePerPhase restriction
+# Day 2 votes
+vote(a, d)
+vote(b, a)
+vote(b, d)
