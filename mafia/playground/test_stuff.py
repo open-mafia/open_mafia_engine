@@ -35,30 +35,27 @@ lynch_tally = LynchTally("lynch-tally")
 phase_state = PhaseState()
 game = Game(status={"tally": lynch_tally, "phase": phase_state})
 
-
-def day():
-    return PhaseUse(phase_state=phase_state, allowed_phases=["day"])
-
-
-def night():
-    return PhaseUse(phase_state=phase_state, allowed_phases=["night"])
-
-
-def a_vote():
-    return VoteAbility("vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()])
-
-
-mafia_kill_tracker = UseTrackerPerPhase(1)
-
-
-def a_mkill():
-    return KillAbility(
-        "mafia-kill",
-        restrictions=[MustBeAlive(), night(), NUse(tracker=mafia_kill_tracker)],
-    )
-
-
 with game:
+    # Create aux objects
+    mafia_kill_tracker = UseTrackerPerPhase(1)
+
+    def day():
+        return PhaseUse(phase_state=phase_state, allowed_phases=["day"])
+
+    def night():
+        return PhaseUse(phase_state=phase_state, allowed_phases=["night"])
+
+    def a_vote():
+        return VoteAbility(
+            "vote", tally=lynch_tally, restrictions=[MustBeAlive(), day()]
+        )
+
+    def a_mkill():
+        return KillAbility(
+            "mafia-kill",
+            restrictions=[MustBeAlive(), night(), NUse(tracker=mafia_kill_tracker)],
+        )
+
     # Create alignments
     mafia = Alignment("mafia")
     town = Alignment("town")
@@ -170,5 +167,5 @@ print_status()
 
 # Night 2 mafia kill
 # (kill the final townie)
-mafiakill(b, d)  # Hey, this didn't work, bugged?
+mafiakill(b, d)
 print_status()
