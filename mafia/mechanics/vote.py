@@ -5,6 +5,7 @@ Typically this is used to decide who is lynched each day, however
 this is not always the case. 
 """
 
+import logging
 import typing
 from mafia.util import ReprMixin
 from mafia.core.ability import Action, ActivatedAbility, Restriction
@@ -133,6 +134,8 @@ class VoteAction(Action):
     def __execute__(self) -> bool:
         if self.canceled:
             return False
+
+        logging.getLogger(__name__).info(f"{self.source} votes for {self.target}.")
 
         if self.target is None:
             self.tally.remove_vote(self.source)

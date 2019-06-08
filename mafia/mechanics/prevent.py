@@ -1,5 +1,6 @@
 """Prevent actions from occurring by cancelling them."""
 
+import logging
 from mafia.core.event import Action
 
 
@@ -22,6 +23,8 @@ class PreventAction(Action):
     def __execute__(self) -> bool:
         if self.canceled:
             return False
+
+        logging.getLogger(__name__).info(f"Prevented action: {self.target}")
 
         self.target.canceled = True
         return True

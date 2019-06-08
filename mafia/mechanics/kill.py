@@ -2,7 +2,7 @@
 
 """
 
-
+import logging
 import typing
 from mafia.core.event import Action, Event, Subscriber, PreActionEvent
 from mafia.core.ability import ActivatedAbility
@@ -36,6 +36,8 @@ class KillAction(Action):
     def __execute__(self) -> bool:
         if self.canceled:
             return False
+
+        logging.getLogger(__name__).info(f"{self.source} kills {self.target}.")
 
         self.target.status.alive = False
         return True
@@ -108,7 +110,7 @@ class KillAbility(ActivatedAbility):
         """
         if not super().is_legal(target=target):
             return False
-            
+
         if not isinstance(target, Actor):
             return False
         return True
