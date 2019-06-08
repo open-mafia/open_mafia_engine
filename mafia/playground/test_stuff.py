@@ -23,7 +23,7 @@ from mafia.mechanics.restriction import (
     UseTrackerPerPhase,
     MustBeAlive,
 )
-from mafia.mechanics.outcome import WhenEliminated, WhenHasOutcome
+from mafia.mechanics.outcome import WhenEliminated, WhenHasOutcome, GameEndChecker
 
 import logging
 
@@ -38,6 +38,7 @@ game = Game(status={"tally": lynch_tally, "phase": phase_state})
 with game:
     # Create aux objects
     mafia_kill_tracker = UseTrackerPerPhase(1)
+    game_end_checker = GameEndChecker(game)
 
     def day():
         return PhaseUse(phase_state=phase_state, allowed_phases=["day"])
@@ -168,4 +169,7 @@ change_phase()
 print_status()
 # mafia kill the final townie
 mafiakill(b, d)
-# print_status()
+
+# Day 3
+
+print_status()

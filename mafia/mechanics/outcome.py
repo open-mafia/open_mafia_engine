@@ -4,8 +4,6 @@ This module contains sample victory and losing conditions.
 
 TODO
 ----
-Figure out how to keep track of wins and prevent constant "X has won" notifications.
-
 Figure out how to signal "game has ended".
 
 Game-end-dependent wincons
@@ -26,6 +24,7 @@ Still need:
 import logging
 import typing
 from mafia.core.event import Action, Event, Subscriber, PostActionEvent
+from mafia.state.game import Game, GameEndAction  # GameFinished,
 from mafia.state.actor import Alignment
 from mafia.mechanics.kill import KillAction
 
@@ -52,6 +51,10 @@ class FinalizeOutcome(Action):
         self.alignment = alignment
         self.victory = victory
 
+    @property
+    def priority(self) -> float:
+        return float("+inf")
+
     def __execute__(self) -> bool:
         if self.canceled:
             return False
@@ -67,6 +70,30 @@ class FinalizeOutcome(Action):
 
         self.alignment.victory = self.victory
         return True
+
+
+class GameEndChecker(Subscriber):
+    """Automatically checks whether the game has ended.
+    
+    Attributes
+    ----------
+    game : Game
+        The game that will be checked.
+    """
+
+    def __init__(self, game: Game):
+        self.game = game
+        self.subscribe_to(PostActionEvent)
+
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
+        if isinstance(event, PostActionEvent):
+            if isinstance(event.action, FinalizeOutcome):
+                # one more outcome was finalized, check if all are
+                for align in self.game.alignments:
+                    if align.victory is None:
+                        return None
+                # All are set, so we end the game
+                return GameEndAction(self.game)
 
 
 class OutcomeChecker(Subscriber):
@@ -111,14 +138,32 @@ class WhenEliminated(OutcomeChecker):
         self.victory = victory
         self.subscribe_to(PostActionEvent)
 
-    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
-        if isinstance(event, PostActionEvent) and isinstance(event.action, KillAction):
-            # check the 'watched' alignment
-            for w in self.watched:
+    class TryFinalize(Action):
+        def __init__(self, parent, canceled=False):
+            super().__init__(canceled=canceled)
+            self.parent = parent
+
+        @property
+        def priority(self) -> float:
+            return float("-inf")
+
+        def __execute__(self) -> bool:
+            if self.canceled:
+                return False
+            for w in self.parent.watched:
                 for a in w.members:
                     if a.status.alive.value:
-                        return None
-            return FinalizeOutcome(alignment=self.parent, victory=self.victory)
+                        return False
+            return True
+
+    def respond_to_event(self, event: Event) -> typing.Optional[Action]:
+        if isinstance(event, PostActionEvent):
+            if isinstance(event.action, KillAction):
+                # check the 'watched' alignment
+                return self.TryFinalize(parent=self)
+            elif isinstance(event.action, self.TryFinalize):
+                if event.action.parent is self:
+                    return FinalizeOutcome(alignment=self.parent, victory=self.victory)
 
 
 class WhenHasOutcome(OutcomeChecker):
@@ -154,8 +199,6 @@ class WhenHasOutcome(OutcomeChecker):
             fo = event.action
             if isinstance(fo, FinalizeOutcome) and (fo.alignment is self.watched):
                 res = self.when_victory if fo.victory else self.when_defeat
-                if res is True:
-                    return FinalizeOutcome(alignment=self.parent, victory=True)
-                elif res is False:
-                    return FinalizeOutcome(alignment=self.parent, victory=False)
+                if res in [True, False]:
+                    return FinalizeOutcome(alignment=self.parent, victory=res)
                 # Or None, in which case we don't care

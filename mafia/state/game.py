@@ -2,13 +2,13 @@
 
 """
 
-# TODO: Everything.
 import typing
+import logging
+
 from mafia.util import ReprMixin
 
-# from mafia.core.errors import MafiaError
-from mafia.core.event import EventManager, Subscriber
-from mafia.core.ability import Action, ActivatedAbility, Restriction
+from mafia.core.event import EventManager, Subscriber, Event, Action
+from mafia.core.ability import ActivatedAbility, Restriction
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
 from mafia.state.access import Accessor
@@ -219,12 +219,70 @@ class GameStatus(Status):
     ----------
     phase : PhaseState
         The current phase, cycle, etc.
+    finished : bool
+        Whether the game has completed. Default is False.
     kwargs : dict
         Keyword arguments to set.
     """
 
-    def __init__(self, phase: PhaseState = PhaseState(), **kwargs):
-        super().__init__(phase=phase, **kwargs)
+    def __init__(
+        self, phase: PhaseState = PhaseState(), finished: bool = False, **kwargs
+    ):
+        super().__init__(phase=phase, finished=finished, **kwargs)
+
+
+class GameFinished(Event):
+    """Signal that the game has ended.
+    
+    Attributes
+    ----------
+    game : Game
+        The game that has finished.
+    """
+
+    def __init__(self, game: EventManager):
+        self.game = game
+
+
+class GameEndAction(Action):
+    """Ends the game, preventing actions from occuring after resolution.
+    
+    Attributes
+    ----------
+    game : Game
+        The game to finish.
+    canceled : bool
+        Whether to cancel the game-ending action.
+    """
+
+    def __init__(self, game: EventManager, canceled: bool = False):
+        super().__init__(canceled=canceled)
+        self.game = game
+
+    @property
+    def priority(self) -> float:
+        return float("-inf")
+
+    def __execute__(self) -> bool:
+        if self.canceled:
+            return False
+
+        # Force pre-game-end checks
+        self.game.handle_event(GameFinished(self.game))
+
+        # Create message
+        result_lines = "\n".join(
+            [
+                f" - {al.name} : {'won' if al.victory else 'lost'}"
+                for al in self.game.alignments
+            ]
+        )
+        logging.getLogger(__name__).info("Game finished. Results:\n" + result_lines)
+
+        # Set game as finished
+        # (though, theoretically, some may have not won or lost...)
+        self.game.status.finished = True
+        return True
 
 
 class Game(EventManager, Subscriber, Accessor):
@@ -290,6 +348,12 @@ class Game(EventManager, Subscriber, Accessor):
             self.actors.append(obj)
         elif isinstance(obj, Alignment):
             self.alignments.append(obj)
+
+    def handle_event(self, event: Event) -> None:
+        if self.status.finished.value:
+            # No more events will be looked at
+            return
+        super().handle_event(event=event)
 
     @property
     def access_levels(self) -> typing.List[str]:
