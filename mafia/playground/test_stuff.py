@@ -75,7 +75,7 @@ with game:
     oc_jester = WhenEliminated(jester, watched=jester, victory=True)
 
     # Automatically determine game end from the results of all the selected alignments
-    game_end_checker = GameEndChecker(game, check_alignments=[mafia, town])
+    game_end_checker = GameEndChecker(game, check_alignments=[mafia, town, mafia_ally])
 
     # Add players
     # (moderator can be a player too, btw, but here he's without alignment)
