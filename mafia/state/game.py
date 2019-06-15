@@ -5,8 +5,7 @@
 import typing
 import logging
 
-from mafia.util import ReprMixin
-
+from mafia.util import ReprMixin, name_of
 from mafia.core.event import EventManager, Subscriber, Event, Action
 from mafia.core.ability import ActivatedAbility, Restriction
 from mafia.state.status import Status
@@ -300,7 +299,7 @@ class GameEndAction(Action):
         # Create message
         result_lines = "\n".join(
             [
-                f" - {al.name} : {'won' if al.victory else 'lost'}"
+                f" - {name_of(al)} : {'won' if al.victory else 'lost'}"
                 for al in self.game.alignments
             ]
         )
@@ -369,14 +368,14 @@ class Game(EventManager, Subscriber, Accessor):
             
             Required levels: None
             """
-            return sorted(a.name for a in self._parent.alignments)
+            return sorted(name_of(a) for a in self._parent.alignments)
 
         def get_actor_names(self) -> typing.List[str]:
             """Returns sorted list of actor (player) names.
             
             Required levels: None
             """
-            return sorted(a.name for a in self._parent.actors)
+            return sorted(name_of(a) for a in self._parent.actors)
 
         def start_game(self) -> None:
             """Starts the current game. Currently a no-op!
