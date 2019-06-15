@@ -14,14 +14,14 @@ class AccessAPI(object):
     
     Attributes
     ----------
-    parent : object
-        The parent game-specific object.
+    _parent : object
+        The _parent game-specific object.
     actors : list
         List of actors
     """
 
-    def __init__(self, parent: object, access_levels: typing.List[str] = ["public"]):
-        self.parent = parent
+    def __init__(self, _parent: object, access_levels: typing.List[str] = ["public"]):
+        self._parent = _parent
         self.access_levels = list(access_levels)
 
     def __repr__(self):
@@ -71,4 +71,4 @@ class AccessAPI(object):
             new_access_levels = list(key)
         else:
             raise KeyError(f"Only str, list, or empty slice (:) allowed, got {key}.")
-        return AccessAPI(parent=self.parent, access_levels=new_access_levels)
+        return AccessAPI(_parent=self._parent, access_levels=new_access_levels)
