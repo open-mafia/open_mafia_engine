@@ -11,7 +11,8 @@ from mafia.core.event import EventManager, Subscriber, Event, Action
 from mafia.core.ability import ActivatedAbility, Restriction
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
-from mafia.state.access import Accessor
+from mafia.state.access import Accessor, AccessError
+from mafia.api.base import AccessAPI
 
 
 class PhaseChangeAction(Action):
@@ -182,6 +183,32 @@ class PhaseState(ReprMixin):
         else:
             raise TypeError("Bad phase type passed, expected int or str.")
 
+    class PhaseStateAPI(AccessAPI):
+        """API for a PhaseState."""
+
+        def __init__(
+            self, _parent: "PhaseState", access_levels: typing.List[str] = ["public"]
+        ):
+            super().__init__(_parent=_parent, access_levels=access_levels)
+
+        def get_current_phase_name(self) -> str:
+            """Returns current phase name.
+            
+            Required access levels: None
+            """
+            return self._parent.current
+
+        def get_all_phase_names(self) -> typing.List[str]:
+            """Returns all possible phase names in list, sorted by internal order.
+            
+            Required access levels: None
+            """
+            return list(str(s) for s in self._parent.states)
+
+    @property
+    def api(self) -> "PhaseState.PhaseStateAPI":
+        return self.PhaseStateAPI(_parent=self)
+
     def __str__(self):
         return f"{self.current} (of {self.states})"
 
@@ -328,6 +355,86 @@ class Game(EventManager, Subscriber, Accessor):
 
         # Game status
         self.status = GameStatus(**status)
+
+    class GameAPI(AccessAPI):
+        """API acess for a Game object."""
+
+        def __init__(
+            self, _parent: "Game", access_levels: typing.List[str] = ["public"]
+        ):
+            super().__init__(_parent=_parent, access_levels=access_levels)
+
+        def get_alignment_names(self) -> typing.List[str]:
+            """Returns sorted list of alignment names.
+            
+            Required levels: None
+            """
+            return sorted(a.name for a in self._parent.alignments)
+
+        def get_actor_names(self) -> typing.List[str]:
+            """Returns sorted list of actor (player) names.
+            
+            Required levels: None
+            """
+            return sorted(a.name for a in self._parent.actors)
+
+        def start_game(self) -> None:
+            """Starts the current game. Currently a no-op!
+            
+            Required levels: ['game']
+            """
+            if "game" not in self.access_levels:
+                raise AccessError(required=["game"], given=self.access_levels)
+            # TODO: Currently a No-Op
+
+        def end_game(self) -> None:
+            """Forcefully ends the current game. Currently a no-op!
+            
+            Required levels: ['game']
+            """
+            if "game" not in self.access_levels:
+                raise AccessError(required=["game"], given=self.access_levels)
+            # TODO: Currently a No-Op
+
+        def get_status_keys(self) -> typing.List[str]:
+            """Returns list of all accessible status keys.
+            
+            Required levels: (variable)
+            """
+            res = []
+            sta = self._parent.status
+            for key in sta.keys():
+                try:
+                    _ = sta[key].access(levels=self.access_levels)
+                    res.append(key)
+                except AccessError:
+                    pass
+            return res
+
+        def get_status_value(self, key: str) -> object:
+            """Returns object mapped to the 'key' string.
+            
+            Required levels: (variable)
+            """
+            obj = self._parent.status[key].access(levels=self.access_levels)
+            return obj
+
+        def get_status_api(self, key: str) -> AccessAPI:
+            """Gets API for a particular key. 
+            
+            Raises
+            ------
+            AccessError
+                If not enough access levels.
+            AttributeError
+                If object does not have an .api member.
+            """
+            obj = self._parent.status[key].access(levels=self.access_levels)
+            return obj.api
+
+    @property
+    def api(self) -> "Game.GameAPI":
+        return self.GameAPI(_parent=self)
 
     def subscribe_me(self, obj: Subscriber, *event_classes) -> None:
         """Subscribes `obj` to passed events.
