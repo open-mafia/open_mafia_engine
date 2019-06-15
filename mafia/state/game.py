@@ -12,7 +12,7 @@ from mafia.core.ability import ActivatedAbility, Restriction
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
 from mafia.state.access import Accessor, AccessError
-from mafia.api.base import AccessAPI
+from mafia.api.base import AccessAPI, SubStatusAPI
 
 import warnings
 
@@ -186,7 +186,15 @@ class PhaseState(ReprMixin):
             raise TypeError("Bad phase type passed, expected int or str.")
 
     class PhaseStateAPI(AccessAPI):
-        """API for a PhaseState."""
+        """API for a PhaseState.
+    
+        Attributes
+        ----------
+        _parent : PhaseState
+            The parent PhaseState.
+        access_levels : list
+            List of access levels for this API instance.            
+        """
 
         def __init__(
             self, _parent: "PhaseState", access_levels: typing.List[str] = ["public"]
@@ -358,8 +366,16 @@ class Game(EventManager, Subscriber, Accessor):
         # Game status
         self.status = GameStatus(**status)
 
-    class GameAPI(AccessAPI):
-        """API acess for a Game object."""
+    class GameAPI(SubStatusAPI):
+        """API acess for a Game object.
+    
+        Attributes
+        ----------
+        _parent : Game
+            The parent Game.
+        access_levels : list
+            List of access levels for this API instance.            
+        """
 
         def __init__(
             self, _parent: "Game", access_levels: typing.List[str] = ["public"]
@@ -398,41 +414,27 @@ class Game(EventManager, Subscriber, Accessor):
                 raise AccessError(required=["game"], given=self.access_levels)
             # TODO: Currently a No-Op
 
-        def get_status_keys(self) -> typing.List[str]:
-            """Returns list of all accessible status keys.
-            
-            Required levels: (variable)
-            """
-            res = []
-            sta = self._parent.status
-            for key in sta.keys():
-                try:
-                    _ = sta[key].access(levels=self.access_levels)
-                    res.append(key)
-                except AccessError:
-                    pass
-            return res
-
-        def get_status_value(self, key: str) -> object:
-            """Returns object mapped to the 'key' string.
-            
-            Required levels: (variable)
-            """
-            obj = self._parent.status[key].access(levels=self.access_levels)
-            return obj
-
-        def get_status_api(self, key: str) -> AccessAPI:
-            """Gets API for a particular key. 
+        def get_actor_api(self, name: str) -> AccessAPI:
+            """Gets API for actor with a particular name.
             
             Raises
             ------
-            AccessError
-                If not enough access levels.
-            AttributeError
-                If object does not have an .api member.
+            KeyError
+                If no such actor has that name.
             """
-            obj = self._parent.status[key].access(levels=self.access_levels)
-            return obj.api
+            actor = self._parent.get_actor_by_name(name)
+            return actor.api
+
+        def get_alignment_api(self, name: str) -> AccessAPI:
+            """Gets API for alignment with a particular name.
+            
+            Raises
+            ------
+            KeyError
+                If no such alignment has that name.
+            """
+            alignment = self._parent.get_alignment_by_name(name)
+            return alignment.api
 
     @property
     def api(self) -> "Game.GameAPI":
@@ -444,7 +446,7 @@ class Game(EventManager, Subscriber, Accessor):
         Raises
         ------
         KeyError
-            If the actor was not found.
+            If no such actor has that name.
         """
         candidates = [a for a in self.actors if name_of(a) == name]
         if len(candidates) == 0:
@@ -463,7 +465,7 @@ class Game(EventManager, Subscriber, Accessor):
         Raises
         ------
         KeyError
-            If the alignment was not found.
+            If no such alignment has that name.
         """
         candidates = [a for a in self.alignments if name_of(a) == name]
         if len(candidates) == 0:
