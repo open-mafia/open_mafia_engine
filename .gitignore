@@ -9,6 +9,9 @@ __pycache__/
 # VS Code
 .vscode
 
+# Custom data (e.g. binaries and images)
+.images
+
 # Distribution / packaging
 .Python
 build/
