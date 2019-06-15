@@ -7,10 +7,12 @@ this is not always the case.
 
 import logging
 import typing
-from mafia.util import ReprMixin
+from mafia.util import ReprMixin, name_of
+from mafia.core.errors import AmbiguousName
 from mafia.core.ability import Action, ActivatedAbility, Restriction
 from mafia.state.actor import Actor
 from mafia.mechanics.kill import KillAction
+from mafia.api.base import AccessAPI
 
 import warnings
 
@@ -106,6 +108,47 @@ class VoteTally(ReprMixin):
             elif len(srcs) == c_max:
                 res.append(targ)
         return res
+
+    class VoteTallyAPI(AccessAPI):
+        """API for a VoteTally."""
+
+        def __init__(
+            self, _parent: "VoteTally", access_levels: typing.List[str] = ["public"]
+        ):
+            super().__init__(_parent=_parent, access_levels=access_levels)
+
+        def get_vote_leader_names(self) -> typing.List[str]:
+            """Gets list of players with the current most votes."""
+            return [name_of(itm) for itm in self._parent.vote_leaders]
+
+        def get_current_votes(self) -> typing.Dict[str, typing.List[str]]:
+            """Gets list of players with the current most votes."""
+            res = {}
+            for k, v in self._parent.votes_for.items():
+                source = name_of(k)
+                targets = [name_of(x) for x in v]
+                res[source] = targets
+            return res
+
+        def get_who_voted_for(self, target: str) -> typing.List[str]:
+            """Gets list of votes for the target."""
+            vb = self._parent.voted_by
+            t_cand = [x for x in vb if name_of(x) == target]
+            if len(t_cand) == 0:
+                return []
+            elif len(t_cand) > 1:
+                warnings.warn(
+                    AmbiguousName(
+                        f"Found {len(t_cand)} candidates with the same name: {target}, "
+                        f"selecting first one of {t_cand}."
+                    )
+                )
+            t = t_cand[0]
+            return [name_of(x) for x in vb[t]]
+
+    @property
+    def api(self) -> "VoteTally.VoteTallyAPI":
+        return self.VoteTallyAPI(_parent=self)
 
 
 class VoteAction(Action):
