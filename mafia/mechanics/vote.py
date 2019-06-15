@@ -8,6 +8,7 @@ this is not always the case.
 import logging
 import typing
 from mafia.util import ReprMixin, name_of
+from mafia.core.errors import AmbiguousName
 from mafia.core.ability import Action, ActivatedAbility, Restriction
 from mafia.state.actor import Actor
 from mafia.mechanics.kill import KillAction
@@ -137,8 +138,10 @@ class VoteTally(ReprMixin):
                 return []
             elif len(t_cand) > 1:
                 warnings.warn(
-                    f"Found {len(t_cand)} candidates with the same name: {target}, "
-                    f"selecting first one of {t_cand}."
+                    AmbiguousName(
+                        f"Found {len(t_cand)} candidates with the same name: {target}, "
+                        f"selecting first one of {t_cand}."
+                    )
                 )
             t = t_cand[0]
             return [name_of(x) for x in vb[t]]
