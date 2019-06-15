@@ -140,38 +140,39 @@ with game:
         print("----------------")
 
 
-# Day 1
-print_status()
-# lynch a townie
-vote(a, b)
-vote(b, c)
-vote(d, c)
+if __name__ == "__main__":
+    # Day 1
+    print_status()
+    # lynch a townie
+    vote(a, b)
+    vote(b, c)
+    vote(d, c)
 
-change_phase()
+    change_phase()
 
-# Night 1
-print_status()
-# mafia kill
-mafiakill(a, e)
-mafiakill(b, d)  # this will fail, correctly
+    # Night 1
+    print_status()
+    # mafia kill
+    mafiakill(a, e)
+    mafiakill(b, d)  # this will fail, correctly
 
-change_phase()
+    change_phase()
 
-# Day 2 votes
-print_status()
-# lynch the jester
-vote(a, g)
-vote(d, g)
-vote(b, d)
-vote(g, g)
+    # Day 2 votes
+    print_status()
+    # lynch the jester
+    vote(a, g)
+    vote(d, g)
+    vote(b, d)
+    vote(g, g)
 
-change_phase()
+    change_phase()
 
-# Night 2
-print_status()
-# mafia kill the final townie
-mafiakill(b, d)
+    # Night 2
+    print_status()
+    # mafia kill the final townie
+    mafiakill(b, d)
 
-# Day 3
+    # Day 3
 
-print_status()
+    print_status()
