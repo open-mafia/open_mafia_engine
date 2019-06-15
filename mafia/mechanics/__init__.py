@@ -1,1 +1,0 @@
-"""Basic mafia game mechanics."""

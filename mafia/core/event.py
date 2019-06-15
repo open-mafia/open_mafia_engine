@@ -1,6 +1,4 @@
-"""Event system module for Mafia Engine.
-
-NOTE: Description needs to be updated.
+"""Module that defines Event base objects and EventManager.
 
 This engine is based on a publisher-:class:`Subscriber` event model. 
 Whenever an :class:`Event` is set off, the :class:`EventManager` 
@@ -18,146 +16,26 @@ and :class:`InternalEvent`'s, which are caused by other components
 (as a response to initial triggering events, for example).
 """
 
-from mafia.util import ReprMixin
-from collections.abc import MutableSequence
-from typing import Optional, List
-import functools
-
+from mafia.core import GameObject, singleton
 import logging
 
-logger = logging.getLogger(__name__)
 
-
-"""Active `EventManager` contexts."""
-active_contexts = set()
-
-
-class Event(ReprMixin):
+class Event(GameObject):
     """Base class for all events."""
 
 
-@functools.total_ordering
-class Action(ReprMixin):
-    """Base class for all actions.
-    
-    :class:`Action`'s are "stored" actions which can be executed. 
-    Note that creating the object doesn't automatically execute - that has 
-    to be called explicitly. In order to create custom behavior, you 
-    only need to override :meth:`__init__` and :meth:`__execute__`.
-
-    Comparison operations implemented for priority only.
-
-    Attributes
-    ----------
-    canceled : bool
-        Whether the action is canceled. Default is False.
-    """
-
-    def __init__(self, canceled: bool = False):
-        self.canceled = canceled
-
-    def __execute__(self) -> bool:
-        """Actually performs the action.
-
-        Override this!
-
-        This should also figure out whether the action was canceled, 
-        explicitly by checking self.canceled (e.g. because some other action 
-        modified it) or implicitly (e.g. because the target is invalid).
-        
-        Returns
-        -------
-        success : bool
-            Returns True if the action was completed.
-        """
-        return bool(self.canceled)
-
-    @property
-    def priority(self) -> float:
-        """The priority of this action. Default is 0."""
-        return 0
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Action):
-            return NotImplemented
-        return self.priority == other.priority
-
-    def __lt__(self, other) -> bool:
-        if not isinstance(other, Action):
-            return NotImplemented
-        return self.priority < other.priority
+class ExternalEvent(Event):
+    """Events from the API."""
 
 
-class ActionEvent(Event):
-    """Event, related to an action. Base class."""
-
-    def __init__(self, action: Action):
-        if not isinstance(action, Action):
-            raise TypeError(f"Expected Action, got {type(action)}")
-        self.action = action
+class InternalEvent(Event):
+    """Generated events."""
 
 
-class PreActionEvent(ActionEvent):
-    """Event signifying that an action is about to begin.
-        
-    Attributes
-    ----------
-    action : Action
-        The action that is attempted to be performed.
-    """
+class Subscriber:
+    """Represents an object that can act as a subscriber."""
 
-
-class PostActionEvent(ActionEvent):
-    """Event signifying an action has resolved.
-    
-    Attributes
-    ----------
-    action : Action
-        The action that was performed.
-    """
-
-
-class ActionQueue(MutableSequence):
-    """Queue for Actions, sorting by priority value.
-    
-    This code isn't very efficient, O(N**2).
-    """
-
-    def __init__(self, items: list = []):
-        self.items = self._prune_sort(items)
-
-    @classmethod
-    def _prune_sort(cls, items: List[Action]) -> List[Action]:
-        """Filters out non-:class:`Action` items, sorts them by priority."""
-
-        items = [i for i in items if isinstance(i, Action)]
-        return sorted(items, reverse=True)
-
-    def __getitem__(self, idx):
-        return self.items[idx]
-
-    def __delitem__(self, idx):
-        del self.items[idx]
-
-    def __setitem__(self, idx, value):
-        self.items[idx] = value
-        self.items = self._prune_sort(self.items)
-
-    def __len__(self):
-        return len(self.items)
-
-    def insert(self, idx, value):
-        self.items.append(value)
-        self.items = self._prune_sort(self.items)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.items})"
-
-
-class Subscriber(object):
-    """Mixin that indicates object can act as a subscriber."""
-
-    def respond_to_event(self, event: Event) -> Optional[Action]:
+    def respond_to_event(self, event):
         """Responds to an event with an Action, or None.
 
         Override this!
@@ -174,79 +52,104 @@ class Subscriber(object):
         """
         return None
 
-    def subscribe_to(self, *event_classes):
-        """Subscribes self to multiple event classes (in context)."""
-        global active_contexts
-        for event_manager in active_contexts:
-            event_manager.subscribe_me(self, *event_classes)
 
-    def unsubscribe_from(self, *event_classes):
-        """Unsubscribes self from multiple event classes (in context)."""
-        global active_contexts
-        for event_manager in active_contexts:
-            event_manager.unsubscribe_me(self, *event_classes)
-
-
-class EventManager(object):
-    """Object that manages event-related things.
-
-    Functions as a context manager.
+class ActionQueue:
+    """Queue for actions, with priorities.
     
-    Subscriptions:
-    { EventType : set([subscribers]) }
+    Starts out empty, can be added to.
+    Priorities are found at execution time (sorting, descending).
+    Execution can trigger additional queues.
     """
 
     def __init__(self):
-        self.listeners = {}
+        self.members = []
 
-    def __enter__(self):
-        global active_contexts
-        active_contexts.add(self)
+    def add(self, action):
+        """Adds action, with its priority, to the queue.
 
-    def __exit__(self, type, value, tb):
-        global active_contexts
-        try:
-            active_contexts.remove(self)
-        except KeyError:
-            pass
+        Parameters
+        ----------
+        action : Action or None
+            Passed action
+        """
+        if action is None:
+            return
+        self.members.append(action)
 
-    def subscribe_me(self, obj: Subscriber, *event_classes) -> None:
+    def execute(self):
+        """Executes all actions in queue, according to priority."""
+
+        # sort members by priority
+        def g(x):
+            return getattr(x, "priority", 0)
+
+        acts = sorted(self.members, key=g, reverse=True)
+        # Alt, but I don't like it:
+        # from operator import attrgetter
+        # sorted(self.members, key=attrgetter('priority'))
+
+        # call members one at a time
+        for act in acts:
+            act.execute()
+
+
+@singleton
+class EventManagerType:
+    """Object that manages event-related things.
+    
+    Subscriptions:
+    { EventType : set([subscribers]) }
+
+    TODO: Rewrite with class-based singleton, not 
+    as a decorator (ie. __new__...)
+    """
+
+    def __init__(self):
+        self.members = {}
+
+    def subscribe_me(self, obj, *event_classes):
         """Subscribes `obj` to passed events.
         
         Parameters
         ----------
-        obj : Subscriber
+        obj : GameObject
             Object to set as a subscriber.
         event_classes : list
             List of Event classes to subscribe to.
         """
 
         for event_class in event_classes:
-            if event_class not in self.listeners:
-                self.listeners[event_class] = set()
-            self.listeners[event_class].add(obj)
+            if event_class not in self.members:
+                self.members[event_class] = set()
+            self.members[event_class].add(obj)
 
-    def unsubscribe_me(self, obj: Subscriber, *event_classes) -> None:
+    def unsubscribe_me(self, obj, *event_classes):
         """Removes `obj` from subscriptions for specific events.
         
+        Currently doesn't look for parent classes of `event_classes.
+        Probably should (so you could unsub from all Events 
+        via the base class), but not implemented yet.
+
         Parameters
         ----------
-        obj : Subscriber
+        obj : GameObject
             Object to set as a subscriber.
         event_classes : list
             List of Event classes to unsubscribe from.
         """
 
+        # TODO: Unsubscribe from parent classes too?
+
         for event_class in event_classes:
             try:
-                self.listeners[event_class].remove(obj)
+                self.members[event_class].remove(obj)
             except KeyError:
-                # could be error in listeners (no key 'event_class')
+                # could be error in members (no key 'event_class')
                 # or could be error in the set (no key 'obj')
                 # Maybe, warn that there was a subscription thing?
                 pass
 
-    def handle_event(self, event: Event) -> None:
+    def handle_event(self, event):
         """Handles a passed event.
         
         Making a local action queue from subscriber actions, 
@@ -258,13 +161,13 @@ class EventManager(object):
             Triggering event.
         """
 
-        logger.debug(f"EM [Handling event: {event}]")
+        logging.debug("EM [Handling event: {}]".format(event.__class__.__name__))
 
         # get set of subscribers (via isinstance())
         subscribers = []
-        for event_class in self.listeners:
+        for event_class in self.members:
             if isinstance(event, event_class):
-                new_subs = self.listeners[event_class]
+                new_subs = self.members[event_class]
                 subscribers.extend(new_subs)
 
         # make local action queue
@@ -273,21 +176,14 @@ class EventManager(object):
         # call subscribers to add to local queue
         for sub in subscribers:
             act = sub.respond_to_event(event)
-            if act is not None:
-                q.append(act)
+            logging.debug(
+                "EM [Subscr: {}, Action: {}]".format(str(sub)[:10], str(act)[:10])
+            )
+            q.add(act)
 
         # execute local queue
-        for act in q:
-            # send pre-event
-            pae = PreActionEvent(act)
-            self.handle_event(pae)
+        q.execute()
 
-            # actually do it, and report success
-            # To change behavior, override Action.__execute__()
-            success = act.__execute__()
-            if not success:
-                continue
 
-            # send post-event
-            poe = PostActionEvent(act)
-            self.handle_event(poe)
+EventManager = EventManagerType()
+"""The singleton that handles events and responses to them."""
