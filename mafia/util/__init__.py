@@ -1,5 +1,6 @@
 from reprlib import recursive_repr
 import inspect
+import typing
 
 
 class ReprMixin(object):
@@ -45,6 +46,11 @@ def name_of(itm) -> str:
         return str(itm.name)
     except AttributeError:
         return str(itm)
+
+
+def intersect(a: typing.List, b: typing.List) -> bool:
+    """True if a and b intersect."""
+    return any(x in b for x in a)
 
 
 if __name__ == "__main__":
