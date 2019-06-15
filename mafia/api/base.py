@@ -8,6 +8,8 @@ import typing
 # from mafia.state.game import Game
 # from mafia.state.actor import Actor, Alignment
 
+from mafia.state.access import AccessError
+
 
 class AccessAPI(object):
     """Base class for Python API for the Open Mafia Engine.
@@ -16,8 +18,8 @@ class AccessAPI(object):
     ----------
     _parent : object
         The _parent game-specific object.
-    actors : list
-        List of actors
+    access_levels : list
+        List of access levels for this API instance.
     """
 
     def __init__(self, _parent: object, access_levels: typing.List[str] = ["public"]):
@@ -46,6 +48,7 @@ class AccessAPI(object):
         MafiaAPI
             A new MafiaAPI with the same game, but different access levels.
         """
+        cls = type(self)  # maybe self.__class__ ?
         key = new_access_levels
         if key is None:
             new_access_levels = ["public"]
@@ -71,4 +74,54 @@ class AccessAPI(object):
             new_access_levels = list(key)
         else:
             raise KeyError(f"Only str, list, or empty slice (:) allowed, got {key}.")
-        return AccessAPI(_parent=self._parent, access_levels=new_access_levels)
+        return cls(_parent=self._parent, access_levels=new_access_levels)
+
+
+class SubStatusAPI(AccessAPI):
+    """AccessAPI for objects with a .status field.
+    
+    Attributes
+    ----------
+    _parent : object
+        The _parent game-specific object.
+    access_levels : list
+        List of access levels for this API instance.
+    """
+
+    def get_status_keys(self) -> typing.List[str]:
+        """Returns list of all accessible status keys.
+        
+        Required levels: (variable)
+        """
+        res = []
+        sta = self._parent.status
+        for key in sta.keys():
+            try:
+                _ = sta[key].access(levels=self.access_levels)
+                res.append(key)
+            except AccessError:
+                pass
+        return res
+
+    def get_status_value(self, key: str) -> object:
+        """Returns object mapped to the 'key' string.
+        
+        Required levels: (variable)
+        """
+        obj = self._parent.status[key].access(levels=self.access_levels)
+        return obj
+
+    def get_status_api(self, key: str) -> AccessAPI:
+        """Gets API for a particular key. 
+
+        Required levels: (variable)
+        
+        Raises
+        ------
+        AccessError
+            If not enough access levels.
+        AttributeError
+            If object does not have an .api member.
+        """
+        obj = self._parent.status[key].access(levels=self.access_levels)
+        return obj.api
