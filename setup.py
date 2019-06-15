@@ -10,9 +10,9 @@ from mafia import __version__
 description = "Open Mafia Engine - framework for mafia/werewolf games."
 try:
     here = path.abspath(path.dirname(__file__))
-    with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+    with open(path.join(here, "README.md"), encoding="utf-8") as f:
         long_description = f.read()
-except Exception: 
+except Exception:
     long_description = description
 
 setup(
@@ -24,35 +24,21 @@ setup(
     author_email="openmafiateam@gmail.com",
     url="https://github.com/open-mafia/open_mafia_engine",
     classifiers=[
-        'Intended Audience :: Developers',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.6',
-        'Natural Language :: English',
+        "Intended Audience :: Developers",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.6",
+        "Natural Language :: English",
     ],
-    install_requires=[
-        
-    ],
-    test_suite='nose.collector',
-    tests_require=['nose'],
+    install_requires=["Deprecated==1.2.5"],
+    test_suite="nose.collector",
+    tests_require=["nose"],
     extras_require={
         # Required for building documentation
-        'docs': [
-            "sphinx", "sphinxcontrib-apidoc",
-            "sphinx_rtd_theme",
-        ],
-        'tests': [
-            'nose',
-        ],
-        'api': [        
-            'fastapi[all]',
-        ],
-        'cli': [
-            'fastapi[all]',        
-            'prompt_toolkit',
-        ],
+        "docs": ["sphinx", "sphinxcontrib-apidoc", "sphinx_rtd_theme"],
+        "tests": ["nose"],
+        "api": ["fastapi[all]"],
+        "cli": ["fastapi[all]", "prompt_toolkit"],
     },
     packages=find_packages(),
-    entry_points={
-        'console_scripts': ['vanilla-mafia=mafia.cli.app2:main']
-    }
+    # entry_points={"console_scripts": ["vanilla-mafia=mafia.cli.app2:main"]},
 )
