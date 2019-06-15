@@ -39,6 +39,14 @@ class ReprMixin(object):
         return res
 
 
+def name_of(itm) -> str:
+    """Tries to find name of an object."""
+    try:
+        return str(itm.name)
+    except AttributeError:
+        return str(itm)
+
+
 if __name__ == "__main__":
 
     class Z(ReprMixin):
