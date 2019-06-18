@@ -12,30 +12,7 @@ or https://open-mafia-engine.readthedocs.io/en/dev/ (dev).
 Currently under construction! Feel free to star and check back soonish! :)
 
 
-Installation
-============
-
-The package isn't available on PyPI, as we are definitely not ready yet. 
-To install from source:
-
-1. Install ``miniconda`` (or ``anaconda``).
-
-2. Clone this repository.
-
-3. Create and activate the environment given:
-
-    conda env create -f env.yml
-
-    conda activate mafia-engine
-
-4. In the activated environment, install the library in development mode:
-
-    python setup.py develop
-
-You can now import the library in Python. 
-
-There is currently no "real" game to run, but ``mafia.playground.test_stuff`` has 
-(most of) the latest developments.
+.. include:: docs/source/howto/quickstart.rst
 
 
 Progress Update (2019-06-06)
@@ -44,16 +21,18 @@ Progress Update (2019-06-06)
 Code for version 0.1.0 has been moved to ``mafia_old`` for a while now.
 A lot of the previous progress update has been fixed:
 
-* The ``EventManager`` now operates as a context, and so does the ``Game`` object.
+* The ``EventManager`` now operates as a context, and so does the 
+  ``Game`` object.
 
-* Class members are added as required (which sometimes require rewrites, but that's better 
-  than useless bloat, right?). Examples are ability owners and the ``Action.canceled`` 
-  attribute, which both came up out of necessity.
+* Class members are added as required (which sometimes require rewrites, 
+  but that's better than useless bloat, right?). Examples are ability owners 
+  and the ``Action.canceled`` attribute, which both came up out of necessity.
   
-* Information visibility will be controlled by ``Status`` objects and object access levels.
+* Information visibility will be controlled by ``Status`` objects and object 
+  access levels.
 
-The API will be separate from the main code, but discoverability and pre-testability is 
-being built into the engine already.
+The API will be separate from the main code, but discoverability and 
+pre-testability is being built into the engine already.
 
 
 Progress Update (2019-03-30)

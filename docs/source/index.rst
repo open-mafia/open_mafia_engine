@@ -1,7 +1,4 @@
-.. Open Mafia Engine documentation master file, created by
-   sphinx-quickstart on Thu Sep 27 19:11:22 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. Open Mafia Engine documentation master file
 
 Welcome to Open Mafia Engine's documentation!
 =============================================
@@ -19,6 +16,7 @@ https://github.com/open-mafia/open_mafia_engine
     :maxdepth: 2
     :caption: Contents:
 
+    howto/quickstart
     _reference/modules
 
 
