@@ -17,6 +17,7 @@ https://github.com/open-mafia/open_mafia_engine
     :caption: Contents:
 
     howto/quickstart
+    concepts/core
     _reference/modules
 
 
