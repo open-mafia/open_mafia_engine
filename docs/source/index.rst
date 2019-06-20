@@ -20,7 +20,7 @@ https://github.com/open-mafia/open_mafia_engine/tree/dev
     :caption: Contents:
 
     howto/quickstart
-    concepts/core
+    concepts/engine_core
     _reference/modules
 
 
