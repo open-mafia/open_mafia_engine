@@ -66,4 +66,4 @@ none (e.g. a non-playing Moderator).
 Beyond normal properties, some objects also have more "flexible" properties 
 defined by a :class:`mafia.state.status.Status` with access control. I'm not 
 entirely sure this is the best way to implement access control, but that's 
-currently the way it is. :)
+currently the way it is.

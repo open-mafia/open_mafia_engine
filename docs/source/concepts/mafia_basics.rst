@@ -13,7 +13,7 @@ variations, still collectively called "Mafia" or "Werewolf". Changes
 include different game backstory and flavor, new player roles, game 
 mechanics, even teams. Some "Mafia" games even stray fairly far away 
 from the normal rules, using crazy or even hidden set-ups to increase 
-fun at the expense of player and moderator sanity. :)
+fun at the expense of player and moderator sanity.
 
 To really understand the game, I suggest looking at the Wikipedia 
 article or, even better, going to the 
