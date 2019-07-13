@@ -15,6 +15,15 @@ Currently under construction! Feel free to star and check back soonish! :)
 .. include:: docs/source/howto/quickstart.rst
 
 
+Progress Update (2019-06-23)
+============================
+
+Version 0.2.0 is now on par with 0.1.0 in terms of features, except for a 
+fully-playable game in the console. However, the documentation is being 
+improved steadily, and work has started on a web client. We also want to 
+add a few more roles to the game before "release 0.2.0".
+
+
 Progress Update (2019-06-06)
 ============================
 
