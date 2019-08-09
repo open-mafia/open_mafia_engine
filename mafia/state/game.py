@@ -414,7 +414,7 @@ class Game(EventManager, Subscriber, Accessor):
                 raise AccessError(required=["game"], given=self.access_levels)
             # TODO: Currently a No-Op
 
-        def get_actor_api(self, name: str) -> AccessAPI:
+        def get_actor_api(self, name: str) -> "Actor.ActorAPI":
             """Gets API for actor with a particular name.
             
             Raises
@@ -425,7 +425,7 @@ class Game(EventManager, Subscriber, Accessor):
             actor = self._parent.get_actor_by_name(name)
             return actor.api
 
-        def get_alignment_api(self, name: str) -> AccessAPI:
+        def get_alignment_api(self, name: str) -> "Alignment.AlignmentAPI":
             """Gets API for alignment with a particular name.
             
             Raises
