@@ -15,9 +15,11 @@ from fastapi import FastAPI, Depends, Security  # noqa
 from pydantic import BaseModel
 
 # from fastapi.security import OAuth2PasswordBearer
-
-
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
+
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
+security = HTTPBasic()
 
 
 # game, lynch_tally, phase_state, mafia_kill_tracker,
@@ -51,27 +53,35 @@ class TeamInfo(BaseModel):
     players: typing.List[str] = []
 
 
+def current_player(credentials: HTTPBasicCredentials = Depends(security)) -> str:
+    return credentials.username
+
+
 @app.get("/players")
 async def get_players_list() -> typing.List[str]:
     """Returns list of all players."""
     return gg.get_actor_names()
 
 
-@app.get("/player/{selected_player}")
-async def get_player_info(selected_player: str) -> PlayerInfo:
+@app.get("/player/{selected_player}/")
+async def get_player_info(
+    selected_player: str, me: str = Depends(current_player)
+) -> PlayerInfo:
     """Gets information on a player."""
 
-    # TODO: Figure out "me" from login
     result = PlayerInfo()
 
-    a_api = gg.get_actor_api(selected_player)(["public", selected_player])
+    a_api = gg.get_actor_api(selected_player)(["public", me])
 
     # Get alignment
-    aligns = a_api.get_alignment_names()
-    if len(aligns) == 0:
-        result.alignment_name = "none"
-    else:
-        result.alignment_name = aligns[0]
+    try:
+        aligns = a_api.get_alignment_names()
+        if len(aligns) == 0:
+            result.alignment_name = "none"
+        else:
+            result.alignment_name = aligns[0]
+    except AccessError:
+        result.alignment_name = "???"
 
     #
     try:
@@ -95,7 +105,7 @@ async def get_team_names() -> typing.List[str]:
     return gg.get_alignment_names()
 
 
-@app.get("/team/{team_name}")
+@app.get("/team/{team_name}/")
 async def get_team_info(team_name: str) -> TeamInfo:
     """Gets information on a specific team."""
 
