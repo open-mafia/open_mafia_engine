@@ -121,7 +121,7 @@ class PyAPI(object):
         """
         api = self.alignment(alignment_name)
         res = AlignmentInfo(
-            alignment_name=alignment_name, member_names=api.get_actor_names()
+            alignment_name=alignment_name, member_names=api.get_member_names()
         )
         return res
 
@@ -130,7 +130,7 @@ class PyAPI(object):
         
         Required levels: [alignment_name]
         """
-        return self.alignment(alignment_name).get_actor_names()
+        return self.alignment(alignment_name).get_member_names()
 
     def get_actor_info(self, actor_name: str) -> ActorInfo:
         """Gets all information for a particular Actor."""
