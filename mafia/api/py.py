@@ -1,4 +1,6 @@
-"""Python API for interacting with the game."""
+"""Python classes for interacting with
+
+These present the API for interacting with the game."""
 
 import typing
 import inspect
@@ -9,70 +11,25 @@ from mafia.state.access import AccessError
 from mafia.core.ability import ActivatedAbility, TryActivateAbility  # Ability
 from mafia.util import name_of, intersect
 
-# import warnings
-# from mafia.core.errors import AmbiguousName
-
-from pydantic import BaseModel
-
-
-# DEFINING STRUCTURED RETURN OBJECTS
-
-
-class AbilityInfo(BaseModel):
-    """Ability information.
-
-    TODO
-    ----
-    Add more useful information than the raw Python stuff.
-    For example, we want to add a human-readable description.
-    """
-
-    ability_name: str
-    is_activated: bool
-    parameters: typing.List[str]
-    docstring: str
-    py_signature: str
-    py_type: str
-    # TODO: restrictions?
-
-
-class AbilityParameters(BaseModel):
-    parameters: typing.Dict[str, str]
-
-
-class AlignmentInfo(BaseModel):
-    """Alignment information.
-
-    TODO
-    ----
-    Add more useful information than the raw Python stuff.
-    For example, we want to add a human-readable description.
-    """
-
-    alignment_name: str
-    member_names: typing.List[str]
-    # TODO: win/lose conditions?
-
-
-class ActorInfo(BaseModel):
-    """Actor information.
-
-    TODO
-    ----
-    Add more useful information than the raw Python stuff.
-    For example, we want to add a human-readable description.
-    """
-
-    actor_name: str
-    alignment_names: typing.List[str]
-    abilities: typing.List[AbilityInfo]
-
-
-# DEFINING THE API CLASSES
+from mafia.api.models import (
+    AbilityInfo,
+    AbilityParameters,
+    AlignmentInfo,
+    ActorInfo,
+)  # noqa
 
 
 class PyAPI(object):
-    """Python API for a Mafia game."""
+    """Python API for a Mafia game.
+    
+    Parameters
+    ----------
+    game : mafia.state.game.Game
+        Main game object to interface to.
+    access_levels : list
+        List of strings representing access levels. 
+        Defaults to ["public"].
+    """
 
     def __init__(self, game: Game, access_levels: typing.List[str] = ["public"]):
         self.game = game
@@ -80,7 +37,14 @@ class PyAPI(object):
 
     @classmethod
     def with_full_access(cls, game: Game) -> "PyAPI":
-        """Creates a PyAPI with full game access."""
+        """Creates a PyAPI with full game access.
+        
+        Parameters
+        ----------
+        game : mafia.state.game.Game
+            Main game object to interface to.
+        """
+
         actor_names = list(name_of(a) for a in game.actors)
         align_names = list(name_of(a) for a in game.alignments)
         lvls = ["public", "game"] + actor_names + align_names
@@ -120,6 +84,7 @@ class PyAPI(object):
 
     def alignment(self, alignment_name: str) -> "_AlignmentAPI":
         """Gets Alignment API helper."""
+
         al = [a for a in self.game.alignments if name_of(a) == alignment_name]
         if len(al) == 0:
             raise KeyError("No such alignment: %r" % alignment_name)
@@ -127,6 +92,7 @@ class PyAPI(object):
 
     def actor(self, actor_name: str) -> "_ActorAPI":
         """Gets Actor API helper."""
+
         ac = [a for a in self.game.actors if name_of(a) == actor_name]
         if len(ac) == 0:
             raise KeyError("No such actor: %r" % actor_name)
@@ -147,6 +113,91 @@ class PyAPI(object):
         """
         phase_state = self.game.status.phase.value
         return list(str(s) for s in phase_state.states)
+
+    def get_alignment_info(self, alignment_name: str) -> AlignmentInfo:
+        """Gets info object for the given alignment.
+        
+        Required levels: [alignment_name]
+        """
+        api = self.alignment(alignment_name)
+        res = AlignmentInfo(
+            alignment_name=alignment_name, member_names=api.get_actor_names()
+        )
+        return res
+
+    def get_alignment_member_names(self, alignment_name: str) -> typing.List[str]:
+        """Gets members for the given alignment.
+        
+        Required levels: [alignment_name]
+        """
+        return self.alignment(alignment_name).get_actor_names()
+
+    def get_actor_info(self, actor_name: str) -> ActorInfo:
+        """Gets all information for a particular Actor."""
+
+        api = self.actor(actor_name)
+        alignment_names = api.get_alignment_names()
+        ability_names = api.get_ability_names()
+        all_abil_info = [api.get_ability_info(abil) for abil in ability_names]
+        return ActorInfo(
+            actor_name=actor_name,
+            alignment_names=alignment_names,
+            abilities=all_abil_info,
+        )
+
+    def get_ability_info(self, actor_name: str, ability_name: str) -> AbilityInfo:
+        """Gets information for a particular Ability of an Actor.
+
+        Parameters
+        ----------
+        actor_name : str
+            Name of the :class:`Actor` (player) to inspect.
+        ability_name : str
+            Name of the :class:`Ability` to inspect.
+        
+        Returns
+        -------
+        AbilityInfo
+            Pydantic model for ability information.
+        """
+        api = self.actor(actor_name)
+        res = api.get_ability_info(ability_name=ability_name)
+        return res
+
+    def use_actor_ability(
+        self, actor_name: str, ability_name: str, ability_args: AbilityParameters
+    ):
+        """Makes an Actor use one of their ActivatedAbility's (with the passed parameters).
+        
+        Parameters
+        ----------
+        actor_name : str
+            Name of the :class:`Actor` (player) that will be performing the action.
+        ability_name : str
+            Name of the :class:`ActivatedAbility` to use.
+        ability_args : AbilityParameters
+            Parameters to pass to the ability. 
+            Currently, just uses `ability_args.parameters` as keyword arguments.
+        """
+        api = self.actor(actor_name)
+        # NOTE: Will we be able to use kwargs???
+        api.do_use_activated_ability(ability_name, **ability_args.parameters)
+
+    def get_alive_actor_names(self) -> typing.List[str]:
+        """Gets list of actors that are currently alive.
+        
+        TODO
+        ----
+        Implement!
+        """
+        actors_names = self.get_actor_names()
+        res = []
+        for name in actors_names:
+            # TODO: Test for "aliveness"
+            ai = self.get_actor_info(name)  # noqa
+            if True:
+                res.append(name)
+        return res
 
 
 class _AlignmentAPI(object):
@@ -180,6 +231,7 @@ class _AlignmentAPI(object):
 
     def actor(self, actor_name: str) -> "_ActorAPI":
         """Gets Actor API helper, only for a member."""
+
         ac = [a for a in self.alignment.members if name_of(a) == actor_name]
         if len(ac) == 0:
             raise KeyError(
@@ -206,6 +258,7 @@ class _ActorAPI(object):
 
     def alignment(self, alignment_name: str) -> "_AlignmentAPI":
         """Gets Alignment API helper, only for own alignments."""
+
         al = [a for a in self.actor.alignments if name_of(a) == alignment_name]
         if len(al) == 0:
             raise KeyError(
