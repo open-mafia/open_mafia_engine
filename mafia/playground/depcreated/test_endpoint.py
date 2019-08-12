@@ -8,8 +8,11 @@ logging.basicConfig(level=logging.INFO)  # noqa
 
 from mafia.state.access import AccessError
 
+# from mafia.api.py import PyAPI, AbilityInfo, ActorInfo, AlignmentInfo
+
 from mafia.playground.test_stuff import *  # noqa
 from mafia.playground.test_stuff import game
+
 
 from fastapi import FastAPI, Depends, Security  # noqa
 from pydantic import BaseModel
@@ -27,7 +30,8 @@ security = HTTPBasic()
 # Players: mod, a - g
 # Non-API functions: vote, mafiakill, change_phase, print_status
 
-gg = game.api
+gg = game.api  # TODO: Remove references to "gg"
+# pyapi = PyAPI(game)
 
 app = FastAPI(
     title="Test Endpoint",

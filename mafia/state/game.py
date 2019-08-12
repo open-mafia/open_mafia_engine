@@ -11,8 +11,7 @@ from mafia.core.event import EventManager, Subscriber, Event, Action
 from mafia.core.ability import ActivatedAbility, Restriction
 from mafia.state.status import Status
 from mafia.state.actor import Alignment, Actor
-from mafia.state.access import Accessor, AccessError
-from mafia.api.base import AccessAPI, SubStatusAPI
+from mafia.state.access import Accessor
 
 import warnings
 
@@ -185,40 +184,6 @@ class PhaseState(ReprMixin):
         else:
             raise TypeError("Bad phase type passed, expected int or str.")
 
-    class PhaseStateAPI(AccessAPI):
-        """API for a PhaseState.
-    
-        Attributes
-        ----------
-        _parent : PhaseState
-            The parent PhaseState.
-        access_levels : list
-            List of access levels for this API instance.            
-        """
-
-        def __init__(
-            self, _parent: "PhaseState", access_levels: typing.List[str] = ["public"]
-        ):
-            super().__init__(_parent=_parent, access_levels=access_levels)
-
-        def get_current_phase_name(self) -> str:
-            """Returns current phase name.
-            
-            Required access levels: None
-            """
-            return self._parent.current
-
-        def get_all_phase_names(self) -> typing.List[str]:
-            """Returns all possible phase names in list, sorted by internal order.
-            
-            Required access levels: None
-            """
-            return list(str(s) for s in self._parent.states)
-
-    @property
-    def api(self) -> "PhaseState.PhaseStateAPI":
-        return self.PhaseStateAPI(_parent=self)
-
     def __str__(self):
         return f"{self.current} (of {self.states})"
 
@@ -365,80 +330,6 @@ class Game(EventManager, Subscriber, Accessor):
 
         # Game status
         self.status = GameStatus(**status)
-
-    class GameAPI(SubStatusAPI):
-        """API acess for a Game object.
-    
-        Attributes
-        ----------
-        _parent : Game
-            The parent Game.
-        access_levels : list
-            List of access levels for this API instance.            
-        """
-
-        def __init__(
-            self, _parent: "Game", access_levels: typing.List[str] = ["public"]
-        ):
-            super().__init__(_parent=_parent, access_levels=access_levels)
-
-        def get_alignment_names(self) -> typing.List[str]:
-            """Returns sorted list of alignment names.
-            
-            Required levels: None
-            """
-            return sorted(name_of(a) for a in self._parent.alignments)
-
-        def get_actor_names(self) -> typing.List[str]:
-            """Returns sorted list of actor (player) names.
-            
-            Required levels: None
-            """
-            return sorted(name_of(a) for a in self._parent.actors)
-
-        def start_game(self) -> None:
-            """Starts the current game. Currently a no-op!
-            
-            Required levels: ['game']
-            """
-            if "game" not in self.access_levels:
-                raise AccessError(required=["game"], given=self.access_levels)
-            # TODO: Currently a No-Op
-
-        def end_game(self) -> None:
-            """Forcefully ends the current game. Currently a no-op!
-            
-            Required levels: ['game']
-            """
-            if "game" not in self.access_levels:
-                raise AccessError(required=["game"], given=self.access_levels)
-            # TODO: Currently a No-Op
-
-        def get_actor_api(self, name: str) -> "Actor.ActorAPI":
-            """Gets API for actor with a particular name.
-            
-            Raises
-            ------
-            KeyError
-                If no such actor has that name.
-            """
-            actor = self._parent.get_actor_by_name(name)
-            return actor.api
-
-        def get_alignment_api(self, name: str) -> "Alignment.AlignmentAPI":
-            """Gets API for alignment with a particular name.
-            
-            Raises
-            ------
-            KeyError
-                If no such alignment has that name.
-            """
-            alignment = self._parent.get_alignment_by_name(name)
-            return alignment.api
-
-    @property
-    def api(self) -> "Game.GameAPI":
-        return self.GameAPI(_parent=self)
 
     def get_actor_by_name(self, name: str) -> Actor:
         """Gets the actor with the given name.
