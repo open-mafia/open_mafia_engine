@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "open_mafia_engine"
+name = "open-mafia-engine"
 version = "0.1.0"
 description = "Open Mafia Engine - a framework for mafia/werewolf games."
 authors = ["Open Mafia Team <openmafiateam@email.com>"]
