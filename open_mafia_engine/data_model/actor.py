@@ -24,6 +24,7 @@ class Role(StateModel):
 
     name: str
     abilities: List[UAbility]
+    # alignment or win_condition ?
 
     class Config:
         validate_assignment = True
@@ -77,6 +78,7 @@ class Actor(StateModel):
     name: str
     roles: List[Role]
     status: List[ActorStatusItem]
+    # effective alignment or wincon?...
 
     class Config:
         validate_assignment = True
