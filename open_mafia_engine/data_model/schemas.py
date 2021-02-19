@@ -1,3 +1,7 @@
+"""This module exposes the data model from a single import point."""
+
+# flake8: noqa
+
 from .ability import (
     AbilityType,
     ActivatedAbility,
