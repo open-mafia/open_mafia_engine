@@ -3,17 +3,16 @@ lynch_vote:
   desc: Vote to lynch the target.
   type: lynch_vote
   constraints:
-    - "alive"
     - type: phase
       phases: [day]
+    # and defaults
 mafia_kill:
   name: Mafia Kill
   desc: Kill the target. Only one Mafioso may use this per night.
   type: kill
   constraints:
-    - "alive"
-
     - type: key_phase_limited
       key: mafia
       phases: [night]
       uses: 1
+    # and defaults
