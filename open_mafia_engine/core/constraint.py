@@ -19,10 +19,17 @@ class Constraint(HookModel):
         defaults = {}
 
 
-class AliveConstraint(Constraint, default=True):
-    """Actor must be alive. Default is 'true'. """
+class ActorAliveConstraint(Constraint, default=True):
+    """Actor must be alive. Default is True."""
 
-    type: str = "alive"
+    type: str = "actor_alive"
+    value: Optional[bool] = True
+
+
+class TargetAliveConstraint(Constraint, default=True):
+    """Target must be alive. Default is True."""
+
+    type: str = "target_alive"
     value: Optional[bool] = True
 
 
