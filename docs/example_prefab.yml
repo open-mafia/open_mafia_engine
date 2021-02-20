@@ -6,8 +6,8 @@ phases:
 alignments:
   - name: town
     wincon:
-      type: factions_eliminated
-      factions: [mafia]
+      type: alignments_eliminated
+      alignments: [mafia]
   - name: mafia
     wincon:
       type: faction_majority
@@ -16,8 +16,7 @@ roles:
     desc: |
       You are just a Citizen. Your only tool is the vote.
       You win when all the Mafia are eliminated.
-    alignments:
-      - town
+    alignment: town
     abilities:
       - name: Vote
         type: lynch_vote
@@ -32,6 +31,7 @@ roles:
     desc: |
       You are a Mafioso. You .
       You win when the Mafia outnumbers the Citizens.
+    alignment: mafia
     abilities:
       - name: Vote
         type: lynch_vote
