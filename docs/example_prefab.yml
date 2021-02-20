@@ -1,0 +1,75 @@
+version: 1.0
+name: "Vanilla Mafia"
+phases:
+  - day
+  - night
+alignments:
+  - name: town
+    wincon:
+      type: factions_eliminated
+      factions: [mafia]
+  - name: mafia
+    wincon:
+      type: faction_majority
+roles:
+  - name: Citizen
+    desc: |
+      You are just a Citizen. Your only tool is the vote.
+      You win when all the Mafia are eliminated.
+    alignments:
+      - town
+    abilities:
+      - name: Vote
+        type: lynch_vote
+        desc: Vote to lynch the target.
+        constraints:
+          - type: alive
+          - type: phase
+            phases: [day]
+        # NOTE: Will appear as
+        # [Day] Vote (target): Vote to lynch the target.
+  - name: Mafioso
+    desc: |
+      You are a Mafioso. You .
+      You win when the Mafia outnumbers the Citizens.
+    abilities:
+      - name: Vote
+        type: lynch_vote
+        desc: Vote to lynch the target.
+        constraints:
+          # These are the same as above, just shortcuts :)
+          - "alive"
+          - "phase_day"
+      - name: Mafia Kill
+        type: mafia_kill
+        desc: Kill the target. Only one Mafioso may use this per night.
+        constraints:
+          # Maybe "alive" is assumed by default?
+          - type: key_phase_limited
+            key: mafia
+            phases: [night]
+            uses: 1
+        # NOTE: Will appear as
+        # [Night, Mafia] Mafia Kill (target): Kill the target. Only one Mafioso may use this per night.
+game_variants:
+  "5 players":
+    players: 5
+    roles_counts:
+      - name: Citizen
+        qty: 4
+      - name: Mafioso
+        qty: 1
+  "6 players":
+    players: 6
+    roles_counts:
+      - name: Citizen
+        qty: 5
+      - name: Mafioso
+        qty: 1
+  "7 players":
+    players: 7
+    roles_counts:
+      - name: Citizen
+        qty: 5
+      - name: Mafioso
+        qty: 2
