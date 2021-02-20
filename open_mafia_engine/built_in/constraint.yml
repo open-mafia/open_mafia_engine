@@ -1,11 +1,17 @@
 alive:
-  type: alive
+  type: actor_alive
   value: True
 dead:
-  type: alive
+  type: actor_alive
   value: False
 dead_or_alive:
-  type: alive
+  type: actor_alive
+  value: null
+target_alive:
+  type: target_alive
+  value: True
+target_dead_or_alive:
+  type: target_alive
   value: null
 one_action:
   type: action_limit
