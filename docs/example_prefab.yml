@@ -10,7 +10,8 @@ alignments:
       alignments: [mafia]
   - name: mafia
     wincon:
-      type: faction_majority
+      type: alignments_majority
+      alignments: [mafia]
 roles:
   - name: Citizen
     desc: |

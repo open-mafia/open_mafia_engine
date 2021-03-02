@@ -26,10 +26,11 @@ class AlignmentEliminatedWincon(Wincon):
     alignments: List[str]
 
 
-class FactionMajorityWincon(Wincon):
-    """Win if your faction gets a majority."""
+class AlignmentMajorityWincon(Wincon):
+    """Win if the given alignments have a majority."""
 
-    type: str = "faction_majority"
+    type: str = "alignments_majority"
+    alignments: List[str]
 
 
 class SurvivalWincon(Wincon):
