@@ -1,9 +1,9 @@
 from __future__ import annotations
 from enum import Enum
-from typing import Dict
-from pydantic import BaseModel
+from typing import Dict, Type, Union
+from pydantic import parse_obj_as
 
-# from open_mafia_engine.util.hook import HookModel
+from open_mafia_engine.util.hook import HookModel
 
 
 class ActionResolution(str, Enum):
@@ -13,7 +13,7 @@ class ActionResolution(str, Enum):
     end_of_phase = "end_of_phase"
 
 
-class Phase(BaseModel):
+class Phase(HookModel):
     """Phase definition.
 
     Attributes
@@ -24,22 +24,47 @@ class Phase(BaseModel):
 
     Note
     ----
-    This partially covers HookModel, but probably don't need to subclass phases.
+    This class overrides the HookType `parse_single` definition to not require
+    the "type" to be specified.
     """
 
+    type: str = "phase"
     name: str
     desc: str = "<no description>"
     action_resolution: ActionResolution
 
     class Hook:
+        subtypes: Dict[str, Type[Phase]] = {}
         builtins: Dict[str, Phase] = {}
+        defaults: Dict[str, Phase] = {}
 
     @classmethod
-    def update_builtins(cls, d: Dict[str, dict]) -> None:
-        """Updates the built-in hooks from the mapping (doesn't overwrite keys)."""
+    def parse_single(cls, c: Union[str, Phase, dict]) -> Phase:
+        """This parses the passed dict (or str builtin) as a Phase."""
 
-        for k, v in d.items():
-            old = cls.Hook.builtins.get(k)
-            if old is not None:
-                raise ValueError(f"Builtin named {k!r} already exists: {old!r}")
-            cls.Hook.builtins[k] = cls(**v)
+        # If already a Phase, don't touch it.
+        if isinstance(c, Phase):
+            # TODO: Maybe check that the `type` matches the class default?
+            return c  # TODO: Maybe also return a copy?
+
+        # If a string, check builtins
+        if isinstance(c, str):
+            x = cls.Hook.builtins.get(c)
+            if x is None:
+                raise ValueError(f"Could not find built-in hook named {c!r}")
+            return x.copy()  # make sure to return a copy :)
+
+        # Must be dict-like
+        # Find the class for this type
+        ts = c.get("type")
+        if ts is None:
+            T = Phase
+        else:
+            T = cls.Hook.subtypes.get(ts)
+        if T is None:
+            raise ValueError(f"No Phase found for type={ts!r}")
+        # Let Pydantic handle parsing this object
+        return parse_obj_as(T, c)
+
+
+Phase.Hook.subtypes["phase"] = Phase
