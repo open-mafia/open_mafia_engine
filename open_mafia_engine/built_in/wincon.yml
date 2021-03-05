@@ -1,0 +1,3 @@
+survivor:
+  type: survival
+  is_alive: True
