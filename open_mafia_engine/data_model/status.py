@@ -4,7 +4,7 @@ from .base import StateModel
 
 class StatusItem(StateModel):
     """Defines a single status.
-    
+
     Attributes
     ----------
     key : str

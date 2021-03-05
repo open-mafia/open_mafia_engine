@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Dict, List, Optional, Type
-from pydantic import validator
 
 from open_mafia_engine.util.hook import HookModel
 

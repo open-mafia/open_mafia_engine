@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List
 from pydantic import validator
 
 from open_mafia_engine.util.hook import HookModel

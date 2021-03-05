@@ -13,12 +13,12 @@ def get_versions() -> Dict[str, str]:
     """Returns version info for all Open Mafia (sub-)packages."""
 
     prefix = "open-mafia"
-    res = sorted(
+    z = sorted(
         [
             (p.key, p.version)
             for p in pkg_resources.working_set
             if p.key.startswith(prefix)
         ]
     )
-    res = {k: v for k, v in res}
+    res = {k: v for k, v in z}
     return res
