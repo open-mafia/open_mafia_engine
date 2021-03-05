@@ -19,10 +19,10 @@ one_action:
 free_action:
   type: action_limit
   n_actions: null
-day:
+phase_day:
   type: phase
   phases: [day]
-night:
+phase_night:
   type: phase
   phases: [night]
 mafia_faction_kill:

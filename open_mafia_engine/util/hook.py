@@ -95,6 +95,9 @@ class HookModel(BaseModel):
     def update_builtins(cls, d: Dict[str, dict]) -> None:
         """Updates the built-in hooks from the mapping (doesn't overwrite keys)."""
 
+        if d is None:
+            return
+
         for k, v in d.items():
             old = cls.Hook.builtins.get(k)
             if old is not None:
