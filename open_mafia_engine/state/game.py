@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Union
 
-from pydantic import parse_obj_as
+from pydantic import parse_obj_as, validator
 
 from open_mafia_engine.built_in.load import prefabs
 from open_mafia_engine.core.prefab import Prefab
@@ -60,3 +60,11 @@ class Game(StateModel):
             actors.append(Actor(name=name, role=role))
 
         return cls(actors=actors)
+
+    @validator("actors", always=True)
+    def _chk_actor_names(cls, v):
+        """Makes sures actors have unique names."""
+        names = [a.name for a in v]
+        if len(names) < len(set(names)):
+            raise ValueError(f"Actor names contain duplicates: {names!r}")
+        return v
