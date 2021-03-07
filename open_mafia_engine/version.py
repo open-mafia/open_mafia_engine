@@ -2,7 +2,9 @@ try:
     import importlib.metadata as _im
 except ImportError:
     import importlib_metadata as _im
+
 from typing import Dict
+
 import pkg_resources
 
 __all__ = ["version", "get_versions"]

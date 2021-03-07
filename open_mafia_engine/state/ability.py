@@ -1,4 +1,5 @@
 from typing import List
+
 from pydantic import validator
 
 from open_mafia_engine.util.hook import HookModel
@@ -38,20 +39,13 @@ class Ability(HookModel):
     )(Constraint.parse_list)
 
 
-class VoteAbility(Ability):
-    """Absract vote ability."""
+class ActivatedAbility(Ability):
+    """Ability that is activated by the actor."""
 
-    type: str
-    constraints: List[Constraint] = ["day"]
-
-
-class LynchVoteAbility(VoteAbility):
-    """Vote for a lynch target."""
-
-    type: str = "lynch_vote"
+    # TODO
 
 
-class KillAbility(Ability):
-    """Kills the target."""
+class TriggeredAbility(Ability):
+    """Ability that is triggered by an event."""
 
-    type: str = "kill"
+    # TODO

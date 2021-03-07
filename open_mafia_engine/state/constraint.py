@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import List, Optional
 
 from open_mafia_engine.util.hook import HookModel

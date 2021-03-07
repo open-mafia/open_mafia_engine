@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 from collections import defaultdict
-from typing import List, Dict, Type, Union
+from typing import Dict, List, Type, Union
+
 from pydantic import BaseModel, parse_obj_as
 
 
 class HookModel(BaseModel):
     """Base model to add "hooks", which parse the model as derivative classes.
 
-    To subclass, define the Hook internal class:
+    To subclass, define the Hook internal class (type annotations are optional):
 
         class Hook:
             subtypes: Dict[str, Type[YourType]] = {}
@@ -17,8 +19,8 @@ class HookModel(BaseModel):
 
     type: str
 
+    # Override this internal class with your own!
     class Hook:
-        # TODO: Possibly add defaults here? Or not? ... :)
         subtypes: Dict[str, Type[HookModel]]
         builtins: Dict[str, HookModel]
         defaults: Dict[str, HookModel]

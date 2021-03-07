@@ -1,6 +1,8 @@
 from typing import List
-from open_mafia_engine.core.ability import Ability
+
 from pydantic import BaseModel, validator
+
+from open_mafia_engine.state.ability import Ability
 
 
 class Role(BaseModel):
