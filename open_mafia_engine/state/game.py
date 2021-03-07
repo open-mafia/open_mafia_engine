@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Union
+from open_mafia_engine.state.alignment import Alignment
+from open_mafia_engine.state.phase import Phase
 
 from pydantic import parse_obj_as, validator
 
@@ -16,14 +18,27 @@ class GameState(StateModel):
 
     Attributes
     ----------
+    alignments: List[Alignment]
+        The alignments in the game.
+    phases : List[Phase]
+        The possible phases in the game.
+    phase_num : int
+        The current phase number. Default is 0.
     actors : List[Actor]
         The various actor entities in the game.
     status : Dict[str, Any]
         Current game status.
     """
 
+    alignments: List[Alignment]
+    phases: List[Phase]
+    phase_num: int = 0
     actors: List[Actor]
     status: Dict[str, Any] = {}
+
+    @property
+    def current_phase(self) -> Phase:
+        return self.phases[self.phase_num]
 
     @classmethod
     def from_prefab(
@@ -51,9 +66,13 @@ class GameState(StateModel):
         elif not isinstance(prefab, Prefab):
             prefab = Prefab(**prefab)
 
+        # Get phases and alignments directly from the prefab
+        phases = prefab.phases
+        alignments = prefab.alignments
+
+        # Assign roles from the chosen variant
         gv = prefab.get_variant(name=variant, players=n)
         n2r = gv.assign_roles(names)
-
         actors = []
         for name, role_name in n2r.items():
             poss_roles = [r for r in prefab.roles if r.name == role_name]
@@ -62,7 +81,7 @@ class GameState(StateModel):
             role = poss_roles[0].copy(deep=True)
             actors.append(Actor(name=name, role=role))
 
-        return cls(actors=actors)
+        return cls(actors=actors, alignments=alignments, phases=phases)
 
     @validator("actors", always=True)
     def _chk_actor_names(cls, v):
@@ -71,3 +90,18 @@ class GameState(StateModel):
         if len(names) < len(set(names)):
             raise ValueError(f"Actor names contain duplicates: {names!r}")
         return v
+
+    @validator("actors", always=True)
+    def _chk_actor_alignments(cls, v, values):
+        """Makes sures actor alignments exist."""
+        al_names = [al.name for al in values.get("alignments")]
+        for a in v:
+            a: Actor
+            al = a.role.alignment
+            if al not in al_names:
+                raise ValueError(f"Could not find alignment {al!r} from {al_names!r}")
+        return v
+
+    _chk_phases = validator(
+        "phases", pre=True, always=True, each_item=True, allow_reuse=True
+    )(Phase.parse_single)
