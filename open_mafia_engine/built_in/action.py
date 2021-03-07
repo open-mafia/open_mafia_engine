@@ -3,7 +3,7 @@ from open_mafia_engine.state.game import GameState
 from open_mafia_engine.state.voting import VoteTally
 
 
-class InitGameAction(Action):
+class VanillaGameInitAction(Action):
     """Initializes a normal game."""
 
     def __call__(self, game: GameState, context: ActionContext) -> None:

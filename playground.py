@@ -9,16 +9,17 @@ game = Game.from_prefab(
 engine = game.engine
 
 # Init the game
-game.process_action(InitGameAction())
+game.process_event(GameStartEvent())
+# game.process_action(VanillaGameInitAction())
 
 # For ease of use
 a, b, c, *_ = game.state.actors
 lt: VoteTally = game.state.status["lynch_tally"]
 
 # Voting occurs
-for pair in [(a, b), (b, a), (c, a), (c, b)]:
+for src, trg in [(a, b), (b, a), (c, a), (c, b)]:
     # 1. Via a direct Action
-    va = VoteAction(pair[0].name, pair[1].name, tally_name="lynch_tally")
+    va = VoteAction(src.name, trg.name, tally_name="lynch_tally")
     game.process_action(va)
 
     # 2. Via an ActivationEvent; don't need the action itself, works by name!

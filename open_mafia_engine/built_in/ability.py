@@ -3,8 +3,10 @@ from open_mafia_engine.built_in.action import (
     KillAction,
     LynchAction,
     PhaseChangeAction,
+    VanillaGameInitAction,
     VoteAction,
 )
+from open_mafia_engine.built_in.event import GameStartEvent
 from open_mafia_engine.core.engine import EType, Event, PreActionEvent
 
 from open_mafia_engine.state.ability import (
@@ -13,7 +15,7 @@ from open_mafia_engine.state.ability import (
     ActivationEvent,
     TriggeredAbility,
 )
-from open_mafia_engine.state.actor import Actor
+
 from open_mafia_engine.state.constraint import Constraint
 
 
@@ -82,3 +84,16 @@ class PhaseEndLynchAbility(TriggeredAbility):
         """Delayed response to the Event with an Action (or None)."""
         if isinstance(e, PreActionEvent) and isinstance(e.action, PhaseChangeAction):
             return LynchAction(tally_name=self.tally_name)
+
+
+class VanillaGameInitAbility(TriggeredAbility):
+    """Initializes a vanilla game."""
+
+    type: str = "vanilla_game_init"
+
+    sub_to: ClassVar[List[EType]] = [GameStartEvent]  # NOTE: Not a field!
+
+    def respond(self, e: Event) -> Optional[LynchAction]:
+        """Delayed response to the Event with an Action (or None)."""
+        if isinstance(e, GameStartEvent):
+            return VanillaGameInitAction()
