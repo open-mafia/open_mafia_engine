@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Union
+from open_mafia_engine.state.ability import TriggeredAbility
 
 from pydantic import parse_obj_as, validator
 
@@ -25,6 +26,8 @@ class GameState(StateModel):
         The current phase number. Default is 0.
     actors : List[Actor]
         The various actor entities in the game.
+    triggers : List[TriggeredAbility]
+        The game's triggered abilities (usually for automation).
     status : Dict[str, Any]
         Current game status.
     """
@@ -33,6 +36,7 @@ class GameState(StateModel):
     phases: List[Phase]
     phase_num: int = 0
     actors: List[Actor]
+    triggers: List[TriggeredAbility] = []
     status: Dict[str, Any] = {}
 
     @property
@@ -68,8 +72,9 @@ class GameState(StateModel):
             prefab = Prefab(**prefab)
 
         # Get phases and alignments directly from the prefab
-        phases = prefab.phases
-        alignments = prefab.alignments
+        phases = [p.copy(deep=True) for p in prefab.phases]
+        alignments = [a.copy(deep=True) for a in prefab.alignments]
+        triggers = [t.copy(deep=True) for t in prefab.triggers]
 
         # Assign roles from the chosen variant
         gv = prefab.get_variant(name=variant, players=n)
@@ -82,7 +87,9 @@ class GameState(StateModel):
             role = poss_roles[0].copy(deep=True)
             actors.append(Actor(name=name, role=role))
 
-        return cls(actors=actors, alignments=alignments, phases=phases)
+        return cls(
+            actors=actors, alignments=alignments, phases=phases, triggers=triggers
+        )
 
     def actor_by_name(self, name: str) -> Actor:
         x = [a for a in self.actors if a.name == name]

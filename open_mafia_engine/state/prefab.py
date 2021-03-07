@@ -1,5 +1,6 @@
 import random
 from typing import Dict, List
+from open_mafia_engine.state.ability import TriggeredAbility
 
 from pydantic import BaseModel, validator
 from pydantic.class_validators import root_validator
@@ -126,6 +127,7 @@ class Prefab(BaseModel):
     phases: List[Phase]
     alignments: List[Alignment]
     roles: List[Role]
+    triggers: List[TriggeredAbility]
     game_variants: List[GameVariant]
 
     def get_variant(self, name: str = None, players: int = None) -> GameVariant:
@@ -145,6 +147,10 @@ class Prefab(BaseModel):
     _chk_phases = validator(
         "phases", pre=True, always=True, each_item=True, allow_reuse=True
     )(Phase.parse_single)
+
+    _chk_triggers = validator(
+        "triggers", pre=True, always=True, each_item=True, allow_reuse=True
+    )(TriggeredAbility.parse_single)
 
     @validator("alignments", always=True, each_item=True)
     def _chk_alignments(cls, v):

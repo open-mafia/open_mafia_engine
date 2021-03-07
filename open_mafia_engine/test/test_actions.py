@@ -20,7 +20,9 @@ def test_cancellation():
                 if isinstance(e.action, FakeAction):
                     return CancelAction(target=e.action)
 
-    game = GameState(actors=[])
+    game = GameState.from_prefab(
+        names=["Alice", "Bob", "Charlie", "Dave", "Eddie"], prefab="Vanilla Mafia"
+    )
 
     tc = TstCancel()
     tc.subscribe_current(PreActionEvent)

@@ -1,5 +1,4 @@
 from open_mafia_engine.core.engine import Action, ActionContext
-from open_mafia_engine.state.actor import Actor
 from open_mafia_engine.state.game import GameState
 from open_mafia_engine.state.voting import VoteTally
 
@@ -33,18 +32,14 @@ class VoteAction(Action):
 
     def __init__(
         self,
-        source: Actor,
-        target: Actor,
+        source: str,
+        target: str,
         tally_name: str,
         weight: int = 1,
         *,
         priority: float = 0,
         canceled: bool = False,
     ):
-        if not isinstance(source, Actor):
-            raise ValueError(f"Expected Actor, got {source!r}")
-        if not isinstance(target, Actor):
-            raise ValueError(f"Expected Actor, got {target!r}")
         super().__init__(priority=priority, canceled=canceled)
         self.source = source
         self.target = target
@@ -53,9 +48,7 @@ class VoteAction(Action):
 
     def __call__(self, game: GameState, context: ActionContext) -> None:
         tally: VoteTally = game.status[self.tally_name]
-        tally.add_vote(
-            source=self.source.name, target=self.target.name, weight=self.weight
-        )
+        tally.add_vote(source=self.source, target=self.target, weight=self.weight)
 
 
 class LynchAction(Action):
@@ -83,14 +76,17 @@ class LynchAction(Action):
 
 
 class KillAction(Action):
-    """Action that kills the `target` Actor."""
+    """Action from the `source` that kills the `target` Actor."""
 
-    def __init__(self, target: str, *, priority: float = 0, canceled: bool = False):
-        if isinstance(target, Actor):
-            target = target.name
+    def __init__(
+        self, source: str, target: str, *, priority: float = 0, canceled: bool = False
+    ):
+        if not isinstance(source, str):
+            raise ValueError(f"Expected str, got {source!r}")
         if not isinstance(target, str):
-            raise ValueError(f"Expected str or Actor, got {target!r}")
+            raise ValueError(f"Expected str, got {target!r}")
         super().__init__(priority=priority, canceled=canceled)
+        self.source = source
         self.target = target
 
     def __call__(self, game: GameState, context: ActionContext) -> None:
