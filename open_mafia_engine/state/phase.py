@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from enum import Enum
 from typing import Dict, Type, Union
+
 from pydantic import parse_obj_as
 
 from open_mafia_engine.util.hook import HookModel

@@ -1,11 +1,11 @@
+from open_mafia_engine.built_in.action import CancelAction
 from open_mafia_engine.core.engine import (
-    Subscriber,
+    Action,
+    ActionContext,
     Event,
     PreActionEvent,
-    ActionContext,
-    Action,
+    Subscriber,
 )
-from open_mafia_engine.built_in.action import CancelAction
 from open_mafia_engine.state.game import GameState
 
 

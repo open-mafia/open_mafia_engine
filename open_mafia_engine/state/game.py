@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Union
-from open_mafia_engine.state.alignment import Alignment
-from open_mafia_engine.state.phase import Phase
 
 from pydantic import parse_obj_as, validator
 
 from open_mafia_engine.built_in.load import prefabs
-from open_mafia_engine.state.prefab import Prefab
 from open_mafia_engine.state.actor import Actor
+from open_mafia_engine.state.alignment import Alignment
+from open_mafia_engine.state.phase import Phase
+from open_mafia_engine.state.prefab import Prefab
 
 from .base import StateModel
 

@@ -1,5 +1,5 @@
-from reprlib import recursive_repr
 import inspect
+from reprlib import recursive_repr
 
 
 class ReprMixin(object):

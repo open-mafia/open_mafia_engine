@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from collections import defaultdict
-from typing import List, Dict, Type, Union
+from typing import Dict, List, Type, Union
+
 from pydantic import BaseModel, parse_obj_as
 
 

@@ -6,9 +6,10 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from contextlib import AbstractContextManager
 from typing import DefaultDict, List, Optional, Type
-from open_mafia_engine.util.repr import ReprMixin
 
 from sortedcontainers import SortedList
+
+from open_mafia_engine.util.repr import ReprMixin
 
 
 class Event(ReprMixin):

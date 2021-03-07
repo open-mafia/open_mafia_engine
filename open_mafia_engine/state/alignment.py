@@ -1,6 +1,8 @@
-from .wincon import Wincon
 from typing import Union
+
 from pydantic import BaseModel, validator
+
+from .wincon import Wincon
 
 
 class Alignment(BaseModel):

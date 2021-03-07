@@ -1,1 +1,1 @@
-from open_mafia_engine.core.engine import Event, PreActionEvent, PostActionEvent  # noqa
+from open_mafia_engine.core.engine import Event, PostActionEvent, PreActionEvent  # noqa

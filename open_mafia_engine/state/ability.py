@@ -1,7 +1,8 @@
 from typing import List
-from open_mafia_engine.core.engine import Action
+
 from pydantic import validator
 
+from open_mafia_engine.core.engine import Action
 from open_mafia_engine.util.hook import HookModel
 
 from .constraint import Constraint

@@ -1,4 +1,5 @@
 from typing import List
+
 from open_mafia_engine.state.ability import ActivatedAbility
 from open_mafia_engine.state.constraint import Constraint
 
