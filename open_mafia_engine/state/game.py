@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Union
 
 from pydantic import parse_obj_as, validator
 
-from open_mafia_engine.built_in.load import prefabs
 from open_mafia_engine.state.actor import Actor
 from open_mafia_engine.state.alignment import Alignment
 from open_mafia_engine.state.phase import Phase
@@ -56,6 +55,8 @@ class GameState(StateModel):
             The variant to use. If None, uses a random applicable variant.
         """
 
+        from open_mafia_engine.built_in.load import prefabs
+
         names = parse_obj_as(List[str], names)
         n = len(names)
 
@@ -83,6 +84,12 @@ class GameState(StateModel):
 
         return cls(actors=actors, alignments=alignments, phases=phases)
 
+    def actor_by_name(self, name: str) -> Actor:
+        x = [a for a in self.actors if a.name == name]
+        if len(x) != 1:
+            raise ValueError(f"Could not find Actor of name {name!r}")
+        return x[0]
+
     @validator("actors", always=True)
     def _chk_actor_names(cls, v):
         """Makes sures actors have unique names."""
@@ -105,3 +112,8 @@ class GameState(StateModel):
     _chk_phases = validator(
         "phases", pre=True, always=True, each_item=True, allow_reuse=True
     )(Phase.parse_single)
+
+    @validator("phase_num", always=True)
+    def _chk_phase_num(cls, v, values):
+        phases = values["phases"]
+        return v % (len(phases))

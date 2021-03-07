@@ -1,6 +1,7 @@
 from open_mafia_engine.core.engine import Action, ActionContext
 from open_mafia_engine.state.actor import Actor
 from open_mafia_engine.state.game import GameState
+from open_mafia_engine.state.voting import VoteTally
 
 
 class InitGameAction(Action):
@@ -11,6 +12,7 @@ class InitGameAction(Action):
         for actor in game.actors:
             actor.status["alive"] = True
         game.phase_num = 0
+        game.status["lynch_tally"] = VoteTally()
 
 
 class CancelAction(Action):
@@ -26,14 +28,87 @@ class CancelAction(Action):
         self.target.canceled = True
 
 
+class VoteAction(Action):
+    """Action that votes for someone."""
+
+    def __init__(
+        self,
+        source: Actor,
+        target: Actor,
+        tally_name: str,
+        weight: int = 1,
+        *,
+        priority: float = 0,
+        canceled: bool = False,
+    ):
+        if not isinstance(source, Actor):
+            raise ValueError(f"Expected Actor, got {source!r}")
+        if not isinstance(target, Actor):
+            raise ValueError(f"Expected Actor, got {target!r}")
+        super().__init__(priority=priority, canceled=canceled)
+        self.source = source
+        self.target = target
+        self.weight = weight
+        self.tally_name = tally_name
+
+    def __call__(self, game: GameState, context: ActionContext) -> None:
+        tally: VoteTally = game.status[self.tally_name]
+        tally.add_vote(
+            source=self.source.name, target=self.target.name, weight=self.weight
+        )
+
+
+class LynchAction(Action):
+    """Action that mob-lynches a vote leader from a tally."""
+
+    def __init__(
+        self,
+        *,
+        tally_name: str = "lynch_tally",
+        priority: float = 0,
+        canceled: bool = False,
+    ):
+        super().__init__(priority=priority, canceled=canceled)
+        self.tally_name = tally_name
+
+    def __call__(self, game: GameState, context: ActionContext) -> None:
+        tally: VoteTally = game.status[self.tally_name]
+        target_name = tally.select_leader()
+
+        # TODO: Change to 'death' instead of changing status directly
+        target = game.actor_by_name(target_name)
+        target.status["alive"] = False
+
+        tally.clear()
+
+
 class KillAction(Action):
     """Action that kills the `target` Actor."""
 
-    def __init__(self, target: Actor, *, priority: float = 0, canceled: bool = False):
-        if not isinstance(target, Actor):
-            raise ValueError(f"Expected Actor, got {target!r}")
+    def __init__(self, target: str, *, priority: float = 0, canceled: bool = False):
+        if isinstance(target, Actor):
+            target = target.name
+        if not isinstance(target, str):
+            raise ValueError(f"Expected str or Actor, got {target!r}")
         super().__init__(priority=priority, canceled=canceled)
         self.target = target
 
     def __call__(self, game: GameState, context: ActionContext) -> None:
-        self.target.status["alive"] = False
+        # TODO: Change to 'death' instead of changing status directly
+        target = game.actor_by_name(self.target)
+        target.status["alive"] = False
+
+
+class PhaseChangeAction(Action):
+    """Action that increments the current phase."""
+
+    def __init__(
+        self,
+        *,
+        priority: float = 0,
+        canceled: bool = False,
+    ):
+        super().__init__(priority=priority, canceled=canceled)
+
+    def __call__(self, game: GameState, context: ActionContext) -> None:
+        game.phase_num += 1  # should automatically wrap around

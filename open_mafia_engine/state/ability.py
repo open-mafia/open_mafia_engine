@@ -1,4 +1,5 @@
-from typing import List
+from typing import ClassVar, List
+from open_mafia_engine.core.engine import EType, Subscriber
 
 from pydantic import validator
 
@@ -45,7 +46,16 @@ class ActivatedAbility(Ability):
     # TODO
 
 
-class TriggeredAbility(Ability):
+class TriggeredAbility(Ability, Subscriber):
     """Ability that is triggered by an event."""
 
-    # TODO
+    sub_to: ClassVar[List[EType]] = []  # NOTE: Not a field!
+
+    def __init__(self, **data) -> None:
+        super().__init__(**data)
+        self.subscribe_current(*self.sub_to)
+
+    # @abstractmethod
+    # def respond(self, e: Event) -> Optional[Action]:
+    #     """Delayed response to the Event with an Action (or None)."""
+    #     return None
