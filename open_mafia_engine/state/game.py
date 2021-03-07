@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Union
 from pydantic import parse_obj_as, validator
 
 from open_mafia_engine.built_in.load import prefabs
-from open_mafia_engine.state.action import ActionContext
 from open_mafia_engine.state.prefab import Prefab
 from open_mafia_engine.state.actor import Actor
 
@@ -21,13 +20,10 @@ class GameState(StateModel):
         The various actor entities in the game.
     status : Dict[str, Any]
         Current game status.
-    context : ActionContext
-        Actions-to-process and previously processed actions.
     """
 
     actors: List[Actor]
     status: Dict[str, Any] = {}
-    context: ActionContext = None
 
     @classmethod
     def from_prefab(
@@ -74,10 +70,4 @@ class GameState(StateModel):
         names = [a.name for a in v]
         if len(names) < len(set(names)):
             raise ValueError(f"Actor names contain duplicates: {names!r}")
-        return v
-
-    @validator("context", always=True)
-    def _chk_context(cls, v):
-        if v is None:
-            return ActionContext()
         return v
