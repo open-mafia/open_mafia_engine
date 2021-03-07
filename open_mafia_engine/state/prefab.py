@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 from pydantic import BaseModel, validator
 from pydantic.class_validators import root_validator
 import random
