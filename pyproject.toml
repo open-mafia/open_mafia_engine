@@ -10,6 +10,7 @@ python = "^3.7"
 beautifulsoup4 = {version = "^4.9.3", optional = true}
 requests = {version = "^2.25.1", optional = true}
 pydantic = "^1.7.3"
+sortedcontainers = "^2.3.0"
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
