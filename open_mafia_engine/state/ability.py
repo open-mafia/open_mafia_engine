@@ -40,9 +40,12 @@ class Ability(HookModel, Subscriber):
         builtins = {}
         defaults = {}
 
-    def __init__(self, **data) -> None:
-        super().__init__(**data)
+    def sub(self):
+        """Runs the subscription."""
         self.subscribe_current(*self.sub_to)
+
+    def __eq__(self, other):
+        return other is self
 
     _chk_constraints_pre = validator(
         "constraints", pre=True, always=True, allow_reuse=True

@@ -87,9 +87,20 @@ class GameState(StateModel):
             role = poss_roles[0].copy(deep=True)
             actors.append(Actor(name=name, role=role))
 
-        return cls(
+        # We got it!
+        res = cls(
             actors=actors, alignments=alignments, phases=phases, triggers=triggers
         )
+
+        # Subscribe everything that needs it
+        for t in res.triggers:
+            t.sub()
+        for actor in res.actors:
+            actor: Actor
+            for ab in actor.role.abilities:
+                ab.sub()
+
+        return res
 
     def actor_by_name(self, name: str) -> Actor:
         x = [a for a in self.actors if a.name == name]

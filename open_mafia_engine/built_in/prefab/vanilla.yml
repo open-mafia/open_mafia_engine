@@ -45,6 +45,8 @@ roles:
         # NOTE: Will appear as
         # [Night, Mafia] Mafia Kill (target): Kill the target. Only one Mafioso may use this per night.
 triggers:
+  # - name: "Initialize game"
+  #   type: "init_game"
   - name: "Lynch on day end"
     type: "phase_end_lynch"
 game_variants:

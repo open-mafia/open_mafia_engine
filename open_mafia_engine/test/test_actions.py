@@ -20,7 +20,7 @@ def test_cancellation():
                 if isinstance(e.action, FakeAction):
                     return CancelAction(target=e.action)
 
-    game = GameState.from_prefab(
+    game_state = GameState.from_prefab(
         names=["Alice", "Bob", "Charlie", "Dave", "Eddie"], prefab="Vanilla Mafia"
     )
 
@@ -29,7 +29,7 @@ def test_cancellation():
 
     context = ActionContext()
     context.enqueue(FakeAction())
-    context.process(game=game)
+    context.process(game_state=game_state)
     assert len(context.history) == 1
 
 
