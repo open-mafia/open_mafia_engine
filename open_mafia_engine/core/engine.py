@@ -34,7 +34,7 @@ class Action(ABC, ReprMixin):
     def __lt__(self, other: Action):
         if not isinstance(other, Action):
             return NotImplemented
-        return self.priority < other.priority
+        return self.priority > other.priority  # We sort decreasing by priority!
 
     @abstractmethod
     def __call__(self, game, context: ActionContext) -> None:
@@ -169,11 +169,6 @@ class ActionContext(object):
     def __repr__(self) -> str:
         cn = type(self).__qualname__
         return f"<{cn} with {len(self.queue)} queued, {len(self.history)} in history>"
-
-    @classmethod
-    def _order_queue(cls, v):
-        v = sorted(v, key=lambda x: -x.priority)
-        return v
 
     def enqueue(self, action: Action) -> None:
         self.queue.add(action)
