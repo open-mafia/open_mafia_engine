@@ -3,7 +3,6 @@ from open_mafia_engine.state.role import Role
 
 
 class Actor(StateModel):
-
     """Mafia actor (usually a Player, Moderator or NPC).
 
     Attributes
