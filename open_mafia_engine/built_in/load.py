@@ -11,6 +11,8 @@ from open_mafia_engine.state.prefab import Prefab
 from open_mafia_engine.state.wincon import Wincon
 from open_mafia_engine.util.yaml import load_yaml
 
+from .ability import *  # noqa
+
 _p = Path(__file__).parent
 
 Ability.update_builtins(load_yaml(_p / "ability.yml"))
