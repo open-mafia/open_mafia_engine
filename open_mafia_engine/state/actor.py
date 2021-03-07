@@ -1,5 +1,5 @@
 from .base import StateModel
-from open_mafia_engine.core.role import Role
+from open_mafia_engine.state.role import Role
 
 
 class Actor(StateModel):

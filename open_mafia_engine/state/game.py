@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Union
 from pydantic import parse_obj_as, validator
 
 from open_mafia_engine.built_in.load import prefabs
-from open_mafia_engine.core.action import ActionContext
-from open_mafia_engine.core.prefab import Prefab
+from open_mafia_engine.state.action import ActionContext
+from open_mafia_engine.state.prefab import Prefab
 from open_mafia_engine.state.actor import Actor
 
 from .base import StateModel
