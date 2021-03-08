@@ -194,7 +194,7 @@ class ActionContext(object):
             self._process_next(game_state=game_state)
 
     def _process_next(self, game_state):
-        """Processes the next action in the queue.
+        """Processes the next actions (with the same priority) in the queue.
 
         This can cause additional actions (due to events), which will run in
         additional sub-contexts. Theoretically, this can lead to infinite
@@ -207,21 +207,31 @@ class ActionContext(object):
         """
 
         engine = CoreEngine.current()
-        action = self.queue.pop(0)
 
-        e_pre = PreActionEvent(action=action)
+        priority = self.queue[0].priority
+        pre_responses: List[Action] = []
+        actions: List[Action] = []
+        post_responses: List[Action] = []
 
-        pre_responses = engine.get_responses(e_pre)
+        while (len(self.queue) > 0) and (self.queue[0].priority == priority):
+            action: Action = self.queue.pop(0)
+            e_pre = PreActionEvent(action=action)
+
+            actions.append(action)
+            pre_responses += engine.get_responses(e_pre)
+
         pre_context = ActionContext(queue=pre_responses)
         pre_context.process(game_state=game_state)
         self.history += pre_context.history
 
-        if not action.canceled:
-            action(game_state, context=self)
-            self.history.append(action)  # TODO: Maybe record in history anyways?
+        for action in actions:
+            if not action.canceled:
+                action(game_state, context=self)
+                self.history.append(action)  # TODO: Maybe record in history anyways?
 
-            e_post = PostActionEvent(action=action)
-            post_responses = engine.get_responses(e_post)
-            post_context = ActionContext(queue=post_responses)
-            post_context.process(game_state=game_state)
-            self.history += post_context.history
+                e_post = PostActionEvent(action=action)
+                post_responses += engine.get_responses(e_post)
+
+        post_context = ActionContext(queue=post_responses)
+        post_context.process(game_state=game_state)
+        self.history += post_context.history
