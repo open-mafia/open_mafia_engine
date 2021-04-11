@@ -1,0 +1,9 @@
+# This document defines default phases
+day:
+  name: day
+  desc: "Day actions are resolved immediately."
+  action_resolution: instant
+night:
+  name: night
+  desc: "Night actions are resolved at the end of the phase."
+  action_resolution: end_of_phase

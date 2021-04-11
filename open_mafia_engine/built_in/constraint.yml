@@ -1,0 +1,35 @@
+alive:
+  type: actor_alive
+  value: True
+dead:
+  type: actor_alive
+  value: False
+dead_or_alive:
+  type: actor_alive
+  value: null
+target_alive:
+  type: target_alive
+  value: True
+target_dead_or_alive:
+  type: target_alive
+  value: null
+one_action:
+  type: action_limit
+  n_actions: 1
+free_action:
+  type: action_limit
+  n_actions: null
+phase_day:
+  type: phase
+  phases: [day]
+phase_night:
+  type: phase
+  phases: [night]
+mafia_faction_kill:
+  type: key_phase_limited
+  key: faction-mafia
+  phases: [night]
+  uses: 1
+one_shot:
+  type: n_shot
+  uses: 1
