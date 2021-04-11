@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from contextlib import AbstractContextManager
-from typing import DefaultDict, List, Optional, Type
+from typing import DefaultDict, List, Optional, Type, Union
 
 from sortedcontainers import SortedList
 
@@ -21,7 +21,8 @@ class Action(ABC, ReprMixin):
 
     Attributes
     ----------
-    type : str
+    owner : object
+        TODO: Add owner or source or smth.
     priority : float
         The action priority for the queue. Default is 0.
     canceled : bool
@@ -64,11 +65,14 @@ class Subscriber(ABC):
 
     def subscribe_current(self, *event_types: List[EType]):
         """Subscribes to the given event type(s) under current active engine."""
-        engine = MafiaEngine.current()
+        engine = CoreEngine.current()
         engine.subscribe(self, *event_types)
 
+    def __eq__(self, other):
+        return other is self
 
-class MafiaEngine(AbstractContextManager):
+
+class CoreEngine(AbstractContextManager):
     """Manages the game engine context."""
 
     __engines__ = []
@@ -106,11 +110,11 @@ class MafiaEngine(AbstractContextManager):
         return res
 
     @classmethod
-    def current(cls) -> MafiaEngine:
+    def current(cls) -> CoreEngine:
         """Returns the currently active engine. If there is none, raises ValueError."""
-        if len(MafiaEngine.__engines__) == 0:
+        if len(CoreEngine.__engines__) == 0:
             raise ValueError("No engine currently active.")
-        return MafiaEngine.__engines__[-1]
+        return CoreEngine.__engines__[-1]
 
     def __repr__(self) -> str:
         cn = type(self).__qualname__
@@ -118,21 +122,21 @@ class MafiaEngine(AbstractContextManager):
         s_count = sum(len(v) for v in self.subscriptions.values())
         return f"<{cn} with {e_count} events, {s_count} subs>"
 
-    def __enter__(self) -> MafiaEngine:
-        MafiaEngine.__engines__.append(self)
+    def __enter__(self) -> CoreEngine:
+        CoreEngine.__engines__.append(self)
         return self
 
     def __exit__(self, exc_type=None, exc_value=None, tb=None) -> Optional[bool]:
-        if (len(MafiaEngine.__engines__) == 0) or (
-            MafiaEngine.__engines__[-1] is not self
+        if (len(CoreEngine.__engines__) == 0) or (
+            CoreEngine.__engines__[-1] is not self
         ):
             raise ValueError("Engine stack is corrupted!")
-        MafiaEngine.__engines__.pop()
+        CoreEngine.__engines__.pop()
         return super().__exit__(exc_type, exc_value, tb)
 
 
 """The default engine is here as a HACK/catch-all."""
-default_engine = MafiaEngine().__enter__()
+default_engine = CoreEngine().__enter__()
 
 
 class PreActionEvent(Event):
@@ -171,10 +175,14 @@ class ActionContext(object):
         cn = type(self).__qualname__
         return f"<{cn} with {len(self.queue)} queued, {len(self.history)} in history>"
 
-    def enqueue(self, action: Action) -> None:
-        self.queue.add(action)
+    def enqueue(self, action: Union[Action, List[Action]]) -> None:
+        """Enqueues one or more actions."""
+        if isinstance(action, Action):
+            self.queue.add(action)
+        else:
+            self.queue.update(action)
 
-    def process(self, game):
+    def process(self, game_state):
         """Processes all the actions in the queue.
 
         Parameters
@@ -184,10 +192,10 @@ class ActionContext(object):
         """
 
         while len(self.queue) > 0:
-            self._process_next(game=game)
+            self._process_next(game_state=game_state)
 
-    def _process_next(self, game):
-        """Processes the next action in the queue.
+    def _process_next(self, game_state):
+        """Processes the next actions (with the same priority) in the queue.
 
         This can cause additional actions (due to events), which will run in
         additional sub-contexts. Theoretically, this can lead to infinite
@@ -195,26 +203,49 @@ class ActionContext(object):
 
         Parameters
         ----------
-        game : GameState
+        game_state : GameState
             The current state of the game.
         """
 
-        engine = MafiaEngine.current()
-        action = self.queue.pop(0)
+        engine = CoreEngine.current()
 
-        e_pre = PreActionEvent(action=action)
+        priority = self.queue[0].priority
+        pre_responses: List[Action] = []
+        actions: List[Action] = []
+        post_responses: List[Action] = []
 
-        pre_responses = engine.get_responses(e_pre)
+        while (len(self.queue) > 0) and (self.queue[0].priority == priority):
+            action: Action = self.queue.pop(0)
+            e_pre = PreActionEvent(action=action)
+
+            actions.append(action)
+            pre_responses += engine.get_responses(e_pre)
+
         pre_context = ActionContext(queue=pre_responses)
-        pre_context.process(game=game)
+        pre_context.process(game_state=game_state)
         self.history += pre_context.history
 
-        if not action.canceled:
-            action(game=game, context=self)
-            self.history.append(action)  # TODO: Maybe record in history anyways?
+        for action in actions:
+            if not action.canceled:
+                action(game_state, context=self)
+                self.history.append(action)  # TODO: Maybe record in history anyways?
 
-            e_post = PostActionEvent(action=action)
-            post_responses = engine.get_responses(e_post)
-            post_context = ActionContext(queue=post_responses)
-            post_context.process(game=game)
-            self.history += post_context.history
+                e_post = PostActionEvent(action=action)
+                post_responses += engine.get_responses(e_post)
+
+        post_context = ActionContext(queue=post_responses)
+        post_context.process(game_state=game_state)
+        self.history += post_context.history
+
+
+class CancelAction(Action):
+    """Action that cancels another action."""
+
+    def __init__(self, target: Action, *, priority: float = 0, canceled: bool = False):
+        if not isinstance(target, Action):
+            raise ValueError(f"Expected Action, got {target!r}")
+        super().__init__(priority=priority, canceled=canceled)
+        self.target = target
+
+    def __call__(self, game_state, context: ActionContext) -> None:
+        self.target.canceled = True

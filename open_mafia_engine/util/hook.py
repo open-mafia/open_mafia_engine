@@ -6,6 +6,10 @@ from typing import Dict, List, Type, Union
 from pydantic import BaseModel, parse_obj_as
 
 
+def copy_model(x):
+    return type(x)(**x.dict())
+
+
 class HookModel(BaseModel):
     """Base model to add "hooks", which parse the model as derivative classes.
 
@@ -49,14 +53,14 @@ class HookModel(BaseModel):
         # If already a HookModel, don't touch it.
         if isinstance(c, HookModel):
             # TODO: Maybe check that the `type` matches the class default?
-            return c  # TODO: Maybe also return a copy?
+            return copy_model(c)  # TODO: Maybe also return a copy?
 
         # If a string, check builtins
         if isinstance(c, str):
             x = cls.Hook.builtins.get(c)
             if x is None:
                 raise ValueError(f"Could not find built-in hook named {c!r}")
-            return x.copy()  # make sure to return a copy :)
+            return copy_model(x)  # make sure to return a copy :)
 
         # Must be dict-like
         # Find the class for this type
