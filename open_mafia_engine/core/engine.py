@@ -21,7 +21,8 @@ class Action(ABC, ReprMixin):
 
     Attributes
     ----------
-    type : str
+    owner : object
+        TODO: Add owner or source or smth.
     priority : float
         The action priority for the queue. Default is 0.
     canceled : bool
@@ -235,3 +236,16 @@ class ActionContext(object):
         post_context = ActionContext(queue=post_responses)
         post_context.process(game_state=game_state)
         self.history += post_context.history
+
+
+class CancelAction(Action):
+    """Action that cancels another action."""
+
+    def __init__(self, target: Action, *, priority: float = 0, canceled: bool = False):
+        if not isinstance(target, Action):
+            raise ValueError(f"Expected Action, got {target!r}")
+        super().__init__(priority=priority, canceled=canceled)
+        self.target = target
+
+    def __call__(self, game_state, context: ActionContext) -> None:
+        self.target.canceled = True
