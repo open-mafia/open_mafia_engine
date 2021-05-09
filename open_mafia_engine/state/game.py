@@ -1,4 +1,5 @@
 from __future__ import annotations
+from open_mafia_engine.open_mafia_engine.state.wincon import Wincon
 
 from typing import Any, Dict, List, Union
 from open_mafia_engine.state.ability import TriggeredAbility
@@ -95,10 +96,15 @@ class GameState(StateModel):
         # Subscribe everything that needs it
         for t in res.triggers:
             t.sub()
+        for alignment in res.alignments:
+            wc: Wincon = alignment.wincon
+            wc.sub()
         for actor in res.actors:
             actor: Actor
             for ab in actor.role.abilities:
                 ab.sub()
+                for constraint in ab.constraints:
+                    constraint.sub()
 
         return res
 

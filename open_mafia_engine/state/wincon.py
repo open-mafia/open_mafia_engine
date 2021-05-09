@@ -1,11 +1,23 @@
 from __future__ import annotations
+from abc import abstractmethod
 
 from typing import Dict, List, Optional, Type
 
+from open_mafia_engine.open_mafia_engine.core.engine import (
+    Action,
+    Event,
+    PostActionEvent,
+    Subscriber,
+)
 from open_mafia_engine.util.hook import HookModel
 
 
-class Wincon(HookModel):
+class VictoryAction(Action):
+    # TODO
+    pass
+
+
+class Wincon(HookModel, Subscriber):
     """Victory condition definition.
 
     To create custom wincons, subclass this and set the `type`.
@@ -17,6 +29,16 @@ class Wincon(HookModel):
         subtypes: Dict[str, Type[Wincon]] = {}
         builtins: Dict[str, Wincon] = {}
         defaults: Dict[str, Wincon] = {}
+
+    def sub(self):
+        """Runs the subscription."""
+        self.subscribe_current(PostActionEvent)
+
+    # @abstractmethod
+    def respond(self, e: Event) -> Optional[VictoryAction]:
+        """Delayed response to the Event with an Action (or None)."""
+        # TODO: Make abstract, require overwriting
+        return None
 
 
 class AlignmentEliminatedWincon(Wincon):
