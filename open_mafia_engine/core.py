@@ -8,6 +8,7 @@ from typing import DefaultDict, Dict, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from open_mafia_engine.util.repr import ReprMixin
+from sortedcontainers.sortedlist import SortedKeyList, SortedList
 
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,11 @@ class Action(ABC, GameObject):
         self.priority = float(priority)
         self.canceled = bool(canceled)
 
+    @property
+    def source(self) -> GameObject:
+        e = GameEngine.current()
+        return e[self.source_id]
+
     def __lt__(self, other: Action):
         if not isinstance(other, Action):
             return NotImplemented
@@ -131,6 +137,84 @@ class Subscriber(ABC):
         GameEngine.current().remove_sub(self, *events)
 
 
+def _sorter_action_ids(id: UUID) -> float:
+    return -GameEngine.current()[id].priority
+
+
+class ActionContext(GameObject):
+    """Context and queue."""
+
+    def __init__(self, queued_ids: List[UUID] = None, history_ids: List[UUID] = None):
+        if queued_ids is None:
+            queued_ids = []
+        if history_ids is None:
+            history_ids = []
+
+        self.queued_ids = SortedKeyList(queued_ids, key=_sorter_action_ids)
+        self.history_ids = history_ids
+
+    @property
+    def history(self) -> List[Action]:
+        e = GameEngine.current()
+        return [e[id] for id in self.history_ids]
+
+    @property
+    def queue(self) -> List[Action]:
+        e = GameEngine.current()
+        return [e[id] for id in self.queued_ids]
+
+    def enqueue(self, *action_ids: List[UUID]) -> None:
+        """Enqueues one or more actions."""
+        self.queued_ids.update(action_ids)
+
+    def process_all(self):
+        while len(self.queued_ids) > 0:
+            self.process_next()
+
+    def process_next(self):
+        """Processes the next batch of Actions with the same priority."""
+
+        engine = GameEngine.current()
+
+        # Select all action IDs with the highest (equal) priority
+        # ... and get pre-responses in parallel
+        first_id = self.queued_ids[0]
+        priority = engine[first_id].priority
+        action_ids: List[Action] = []
+        pre_responses: List[Action] = []
+        while len(self.queued_ids) > 0:
+            if engine[self.queued_ids[0]].priority != priority:
+                break
+
+            in_id: UUID = self.queued_ids.pop(0)
+            e_pre = PreActionE(action_id=in_id)
+            action_ids.append(in_id)
+            pre_responses += engine.get_responses(e_pre)
+
+        # Run pre-responses, which may change the actions
+        pre_ids = [engine.add_object(resp) for resp in pre_responses]
+        pre_context = ActionContext(queued_ids=pre_ids)
+        pre_context.process_all()
+        self.history_ids += pre_context.history_ids
+
+        # Run all current actions, and get post-responses
+        post_responses: List[Action] = []
+        for action_id in action_ids:
+            action: Action = engine[action_id]
+            if not action.canceled:
+                action()
+                self.history_ids.append(action_id)
+
+                e_post = PostActionE(action_id=action_id)
+                post_responses += engine.get_responses(e_post)
+
+        # Run post-responses, which can't change the actions
+        post_ids = [engine.add_object(resp) for resp in post_responses]
+        post_context = ActionContext(queued_ids=post_ids)
+        post_context.process_all()
+        self.history_ids += post_context.history_ids
+
+
 __active_engines__ = []
 
 
@@ -149,6 +233,7 @@ class GameEngine(object):
         self,
         state: Dict[UUID, GameObject] = None,
         subscribers: DefaultDict[str, List[GameObject]] = None,
+        root_context: ActionContext = None,
     ):
         if state is None:
             state = {}
@@ -156,6 +241,9 @@ class GameEngine(object):
         if subscribers is None:
             subscribers = defaultdict(list)
         self.subscribers = subscribers
+        if root_context is None:
+            root_context = ActionContext()
+        self.root_context = root_context
 
     @classmethod
     def current(cls) -> GameEngine:
