@@ -34,5 +34,5 @@ class ReprMixin(object):
                 except AttributeError:
                     s_args.append(f"{k}=<?>")
                 used_keys.append(k)
-        res = f"{self.__class__.__name__}(" + ", ".join(s_args) + ")"
+        res = f"{self.__class__.__qualname__}(" + ", ".join(s_args) + ")"
         return res
