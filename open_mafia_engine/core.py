@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
+from collections import defaultdict
 from enum import Enum
-from typing import Dict, List, Optional
+import logging
+from typing import DefaultDict, Dict, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from open_mafia_engine.util.repr import ReprMixin
+
+
+logger = logging.getLogger(__name__)
 
 __object_types__ = {}
 
@@ -19,6 +25,112 @@ class GameObject(ReprMixin):
         __object_types__[name] = cls
 
 
+class Event(ABC, GameObject):
+    """Core event object."""
+
+    @classmethod
+    def _default_parts(cls) -> List[str]:
+        """Gets the backwards MRO, starting from Event."""
+        mro = cls.mro()
+        parts = []
+        for cls in mro:
+            parts.append(cls.__qualname__)
+            if cls is Event:
+                break
+        parts = list(reversed(parts))
+        return parts
+
+    # @abstractmethod
+    def _code_parts(self) -> List[str]:
+        """Internal definition of code parts. Override this.
+
+        Example implementation (correctly includes own type):
+
+            def _code_parts(self) -> List[str]:
+                parts = super()._code_parts()
+                return parts + [str(self.blah)]
+        """
+        return type(self)._default_parts()
+
+    @property
+    def code(self) -> str:
+        """Returns the event code, as a string."""
+        _parts = self._code_parts()
+        assert all(":" not in x for x in _parts)
+        return ":".join(_parts)
+
+
+EType = Type[Event]
+EventTLike = Union[EType, str]
+
+
+class Action(ABC, GameObject):
+    """Base action class. Override __init__() and __call__().
+
+    Attributes
+    ----------
+    source_id : UUID
+        The direct source of the action, e.g. an Ability, rather than Actor.
+    priority : float
+        The action priority for the queue. Default is 0.
+    canceled : bool
+        Whether the action was canceled (as a result of other actions).
+    """
+
+    def __init__(self, source_id: UUID, *, priority: float = 0, canceled: bool = False):
+        self.source_id = source_id
+        self.priority = float(priority)
+        self.canceled = bool(canceled)
+
+    def __lt__(self, other: Action):
+        if not isinstance(other, Action):
+            return NotImplemented
+        return self.priority > other.priority  # We sort decreasing by priority!
+
+    @abstractmethod
+    def __call__(self) -> None:
+        """This actually executes the action."""
+
+
+class PreActionE(Event):
+    """Event that happens before an action."""
+
+    def __init__(self, action_id: UUID):
+        self.action_id = action_id
+
+    def _code_parts(self) -> List[str]:
+        parts = super()._code_parts()
+        return parts + [str(self.action_id)]
+
+
+class PostActionE(Event):
+    """Event that happens after an action."""
+
+    def __init__(self, action_id: UUID):
+        self.action_id = action_id
+
+    def _code_parts(self) -> List[str]:
+        parts = super()._code_parts()
+        return parts + [str(self.action_id)]
+
+
+class Subscriber(ABC):
+    """Mixin type for subscriber objects."""
+
+    @abstractmethod
+    def respond(self, event: Event) -> Optional[Action]:
+        """Respond to an Event."""
+        return None
+
+    def sub(self, *events: List[EventTLike]) -> None:
+        """Subscribes to one or more events."""
+        GameEngine.current().add_sub(self, *events)
+
+    def unsub(self, *events: List[EventTLike]) -> None:
+        """Unsubscribes from one or more events."""
+        GameEngine.current().remove_sub(self, *events)
+
+
 __active_engines__ = []
 
 
@@ -29,12 +141,21 @@ class GameEngine(object):
     ----------
     state : Dict[UUID, GameObject]
         Mapping of object IDs to their objects.
+    subscribers : DefaultDict[str, List[GameObject]]
+        Mapping of event types to their subscribers.
     """
 
-    def __init__(self, state: Dict[UUID, GameObject] = None):
+    def __init__(
+        self,
+        state: Dict[UUID, GameObject] = None,
+        subscribers: DefaultDict[str, List[GameObject]] = None,
+    ):
         if state is None:
             state = {}
         self.state: Dict[str, GameObject] = state
+        if subscribers is None:
+            subscribers = defaultdict(list)
+        self.subscribers = subscribers
 
     @classmethod
     def current(cls) -> GameEngine:
@@ -56,6 +177,46 @@ class GameEngine(object):
             raise TypeError(f"Expected GameObject, got {obj!r}")
         self.state[id] = obj
         return id
+
+    def get_responses(self, event: Event) -> List[Action]:
+        """Gets responses from all subscribers."""
+
+        # NOTE: We need to de-duplicate subscribers, since you can sub to "X" and "X:Y"
+        subs: List[Subscriber] = []
+        parts = event.code.split(":")
+        for i in range(len(parts) + 1):
+            eparts = ":".join(parts[:i])
+            subs += [s for s in self.subscribers[eparts] if s not in subs]
+
+        actions: List[Action] = []
+        for sub in subs:
+            x = sub.respond(event)
+            if x is not None:
+                actions.append(x)
+        return actions
+
+    def add_sub(self, sub: Subscriber, *etypes: List[EventTLike]):
+        """Adds subscriptions to `sub`."""
+        for etype in etypes:
+            if isinstance(etype, str):
+                event_str = etype
+            elif issubclass(etype, Event):
+                event_str = ":".join(etype._default_parts())
+            # if sub not in self.subscribers[event_str]:
+            self.subscribers[event_str].append(sub)
+
+    def remove_sub(self, sub: Subscriber, *etypes: List[EventTLike]):
+        """Removes subscriptions from `sub`."""
+        for etype in etypes:
+            if isinstance(etype, str):
+                event_str = etype
+            elif issubclass(etype, Event):
+                event_str = ":".join(etype._default_parts())
+
+            try:
+                self.subscribers[event_str].remove(sub)
+            except ValueError:
+                logger.exception(f"Attempted to unsubscribe {sub} from {etype}.")
 
     def __repr__(self) -> str:
         cn = type(self).__qualname__
@@ -169,7 +330,7 @@ class Phase(GameObject):
         One of: {"instant", "end_of_phase"}
     """
 
-    def __init__(self, action_resolution: ActionResolutionType):
+    def __init__(self, action_resolution: Union[ActionResolutionType, str]):
         self.action_resolution = ActionResolutionType(action_resolution)
 
 
