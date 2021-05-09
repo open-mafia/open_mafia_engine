@@ -87,8 +87,11 @@ class GameVariant(BaseModel):
         n_g = len(guaranteed)
 
         # Sample what roles will be used, then shuffle to map them to names
-        roles = random.sample(guaranteed, k=n_g)
-        roles += random.choices(randomized, probs, k=n - n_g)
+        roles = []
+        if n_g > 0:
+            roles += random.sample(guaranteed, k=n_g)
+        if n > n_g:
+            roles += random.choices(randomized, probs, k=n - n_g)
         random.shuffle(roles)
         res = {n: r for (n, r) in zip(names, roles)}
         return res
