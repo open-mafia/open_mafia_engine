@@ -29,8 +29,15 @@ for src, trg in [(a, b), (b, a), (c, a), (c, b)]:
 assert lt.current_leaders == ["Bob"]
 assert b.status["alive"] == True
 
+# Change phase - this will trigger the lynch to occur
 game.process_action(PhaseChangeAction())
-
 assert b.status["alive"] == False
+
+try:
+    va = VoteAction(b.name, c.name, tally_name="lynch_tally")
+    game.process_action(va)
+    # shouldn't do anything, but it currently does :/
+except Exception:
+    pass
 
 game
