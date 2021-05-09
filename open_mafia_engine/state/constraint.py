@@ -40,7 +40,7 @@ class Constraint(HookModel, Subscriber):
         ):
             if not isinstance(target, Action):
                 raise ValueError(f"Expected Action, got {target!r}")
-            super().__init__(priority=priority, canceled=canceled)
+            super().__init__(priority=priority, canceled=canceled, target=target)
             self.target = target
             self.parent = parent
 
