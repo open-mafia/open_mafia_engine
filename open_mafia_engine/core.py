@@ -280,6 +280,23 @@ class Actor(GameObject):
         self.alignment_id = alignment_id
         self.ability_ids = ability_ids
 
+    @property
+    def alignment(self) -> Alignment:
+        al = GameEngine.current()[self.alignment_id]
+        if not isinstance(al, Alignment):
+            raise TypeError(f"Object is not an Alignment: {al}")
+        return al
+
+    @property
+    def abilities(self) -> List[Ability]:
+        e = GameEngine.current()
+        res = []
+        for id in self.ability_ids:
+            x = e[id]
+            if not isinstance(x, Ability):
+                raise TypeError(f"Object is not an Ability: {x}")
+        return res
+
 
 class Ability(GameObject):
     """An ability.
@@ -299,6 +316,23 @@ class Ability(GameObject):
         self.actor_id = actor_id
         self.constraint_ids = constraint_ids
 
+    @property
+    def actor(self) -> Actor:
+        act = GameEngine.current()[self.actor_id]
+        if not isinstance(act, Actor):
+            raise TypeError(f"Object is not an Actor: {act}")
+        return act
+
+    @property
+    def constraints(self) -> List[Constraint]:
+        e = GameEngine.current()
+        res = []
+        for id in self.constraint_ids:
+            x = e[id]
+            if not isinstance(x, Constraint):
+                raise TypeError(f"Object is not a Constraint: {x}")
+        return res
+
 
 class Constraint(GameObject):
     """A constraint on the (possibly automatic) usage of an ability.
@@ -311,6 +345,14 @@ class Constraint(GameObject):
 
     def __init__(self, ability_id: UUID):
         self.ability_id = ability_id
+
+    @property
+    def ability(self) -> Ability:
+        """The parent Ability object."""
+        abil = GameEngine.current()[self.ability_id]
+        if not isinstance(abil, Ability):
+            raise TypeError(f"Object is not an Ability: {abil}")
+        return abil
 
 
 class ActionResolutionType(str, Enum):
@@ -349,6 +391,15 @@ class Vote(GameObject):
         self.source_id = source_id
         self.target_ids = target_ids
 
+    @property
+    def source(self) -> GameObject:
+        return GameEngine.current()[self.source_id]
+
+    @property
+    def targets(self) -> List[GameObject]:
+        e = GameEngine.current()
+        return [e[i] for i in self.target_ids]
+
 
 class VoteTally(GameObject):
     """This holds voting information.
@@ -361,3 +412,13 @@ class VoteTally(GameObject):
 
     def __init__(self, vote_ids: List[UUID]):
         self.vote_ids = vote_ids
+
+    @property
+    def votes(self) -> List[Vote]:
+        e = GameEngine.current()
+        res = []
+        for id in self.vote_ids:
+            x = e[id]
+            if not isinstance(x, Vote):
+                raise TypeError(f"Object is not a Vote: {x}")
+        return res
