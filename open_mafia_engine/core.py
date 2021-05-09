@@ -1,0 +1,202 @@
+from __future__ import annotations
+
+from enum import Enum
+from typing import Dict, List, Optional
+from uuid import UUID, uuid4
+
+from open_mafia_engine.util.repr import ReprMixin
+
+__object_types__ = {}
+
+
+class GameObject(ReprMixin):
+    """Base class for game objects."""
+
+    def __init_subclass__(cls, name: str = None) -> None:
+        global __object_types__
+        if name is None:
+            name = cls.__qualname__
+        __object_types__[name] = cls
+
+
+__active_engines__ = []
+
+
+class GameEngine(object):
+    """Game engine.
+
+    Attributes
+    ----------
+    state : Dict[UUID, GameObject]
+        Mapping of object IDs to their objects.
+    """
+
+    def __init__(self, state: Dict[UUID, GameObject] = None):
+        if state is None:
+            state = {}
+        self.state: Dict[str, GameObject] = state
+
+    @classmethod
+    def current(cls) -> GameEngine:
+        if len(__active_engines__) == 0:
+            raise ValueError("No engine is currently active, even default.")
+        return __active_engines__[-1]
+
+    def add_object(self, obj: GameObject, id: UUID = None) -> UUID:
+        """Adds the object. If there is no ID passed, creates a new ID."""
+        if id is None:
+            id = uuid4()
+        elif isinstance(id, UUID):
+            pass
+        elif isinstance(id, str):
+            id = UUID(id)
+        else:
+            raise ValueError(f"Expected UUID, got {id!r}")
+        if not isinstance(obj, GameObject):
+            raise TypeError(f"Expected GameObject, got {obj!r}")
+        self.state[id] = obj
+        return id
+
+    def __repr__(self) -> str:
+        cn = type(self).__qualname__
+        n_obj = len(self.state)
+        s = "" if n_obj == 1 else "s"
+        return f"<{cn} with {n_obj} object{s}>"
+
+    def __enter__(self) -> GameEngine:
+        global __active_engines__
+        __active_engines__.append(self)
+        return self
+
+    def __exit__(self, exc_type=None, exc_value=None, tb=None) -> Optional[bool]:
+        if (len(__active_engines__) == 0) or (__active_engines__[-1] is not self):
+            raise ValueError("Engine stack is corrupted!")
+        __active_engines__.pop()
+        return super().__exit__(exc_type, exc_value, tb)
+
+    def __getitem__(self, id: UUID) -> GameObject:
+        """Gets the object of the given ID by state."""
+        if isinstance(id, UUID):
+            pass
+        elif isinstance(id, str):
+            id = UUID(id)
+        else:
+            raise TypeError(f"Keys must be UUID, got {id!r}")
+        return self.state[id]
+
+    def __setitem__(self, id: UUID, obj: GameObject):
+        self.add_object(obj=obj, id=id)
+
+
+default_engine = GameEngine().__enter__()
+
+
+class Alignment(GameObject):
+    """A "team" for players.
+
+    TODO: Wincon?
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+
+
+class Actor(GameObject):
+    """An active participant of the game.
+
+    Attributes
+    ----------
+    name : str
+        The actor's name (human-readable).
+    alignment_id : UUID
+        The parent alignment.
+    ability_ids : List[UUID]
+        The abilities this Actor has.
+    """
+
+    def __init__(self, name: str, alignment_id: UUID, ability_ids: List[UUID]):
+        self.name = name
+        self.alignment_id = alignment_id
+        self.ability_ids = ability_ids
+
+
+class Ability(GameObject):
+    """An ability.
+
+    Attributes
+    ----------
+    name : str
+        The ability name (human-readable).
+    actor_id : UUID
+        The parent actor.
+    constraint_ids : List[UUID]
+        The constraints that apply to this ability.
+    """
+
+    def __init__(self, name: str, actor_id: UUID, constraint_ids: List[UUID]):
+        self.name = name
+        self.actor_id = actor_id
+        self.constraint_ids = constraint_ids
+
+
+class Constraint(GameObject):
+    """A constraint on the (possibly automatic) usage of an ability.
+
+    Attributes
+    ----------
+    ability_id : UUID
+        The parent ability.
+    """
+
+    def __init__(self, ability_id: UUID):
+        self.ability_id = ability_id
+
+
+class ActionResolutionType(str, Enum):
+    """When actions are resolved."""
+
+    instant = "instant"
+    end_of_phase = "end_of_phase"
+
+
+class Phase(GameObject):
+    """This holds game phase information.
+
+    Attributes
+    ----------
+    action_resolution : ActionResolutionType
+        Determines how actions are resolved during this phase.
+        One of: {"instant", "end_of_phase"}
+    """
+
+    def __init__(self, action_resolution: ActionResolutionType):
+        self.action_resolution = ActionResolutionType(action_resolution)
+
+
+class Vote(GameObject):
+    """This is a basic vote.
+
+    Attributes
+    ----------
+    source_id : UUID
+        This is the source of the vote (e.g. voter).
+    target_ids : List[UUID]
+        Votes may have 0 or more targets.
+    """
+
+    def __init__(self, source_id: UUID, target_ids: List[UUID]):
+        self.source_id = source_id
+        self.target_ids = target_ids
+
+
+class VoteTally(GameObject):
+    """This holds voting information.
+
+    Attributes
+    ----------
+    vote_ids : List[UUID]
+        The votes that were cast.
+    """
+
+    def __init__(self, vote_ids: List[UUID]):
+        self.vote_ids = vote_ids
