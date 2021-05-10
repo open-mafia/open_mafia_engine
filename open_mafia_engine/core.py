@@ -407,6 +407,14 @@ class EActivateAbility(Event):
     def code_for(cls, atype: Type[Ability]) -> str:
         return cls.default_code() + ":" + type(atype).__qualname__
 
+    def __repr__(self):
+        cn = type(self).__qualname__
+        kv = ", ".join(
+            [f"ability={self._ability!r}"]
+            + [f"{k}={v!r}" for k, v in self._params.items()]
+        )
+        return f"{cn}({kv})"
+
 
 class ActivatedAbility(Ability, Subscriber):
     """Ability that is activated by the `EActivateAbility` event.
@@ -430,14 +438,32 @@ class ActivatedAbility(Ability, Subscriber):
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         if isinstance(event, EActivateAbility):
             if event.ability is self:
-                return self.make_action(game=game, **event.params)
+                params = event.params
+                for con in self.constraints:
+                    if not con.is_ok(game, **params):
+                        return None
+                return self.make_action(game=game, **params)
         return None
 
 
-class Constraint(GameObject):
+class Constraint(ABC, GameObject):
+    """A constraint on the use of particular abilities.
+
+    parent : Ability
+        The parent ability.
+    """
+
     def __init__(self, parent: Ability):
         self._parent = parent
         self._parent._constraints.append(self)
+
+    @abstractmethod
+    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+        """Checks whether it is OK to make the action.
+
+        Overwrite this. Remember that `self.parent` is also available.
+        """
+        return True
 
     @property
     def parent(self) -> Ability:
