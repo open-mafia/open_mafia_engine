@@ -1,10 +1,85 @@
 from __future__ import annotations
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Tuple, Union
+from typing import List, Union
 from open_mafia_engine.util.repr import ReprMixin
 
 
-class Alignment(ReprMixin):
+class GameObject(ReprMixin):
+    """Core game object."""
+
+
+class Event(GameObject):
+    """Represents some event."""
+
+
+class Action(ABC, GameObject):
+    """Some action.
+
+    Attributes
+    ----------
+    source : GameObject
+    priority : float
+        Higher priority means it should be executed first.
+    """
+
+    def __init__(
+        self, source: GameObject, *, priority: float = 0, canceled: bool = False
+    ):
+        self._source = source
+        self._priority = float(priority)
+        self._canceled = bool(canceled)
+
+    @abstractmethod
+    def doit(self) -> None:
+        """Runs the action."""
+        raise NotImplementedError(f"doit() not implemented for {self!r}")
+
+    @property
+    def source(self) -> GameObject:
+        return self._source
+
+    @property
+    def priority(self) -> float:
+        return self._priority
+
+    @property
+    def canceled(self) -> bool:
+        return self._canceled
+
+    @canceled.setter
+    def canceled(self, value):
+        self._canceled = bool(value)
+
+    def __lt__(self, other: Action):
+        if not isinstance(other, Action):
+            return NotImplemented
+        return self._priority > other._priority  # We sort decreasing by priority!
+
+
+class EPreAction(Event):
+    """Pre-action event, triggered before an action is about to occur."""
+
+    def __init__(self, action: Action):
+        self._action = action
+
+    @property
+    def action(self) -> Action:
+        return self._action
+
+
+class EPostAction(Event):
+    """Post-action event, triggered when the action has already occurred."""
+
+    def __init__(self, action: Action):
+        self._action = action
+
+    @property
+    def action(self) -> Action:
+        return self._action
+
+
+class Alignment(GameObject):
     """A 'team' of Actors.
 
     Attributes
@@ -36,7 +111,7 @@ class Alignment(ReprMixin):
         return list(self._actors)
 
 
-class Actor(ReprMixin):
+class Actor(GameObject):
     """Represents a person or character.
 
     Attributes
@@ -106,7 +181,7 @@ class Actor(ReprMixin):
             ability.owner = self
 
 
-class Ability(ReprMixin):
+class Ability(GameObject):
     """
 
     Attributes
@@ -164,7 +239,7 @@ class ActivatedAbility(Ability):
     pass
 
 
-class Constraint(ReprMixin):
+class Constraint(GameObject):
     def __init__(self, parent: Ability):
         self._parent = parent
         self._parent._constraints.append(self)
@@ -188,7 +263,7 @@ class ActionResolutionType(str, Enum):
     end_of_phase = "end_of_phase"
 
 
-class Phase(ReprMixin):
+class Phase(GameObject):
     """Represents a monolithic "phase" of action.
 
     Attributes
