@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from enum import Enum
 import logging
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from sortedcontainers import SortedList
 
@@ -91,6 +91,9 @@ class EPreAction(Event):
     def action(self) -> Action:
         return self._action
 
+    def code(self) -> str:
+        return self.default_code() + ":" + type(self._action).__qualname__
+
 
 class EPostAction(Event):
     """Post-action event, triggered when the action has already occurred."""
@@ -101,6 +104,9 @@ class EPostAction(Event):
     @property
     def action(self) -> Action:
         return self._action
+
+    def code(self) -> str:
+        return self.default_code() + ":" + type(self._action).__qualname__
 
 
 class Subscriber(ABC):
@@ -327,7 +333,7 @@ class Actor(GameObject):
 
 
 class Ability(GameObject):
-    """
+    """An Ability is a part of the role that allows some sort of action.
 
     Attributes
     ----------
@@ -379,9 +385,53 @@ class Ability(GameObject):
             constraint.parent = self
 
 
-class ActivatedAbility(Ability):
-    # TODO: trigger by some UseAbility event?
-    pass
+class EActivateAbility(Event):
+    """Event of intent to activate an ability."""
+
+    def __init__(self, ability: ActivatedAbility, **params: Dict[str, Any]):
+        self._ability = ability
+        self._params = dict(params)
+
+    @property
+    def ability(self) -> ActivatedAbility:
+        return self._ability
+
+    @property
+    def params(self) -> Dict[str, Any]:
+        return dict(self._params)
+
+    def code(self) -> str:
+        return self.code_for(type(self._ability))
+
+    @classmethod
+    def code_for(cls, atype: Type[Ability]) -> str:
+        return cls.default_code() + ":" + type(atype).__qualname__
+
+
+class ActivatedAbility(Ability, Subscriber):
+    """Ability that is activated by the `EActivateAbility` event.
+
+    Override `make_action` for your custom abilities.
+    """
+
+    def __init__(self, name: str, owner: Actor, constraints: List[Constraint] = None):
+        super().__init__(name, owner, constraints=constraints)
+
+    @abstractmethod
+    def make_action(self, game: Game, **params) -> Optional[Action]:
+        raise NotImplementedError(f"No `make_action` for {self!r}")
+
+    def subscribe(self, game: Game) -> None:
+        game.add_sub(self, EActivateAbility.code_for(type(self)))
+
+    def unsubscribe(self, game: Game) -> None:
+        game.remove_sub(self, EActivateAbility.code_for(type(self)))
+
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        if isinstance(event, EActivateAbility):
+            if event.ability is self:
+                return self.make_action(game=game, **event.params)
+        return None
 
 
 class Constraint(GameObject):
@@ -419,7 +469,13 @@ class Phase(GameObject):
         One of {"instant", "end_of_phase"}
     """
 
-    def __init__(self, name: str, action_resolution: Union[str, ActionResolutionType]):
+    def __init__(
+        self,
+        name: str,
+        action_resolution: Union[
+            str, ActionResolutionType
+        ] = ActionResolutionType.instant,
+    ):
         self.name = name
         self.action_resolution = ActionResolutionType(action_resolution)
 
@@ -445,10 +501,11 @@ class Game(ReprMixin):
 
     Attributes
     ----------
-    game_actor : Actor
-        The fake actor that represents the game's actions.
     current_phase : Phase
         Defines the current phase, including how actions are resolved.
+    game_actor : Actor
+        The fake actor that represents the game's actions.
+        By default, this is an empty actor (e.g. no automation).
     alignments : List[Alignment]
     actors : List[Actor]
     subscribers : Dict[str, List[Subscriber]]
@@ -459,7 +516,7 @@ class Game(ReprMixin):
         self,
         *,
         current_phase: Phase,
-        game_actor: Actor,
+        game_actor: Actor = None,
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
         subscribers: Dict[str, List[Subscriber]] = None,
@@ -470,6 +527,8 @@ class Game(ReprMixin):
             actors: List[Actor] = []
         if subscribers is None:
             subscribers = {}
+        if game_actor is None:
+            game_actor = Actor(name="game")
         # TODO: Maybe hide behind properties?
         # Probably only if we add backlinks.
         self.game_actor = game_actor

@@ -12,8 +12,23 @@ mafia.add_actor(alice)
 
 print(town.actors, mafia.actors)
 
+
+class VoteAbility(ActivatedAbility):
+    def make_action(self, game: Game, **params) -> Optional[Action]:
+        print("TEMP - it activated.")  # targets: List[str]
+        return None
+
+
 print(alice)
-Ability(name="abil", owner=alice)
+va = VoteAbility(name="vote", owner=alice)
 print(alice)
+
+
+game = Game(current_phase=Phase("day"), alignments=[town, mafia], actors=[alice])
+
+# TODO: Figure out how to auto subscribe?
+va.subscribe(game)
+
+game.broadcast_event(EActivateAbility(va))  # OMG it works!
 
 print("Done.")
