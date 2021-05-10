@@ -422,7 +422,27 @@ class Ability(GameObject):
         return res
 
 
-class Constraint(GameObject):
+class CancelAction(Action):
+    """Action that cancels another action."""
+
+    def __init__(
+        self,
+        source_id: UUID,
+        target_id: UUID,
+        *,
+        priority: float = 100.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source_id, priority=priority, canceled=canceled)
+        self.target_id = target_id
+
+    def __call__(self) -> None:
+        engine = GameEngine.current()
+        target: Action = engine[self.target_id]
+        target.canceled = True
+
+
+class Constraint(GameObject, Subscriber):
     """A constraint on the (possibly automatic) usage of an ability.
 
     Attributes
@@ -432,7 +452,23 @@ class Constraint(GameObject):
     """
 
     def __init__(self, ability_id: UUID):
+        self.sub(PreActionE)
         self.ability_id = ability_id
+
+    @abstractmethod
+    def _check_if_allowed(self, action: Action) -> bool:
+        return True
+
+    def respond(self, event: Event) -> Optional[Action]:
+        engine = GameEngine.current()
+        if isinstance(event, PreActionE):
+            a: Action = engine[event.action_id]
+            if a.source_id == self.ability_id:
+                if not self._check_if_allowed(a):
+                    return CancelAction(
+                        source_id=self.ability_id, target_id=event.action_id
+                    )
+        return None
 
     @property
     def ability(self) -> Ability:
@@ -441,6 +477,20 @@ class Constraint(GameObject):
         if not isinstance(abil, Ability):
             raise TypeError(f"Object is not an Ability: {abil}")
         return abil
+
+
+class PhaseConstraint(Constraint):
+    """A constraint on the phase an ability is used."""
+
+    def __init__(self, ability_id: UUID, phase_id: UUID):
+        super().__init__(ability_id=ability_id)
+        self.phase_id = phase_id
+
+    def _check_if_allowed(self, action: Action) -> bool:
+        engine = GameEngine.current()
+        phase: Phase = engine[self.phase_id]
+        # blah
+        return True  # Blah
 
 
 class ActionResolutionType(str, Enum):
@@ -498,8 +548,8 @@ class VoteTally(GameObject):
         The votes that were cast.
     """
 
-    def __init__(self, vote_ids: List[UUID]):
-        self.vote_ids = vote_ids
+    def __init__(self, vote_ids: List[UUID] = []):
+        self.vote_ids = list(vote_ids)
 
     @property
     def votes(self) -> List[Vote]:
@@ -509,4 +559,32 @@ class VoteTally(GameObject):
             x = e[id]
             if not isinstance(x, Vote):
                 raise TypeError(f"Object is not a Vote: {x}")
+            res.append(x)
         return res
+
+
+class VoteAction(Action):
+    """Simple voting action."""
+
+    def __init__(
+        self,
+        source_id: UUID,
+        target_ids: List[UUID],
+        tally_id: UUID,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source_id, priority=priority, canceled=canceled)
+        self.target_ids = target_ids
+        self.tally_id = tally_id
+
+    def __call__(self) -> None:
+        engine = GameEngine.current()
+        tally: VoteTally = engine[self.tally_id]
+        # add new votes (we don't care about old IDs, since the Tally behavior decides)
+        new_vote = Vote(
+            source_id=self.source_id, target_ids=[t for t in self.target_ids]
+        )
+        new_vote_id = engine.add_object(new_vote)
+        tally.vote_ids.append(new_vote_id)
