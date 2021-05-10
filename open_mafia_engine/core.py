@@ -1,8 +1,17 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from enum import Enum
-from typing import List, Union
+import logging
+from typing import Dict, List, Optional, Tuple, Type, Union
+
+from sortedcontainers import SortedList
+
 from open_mafia_engine.util.repr import ReprMixin
+
+
+logger = logging.getLogger(__name__)
 
 
 class GameObject(ReprMixin):
@@ -11,6 +20,21 @@ class GameObject(ReprMixin):
 
 class Event(GameObject):
     """Represents some event."""
+
+    @classmethod
+    def default_code(cls) -> str:
+        """Gets the hierarchy code for this event type."""
+        mro = cls.mro()
+        parts = []
+        for cls in mro:
+            parts.append(cls.__qualname__)
+            if cls is Event:
+                break
+        return ":".join(reversed(parts))
+
+    def code(self) -> str:
+        """Gets the code for this particular event."""
+        return self.default_code()
 
 
 class Action(ABC, GameObject):
@@ -31,7 +55,7 @@ class Action(ABC, GameObject):
         self._canceled = bool(canceled)
 
     @abstractmethod
-    def doit(self) -> None:
+    def doit(self, game: Game) -> None:
         """Runs the action."""
         raise NotImplementedError(f"doit() not implemented for {self!r}")
 
@@ -77,6 +101,127 @@ class EPostAction(Event):
     @property
     def action(self) -> Action:
         return self._action
+
+
+class Subscriber(ABC):
+    """Mixin class for objects that need to recieve event broadcasts."""
+
+    @abstractmethod
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        """Respond to an event, given the game context."""
+        return None
+
+    @abstractmethod
+    def subscribe(self, game: Game) -> None:
+        """Subscribe to some particular event type(s)."""
+
+    @abstractmethod
+    def unsubscribe(self, game: Game) -> None:
+        """Unsubscribe from some particular event type(s)."""
+
+
+class ActionQueue(GameObject):
+    """Queue for properly ordering and executing actions.
+
+    Attributes
+    ----------
+    queue : List[Action]
+        These actions are queued to be executed. First actions have higher priority.
+    history : List[Action]
+        These actions have already been executed, and are here just for information.
+    depth : int
+        This is the recursion depth, limited by `ActionQueue.max_depth`.
+        You usually don't need to set this by hand.
+    """
+
+    max_depth: int = 20
+
+    def __init__(
+        self,
+        queue: List[Action] = None,
+        history: List[Action] = None,
+        *,
+        depth: int = 0,
+    ):
+        if depth > self.max_depth:
+            raise RecursionError(f"Reached recursion limit of {self.max_depth}")
+        if queue is None:
+            queue = []
+        if history is None:
+            history = []
+
+        self._queue = SortedList(queue)
+        self._history = list(history)
+        self._depth = depth
+
+    @property
+    def depth(self) -> int:
+        return int(self._depth)
+
+    @property
+    def history(self) -> List[Action]:
+        """Historic actions are read-only."""
+        return list(self._history)
+
+    @property
+    def queue(self) -> List[Action]:
+        """A view of the queue in its current state."""
+        return list(self._queue)
+
+    def add(self, action: Action):
+        if not isinstance(action, Action):
+            raise TypeError(f"Expected Action, got {action!r}")
+        self._queue.add(action)
+
+    def process_all(self, game: Game):
+        """Processes all actions, according to the given game state."""
+
+        while len(self._queue) > 0:
+            self.process_next(game=game)
+
+    def process_next(self, game: Game):
+        """Processes the next action, according to the given game state."""
+
+        next_actions = self._get_next_actions(game)
+
+        # Get and run all pre-action responses
+        pre_responses = []
+        for action in next_actions:
+            pre_responses += game.broadcast_event(EPreAction(action))
+        pre_queue = ActionQueue(queue=pre_responses, depth=self._depth + 1)
+        pre_queue.process_all(game=game)
+        self._history += pre_queue._history
+
+        # Run the actions themselves
+        for action in next_actions:
+            if not action.canceled:
+                action.doit(game)
+                self._history.append(action)
+
+        # Get and run all post-action responses
+        post_responses = []
+        for action in next_actions:
+            post_responses += game.broadcast_event(EPostAction(action))
+        post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
+        post_queue.process_all(game=game)
+        self._history += post_queue._history
+
+    def _get_next_actions(self, game: Game) -> List[Action]:
+        """Gets the next 'batch' of actions to execute (with the same priority)."""
+
+        if len(self._queue) == 0:
+            return []
+
+        res = []
+        priority = self._queue[0].priority
+        while (len(self._queue) > 0) and (self._queue[0].priority == priority):
+            action: Action = self._queue.pop(0)
+            res.append(action)
+        return res
+
+    def __repr__(self) -> str:
+        cn = type(self).__qualname__
+        return f"<{cn} with {len(self._queue)} queued, {len(self._history)} in history>"
 
 
 class Alignment(GameObject):
@@ -279,6 +424,22 @@ class Phase(GameObject):
         self.action_resolution = ActionResolutionType(action_resolution)
 
 
+ETypeOrS = Union[Type[Event], str]
+
+
+def normalize_etype(etype: ETypeOrS) -> str:
+    """Normalizes event type to a string."""
+
+    if isinstance(etype, str):
+        pass
+    elif issubclass(etype, Event):
+        etype: Type[Event]
+        etype: str = etype.default_code()
+    else:
+        raise TypeError(f"Expected str or Event subclass, got {etype!r}")
+    return etype
+
+
 class Game(ReprMixin):
     """Holds game state and logic.
 
@@ -290,6 +451,8 @@ class Game(ReprMixin):
         Defines the current phase, including how actions are resolved.
     alignments : List[Alignment]
     actors : List[Actor]
+    subscribers : Dict[str, List[Subscriber]]
+        Map between event types (as str hierarchies) and Subscribers.
     """
 
     def __init__(
@@ -299,14 +462,57 @@ class Game(ReprMixin):
         game_actor: Actor,
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
+        subscribers: Dict[str, List[Subscriber]] = None,
     ):
         if alignments is None:
             alignments: List[Alignment] = []
         if actors is None:
             actors: List[Actor] = []
+        if subscribers is None:
+            subscribers = {}
         # TODO: Maybe hide behind properties?
         # Probably only if we add backlinks.
         self.game_actor = game_actor
         self.current_phase = current_phase
         self.alignments = alignments
         self.actors = actors
+        self._subscribers = defaultdict(list, subscribers)
+
+    @property
+    def subscribers(self) -> Dict[str, List[Subscriber]]:
+        return dict(self._subscribers)
+
+    def add_sub(self, sub: Subscriber, *etypes: Tuple[ETypeOrS, ...]) -> None:
+        """Subscribes `sub` to one or more event types."""
+
+        for etype in etypes:
+            etype = normalize_etype(etype)
+            if sub not in self._subscribers[etype]:
+                self._subscribers[etype].append(sub)
+
+    def remove_sub(self, sub: Subscriber, *etypes: Tuple[ETypeOrS, ...]) -> None:
+        """Unsubscribes `sub` from one or more event types."""
+
+        for etype in etypes:
+            etype = normalize_etype(etype)
+            try:
+                self._subscribers[etype].remove(sub)
+            except ValueError:
+                logger.warn(f"Attempted to remove sub from unsubbed {etype!r}")
+
+    def broadcast_event(self, event: Event) -> List[Action]:
+        """Broadcasts an event to all relevant subscribers."""
+
+        parts = event.code().split(":")
+
+        affected_subs = []
+        for i in range(len(parts) + 1):  # including "" and `event.code()`
+            subs_i = self._subscribers[":".join(parts[:i])]
+            affected_subs += [s for s in subs_i if s not in affected_subs]
+
+        res = []
+        for sub in affected_subs:
+            response = sub.respond_to_event(event=event, game=self)
+            if response is not None:
+                res.append(response)
+        return res
