@@ -31,4 +31,5 @@ va.subscribe(game)
 
 game.broadcast_event(EActivateAbility(va))  # OMG it works!
 
+print(game.subscribers)
 print("Done.")

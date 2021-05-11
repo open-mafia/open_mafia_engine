@@ -18,17 +18,19 @@ class GameObject(ReprMixin):
     """Core game object."""
 
 
-class Event(GameObject):
+class Event(ABC, GameObject):
     """Represents some event."""
 
     @classmethod
     def default_code(cls) -> str:
         """Gets the hierarchy code for this event type."""
+        # NOTE: MRO may be broken due to ABC?...
+        # return cls.__qualname__
         mro = cls.mro()
         parts = []
-        for cls in mro:
-            parts.append(cls.__qualname__)
-            if cls is Event:
+        for x in mro:
+            parts.append(x.__qualname__)
+            if x is Event:
                 break
         return ":".join(reversed(parts))
 
@@ -332,7 +334,7 @@ class Actor(GameObject):
             ability.owner = self
 
 
-class Ability(GameObject):
+class Ability(GameObject, Subscriber):
     """An Ability is a part of the role that allows some sort of action.
 
     Attributes
@@ -384,6 +386,17 @@ class Ability(GameObject):
         if constraint not in self._constraints:
             constraint.parent = self
 
+    # Override these (required for Subscriber), but by default we implement no-ops
+
+    def subscribe(self, game: Game) -> None:
+        pass
+
+    def unsubscribe(self, game: Game) -> None:
+        pass
+
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        return None
+
 
 class EActivateAbility(Event):
     """Event of intent to activate an ability."""
@@ -405,7 +418,7 @@ class EActivateAbility(Event):
 
     @classmethod
     def code_for(cls, atype: Type[Ability]) -> str:
-        return cls.default_code() + ":" + type(atype).__qualname__
+        return cls.default_code() + ":" + atype.__qualname__
 
     def __repr__(self):
         cn = type(self).__qualname__
@@ -416,7 +429,7 @@ class EActivateAbility(Event):
         return f"{cn}({kv})"
 
 
-class ActivatedAbility(Ability, Subscriber):
+class ActivatedAbility(Ability):
     """Ability that is activated by the `EActivateAbility` event.
 
     Override `make_action` for your custom abilities.
@@ -547,21 +560,70 @@ class Game(ReprMixin):
         actors: List[Actor] = None,
         subscribers: Dict[str, List[Subscriber]] = None,
     ):
+        # Fix arguments
+        if subscribers is None:
+            subscribers = {}
         if alignments is None:
             alignments: List[Alignment] = []
         if actors is None:
             actors: List[Actor] = []
-        if subscribers is None:
-            subscribers = {}
         if game_actor is None:
             game_actor = Actor(name="game")
-        # TODO: Maybe hide behind properties?
-        # Probably only if we add backlinks.
+
+        # Initialize subscribers
+        self._subscribers = defaultdict(list, subscribers)
+
+        # Initialize other properties as empty
+        self._game_actor = None
+        self._current_phase = None
+        self._alignments = None
+        self._actors = None
+
+        # Properly initialize via setters:
         self.game_actor = game_actor
         self.current_phase = current_phase
         self.alignments = alignments
         self.actors = actors
-        self._subscribers = defaultdict(list, subscribers)
+
+    @property
+    def game_actor(self) -> Actor:
+        return self._game_actor
+
+    @game_actor.setter
+    def game_actor(self, v: Actor):
+        # TODO: unsub old one
+        self._game_actor = v
+        # TODO: sub new one
+
+    @property
+    def current_phase(self) -> Phase:
+        return self._current_phase
+
+    @current_phase.setter
+    def current_phase(self, v: Phase):
+        # TODO: unsub old one
+        self._current_phase = v
+        # TODO: sub new one
+
+    @property
+    def actors(self) -> List[Actor]:
+        return self._actors
+
+    @actors.setter
+    def actors(self, v: List[Actor]):
+        # TODO: unsub old one
+        self._actors = list(v)
+        # TODO: sub new one
+
+    @property
+    def alignments(self) -> List[Alignment]:
+        return self._alignments
+
+    @alignments.setter
+    def alignments(self, v: List[Alignment]):
+        # TODO: unsub old one
+        self._alignments = list(v)
+        # TODO: sub new one
 
     @property
     def subscribers(self) -> Dict[str, List[Subscriber]]:
