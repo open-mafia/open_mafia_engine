@@ -23,7 +23,7 @@ VoteAbility = ActivatedAbility.create_type(VoteAction, name="VoteAbility")
 
 # Create the game
 
-game = Game(current_phase=Phase("day", action_resolution="instant"))
+game = Game()
 
 town = Alignment(game, name="town")
 mafia = Alignment(game, name="mafia")

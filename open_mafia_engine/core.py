@@ -587,11 +587,56 @@ class Phase(GameObject):
 
 
 class EPhaseEnd(Event):
-    """The current phase is about to end."""
+    """The current phase is about to end.
+
+    This will force the Game's action queue to process the whole queue.
+    Note that you can always get the current phase from the Game object.
+    """
 
 
 class EPhaseStart(Event):
-    """The next phase has just started."""
+    """The next phase has just started.
+
+    Note that you can always get the current phase from the Game object.
+    """
+
+
+class PhaseCycle(GameObject):
+    """Simple phase cycle."""
+
+    def __init__(self, phases: List[Phase], num: int = 0):
+        self._phases = phases
+        self._num = num
+
+    @property
+    def current(self) -> Phase:
+        return self._phases[self._num]
+
+    @property
+    def phases(self) -> List[Phase]:
+        return list(self._phases)
+
+    @property
+    def num(self) -> int:
+        return self._num
+
+    def __next__(self) -> Phase:
+        self._num += 1
+        res = self._phases[self._num % len(self._phases)]
+        return res
+
+    @classmethod
+    def make_day_night(cls) -> PhaseCycle:
+        """Makes the default day/night cycle."""
+
+        return cls(
+            phases=[
+                Phase(name="day", action_resolution=ActionResolutionType.instant),
+                Phase(
+                    name="night", action_resolution=ActionResolutionType.end_of_phase
+                ),
+            ]
+        )
 
 
 class _EventEngine(ReprMixin):
@@ -767,14 +812,16 @@ class Game(_EventEngine):
     def __init__(
         self,
         *,
-        current_phase: Phase,
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
+        phases: PhaseCycle = None,
         subscribers: Dict[str, List[Subscriber]] = None,
         action_queue: ActionQueue = None,
     ):
         super().__init__(subscribers=subscribers)
 
+        if phases is None:
+            phases = PhaseCycle.make_day_night()
         if alignments is None:
             alignments: List[Alignment] = []
         if actors is None:
@@ -783,8 +830,8 @@ class Game(_EventEngine):
             action_queue = ActionQueue()
 
         # Read-only properties
+        self._phases = phases
         self._action_queue = action_queue
-        self._current_phase = current_phase
         self._alignments = alignments
         self._actors = actors
 
@@ -797,8 +844,12 @@ class Game(_EventEngine):
         return self._action_queue
 
     @property
+    def phases(self) -> PhaseCycle:
+        return self._phases
+
+    @property
     def current_phase(self) -> Phase:
-        return self._current_phase
+        return self._phases.current
 
     @property
     def actors(self) -> List[Actor]:
