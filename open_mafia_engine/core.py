@@ -138,110 +138,6 @@ class Subscriber(GameObject):
         return None
 
 
-class ActionQueue(GameObject):
-    """Queue for properly ordering and executing actions.
-
-    Attributes
-    ----------
-    queue : List[Action]
-        These actions are queued to be executed. First actions have higher priority.
-    history : List[Action]
-        These actions have already been executed, and are here just for information.
-    depth : int
-        This is the recursion depth, limited by `ActionQueue.max_depth`.
-        You usually don't need to set this by hand.
-    """
-
-    max_depth: int = 20
-
-    def __init__(
-        self,
-        queue: List[Action] = None,
-        history: List[Action] = None,
-        *,
-        depth: int = 0,
-    ):
-        if depth > self.max_depth:
-            raise RecursionError(f"Reached recursion limit of {self.max_depth}")
-        if queue is None:
-            queue = []
-        if history is None:
-            history = []
-
-        self._queue = SortedList(queue)
-        self._history = list(history)
-        self._depth = depth
-
-    @property
-    def depth(self) -> int:
-        return int(self._depth)
-
-    @property
-    def history(self) -> List[Action]:
-        """Historic actions are read-only."""
-        return list(self._history)
-
-    @property
-    def queue(self) -> List[Action]:
-        """A view of the queue in its current state."""
-        return list(self._queue)
-
-    def add(self, action: Action):
-        if not isinstance(action, Action):
-            raise TypeError(f"Expected Action, got {action!r}")
-        self._queue.add(action)
-
-    def process_all(self, game: Game):
-        """Processes all actions, according to the given game state."""
-
-        while len(self._queue) > 0:
-            self.process_next(game=game)
-
-    def process_next(self, game: Game):
-        """Processes the next action, according to the given game state."""
-
-        next_actions = self._get_next_actions(game)
-
-        # Get and run all pre-action responses
-        pre_responses = []
-        for action in next_actions:
-            pre_responses += game.broadcast_event(EPreAction(action))
-        pre_queue = ActionQueue(queue=pre_responses, depth=self._depth + 1)
-        pre_queue.process_all(game=game)
-        self._history += pre_queue._history
-
-        # Run the actions themselves
-        for action in next_actions:
-            if not action.canceled:
-                action.doit(game)
-                self._history.append(action)
-
-        # Get and run all post-action responses
-        post_responses = []
-        for action in next_actions:
-            post_responses += game.broadcast_event(EPostAction(action))
-        post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
-        post_queue.process_all(game=game)
-        self._history += post_queue._history
-
-    def _get_next_actions(self, game: Game) -> List[Action]:
-        """Gets the next 'batch' of actions to execute (with the same priority)."""
-
-        if len(self._queue) == 0:
-            return []
-
-        res = []
-        priority = self._queue[0].priority
-        while (len(self._queue) > 0) and (self._queue[0].priority == priority):
-            action: Action = self._queue.pop(0)
-            res.append(action)
-        return res
-
-    def __repr__(self) -> str:
-        cn = type(self).__qualname__
-        return f"<{cn} with {len(self._queue)} queued, {len(self._history)} in history>"
-
-
 class Alignment(GameObject):
     """A 'team' of Actors.
 
@@ -284,7 +180,10 @@ class Alignment(GameObject):
 
 
 class Status(GameObject, MutableMapping):
-    """Dict-like representation of an actor's status.
+    """dict-like representation of an actor's status.
+
+    Access of empty attribs gives None.
+    Changing an attribute emits an EStatusChange event.
 
     Attributes
     ----------
@@ -310,21 +209,61 @@ class Status(GameObject, MutableMapping):
         return dict(self._attribs)
 
     def __getitem__(self, key) -> Any:
-        return self._attribs[key]
+        return self._attribs.get(key, None)
 
     def __delitem__(self, key) -> None:
-        # TODO: Add event of status change
-        del self._attribs[key]
+        old_val = self[key]
+        if old_val is not None:
+            del self._attribs[key]
+        if old_val is None:  # TODO: Maybe broadcast always?
+            return
+        self.game.process_event(EStatusChange(self, key, old_val, None))
 
     def __setitem__(self, key, value) -> None:
-        # TODO: Add event of status change
+        old_val = self[key]
         self._attribs[key] = value
+        if old_val == value:  # TODO: Maybe broadcast always?
+            return
+        self.game.process_event(EStatusChange(self, key, old_val, value))
 
     def __len__(self) -> int:
         return len(self._attribs)
 
     def __iter__(self):
         return iter(self._attribs)
+
+
+class EStatusChange(Event):
+    """The Status has changed for some Actor."""
+
+    def __init__(self, status: Status, key: str, old_val: Any, new_val: Any):
+        self._status = status
+        self._key = key
+        self._old_val = old_val
+        self._new_val = new_val
+
+    @property
+    def status(self) -> Status:
+        return self._status
+
+    @property
+    def actor(self) -> Actor:
+        return self.status.parent
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @property
+    def old_val(self) -> Any:
+        return self._old_val
+
+    @property
+    def new_val(self) -> Any:
+        return self._new_val
+
+    def code(self) -> str:
+        return self.default_code() + ":" + type(self._action).__qualname__
 
 
 class Actor(GameObject):
@@ -661,6 +600,112 @@ class _EventEngine(ReprMixin):
         return res
 
 
+class ActionQueue(GameObject):
+    """Queue for properly ordering and executing actions.
+
+    Attributes
+    ----------
+    queue : List[Action]
+        These actions are queued to be executed. First actions have higher priority.
+    history : List[Action]
+        These actions have already been executed, and are here just for information.
+    depth : int
+        This is the recursion depth, limited by `ActionQueue.max_depth`.
+        You usually don't need to set this by hand.
+    """
+
+    max_depth: int = 20
+
+    def __init__(
+        self,
+        queue: List[Action] = None,
+        history: List[Action] = None,
+        *,
+        depth: int = 0,
+    ):
+        if depth > self.max_depth:
+            raise RecursionError(f"Reached recursion limit of {self.max_depth}")
+        if queue is None:
+            queue = []
+        if history is None:
+            history = []
+
+        self._queue = SortedList(queue)
+        self._history = list(history)
+        self._depth = depth
+
+    @property
+    def depth(self) -> int:
+        return int(self._depth)
+
+    @property
+    def history(self) -> List[Action]:
+        """Historic actions are read-only."""
+        return list(self._history)
+
+    @property
+    def queue(self) -> List[Action]:
+        """A view of the queue in its current state."""
+        return list(self._queue)
+
+    def add(self, *actions: Tuple[Action, ...]):
+        """Adds one or more actions to the queue."""
+        for action in actions:
+            if not isinstance(action, Action):
+                raise TypeError(f"Expected Action, got {action!r}")
+            self._queue.add(action)
+
+    def process_all(self, game: Game):
+        """Processes all actions, according to the given game state."""
+
+        while len(self._queue) > 0:
+            self.process_next(game=game)
+
+    def process_next(self, game: Game):
+        """Processes the next action, according to the given game state."""
+
+        next_actions = self._get_next_actions(game)
+
+        # Get and run all pre-action responses
+        pre_responses = []
+        for action in next_actions:
+            pre_responses += game.broadcast_event(EPreAction(action))
+        pre_queue = ActionQueue(queue=pre_responses, depth=self._depth + 1)
+        pre_queue.process_all(game=game)
+        self._history += pre_queue._history
+
+        # Run the actions themselves
+        for action in next_actions:
+            if not action.canceled:
+                action.doit(game)
+                self._history.append(action)
+
+        # Get and run all post-action responses
+        post_responses = []
+        for action in next_actions:
+            post_responses += game.broadcast_event(EPostAction(action))
+        post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
+        post_queue.process_all(game=game)
+        self._history += post_queue._history
+
+    def _get_next_actions(self, game: Game) -> List[Action]:
+        """Gets the next 'batch' of actions to execute (with the same priority)."""
+
+        if len(self._queue) == 0:
+            return []
+
+        res = []
+        priority = self._queue[0].priority
+        while (len(self._queue) > 0) and (self._queue[0].priority == priority):
+            action: Action = self._queue.pop(0)
+            res.append(action)
+        return res
+
+    def __repr__(self) -> str:
+        cn = type(self).__qualname__
+        return f"<{cn} with {len(self._queue)} queued, {len(self._history)} in history>"
+
+
 class Game(_EventEngine):
     """Holds game state and logic.
 
@@ -681,6 +726,7 @@ class Game(_EventEngine):
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
         subscribers: Dict[str, List[Subscriber]] = None,
+        action_queue: ActionQueue = None,
     ):
         super().__init__(subscribers=subscribers)
 
@@ -688,11 +734,18 @@ class Game(_EventEngine):
             alignments: List[Alignment] = []
         if actors is None:
             actors: List[Actor] = []
+        if action_queue is None:
+            action_queue = ActionQueue()
 
         # Read-only properties
+        self._action_queue = action_queue
         self._current_phase = current_phase
         self._alignments = alignments
         self._actors = actors
+
+    @property
+    def action_queue(self) -> ActionQueue:
+        return self._action_queue
 
     @property
     def current_phase(self) -> Phase:
@@ -705,3 +758,10 @@ class Game(_EventEngine):
     @property
     def alignments(self) -> List[Alignment]:
         return list(self._alignments)
+
+    def process_event(self, event: Event) -> None:
+        """Broadcasts event and processes all responses."""
+
+        actions = self.broadcast_event(event)
+        self.action_queue.add(*actions)
+        self.action_queue.process_all(self)
