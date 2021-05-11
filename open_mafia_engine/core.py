@@ -14,11 +14,11 @@ from open_mafia_engine.util.repr import ReprMixin
 logger = logging.getLogger(__name__)
 
 
-class GameObject(ReprMixin):
+class GameObject(ReprMixin, ABC):
     """Core game object."""
 
 
-class Event(ABC, GameObject):
+class Event(GameObject):
     """Represents some event."""
 
     @classmethod
@@ -39,7 +39,23 @@ class Event(ABC, GameObject):
         return self.default_code()
 
 
-class Action(ABC, GameObject):
+ETypeOrS = Union[Type[Event], str]
+
+
+def normalize_etype(etype: ETypeOrS) -> str:
+    """Normalizes event type to a string."""
+
+    if isinstance(etype, str):
+        pass
+    elif issubclass(etype, Event):
+        etype: Type[Event]
+        etype: str = etype.default_code()
+    else:
+        raise TypeError(f"Expected str or Event subclass, got {etype!r}")
+    return etype
+
+
+class Action(GameObject):
     """Some action.
 
     Attributes
@@ -111,21 +127,15 @@ class EPostAction(Event):
         return self.default_code() + ":" + type(self._action).__qualname__
 
 
-class Subscriber(ABC):
+class Subscriber(GameObject):
     """Mixin class for objects that need to recieve event broadcasts."""
 
-    @abstractmethod
+    def __subscribe__(self, game: Game) -> None:
+        """Subscribe to some particular event type(s)."""
+
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         """Respond to an event, given the game context."""
         return None
-
-    @abstractmethod
-    def subscribe(self, game: Game) -> None:
-        """Subscribe to some particular event type(s)."""
-
-    @abstractmethod
-    def unsubscribe(self, game: Game) -> None:
-        """Unsubscribe from some particular event type(s)."""
 
 
 class ActionQueue(GameObject):
@@ -237,17 +247,26 @@ class Alignment(GameObject):
 
     Attributes
     ----------
+    game : Game
     name : str
     actors : List[Actor]
 
     TODO: Add wincons.
     """
 
-    def __init__(self, name: str, actors: List[Actor] = None):
+    def __init__(self, game: Game, name: str, actors: List[Actor] = None):
         if actors is None:
             actors = []
         self.name = name
         self._actors = list(actors)
+
+        # Register self with the parent game
+        self._game = game
+        self._game._alignments.append(self)
+
+    @property
+    def game(self) -> Game:
+        return self._game
 
     def add_actor(self, actor: Actor):
         if actor not in self._actors:
@@ -276,6 +295,7 @@ class Actor(GameObject):
 
     def __init__(
         self,
+        game: Game,
         name: str,
         alignments: List[Alignment] = None,
         abilities: List[Ability] = None,
@@ -284,14 +304,23 @@ class Actor(GameObject):
             abilities = []
         if alignments is None:
             alignments = []
+
         self.name = name
 
-        # "parent" alignment
+        # Register self with the parent game
+        self._game = game
+        self._game._actors.append(self)
+
+        # Add self to "parent" alignments
         self._alignments = list(alignments)
         for al in self._alignments:
             al.add_actor(self)
 
         self._abilities = list(abilities)
+
+    @property
+    def game(self) -> Game:
+        return self._game
 
     @property
     def alignments(self) -> List[Alignment]:
@@ -309,11 +338,13 @@ class Actor(GameObject):
         self._alignments = list(new_alignments)  # technically not needed
 
     def add_alignment(self, al: Alignment):
+        """Adds an alignment to this Actor."""
         if al not in self._alignments:
             self._alignments.append(al)
             al.add_actor(self)
 
     def remove_alignment(self, al: Alignment):
+        """Removes an alignment from this Actor."""
         if al in self._alignments:
             self._alignments.remove(al)
             al.remove_actor(self)
@@ -334,23 +365,28 @@ class Actor(GameObject):
             ability.owner = self
 
 
-class Ability(GameObject, Subscriber):
+class Ability(Subscriber):
     """An Ability is a part of the role that allows some sort of action.
+
+    This is a base class. If you need to be able to "activate" your ability, then use
+    the ActivatedAbility class. If you want a "triggered" ability, then override
+    `__subscribe__()` and `respond_to_event()` with the relevant events.
 
     Attributes
     ----------
-    name : str
     owner : Actor
         Abilities must always have an owner that points back at them.
+    name : str
     constraints : List[Constraint]
         Constraints on ability usage.
     """
 
-    def __init__(self, name: str, owner: Actor, constraints: List[Constraint] = None):
+    def __init__(self, owner: Actor, name: str, constraints: List[Constraint] = None):
         if constraints is None:
             constraints = []
         self.name = name
 
+        # Set the owner
         self._owner = owner
         self._owner._abilities.append(self)
 
@@ -358,9 +394,16 @@ class Ability(GameObject, Subscriber):
         for c in constraints:
             self.take_control_of_constraint(c)
 
+        # Auto-subscribe
+        self.__subscribe__(self.game)
+
     def clone(self, new_owner: Actor) -> Ability:
         """Clones this ability with a new owner."""
         raise NotImplementedError("TODO: Implement")
+
+    @property
+    def game(self) -> Game:
+        return self.owner.game
 
     @property
     def owner(self) -> Actor:
@@ -386,20 +429,17 @@ class Ability(GameObject, Subscriber):
         if constraint not in self._constraints:
             constraint.parent = self
 
-    # Override these (required for Subscriber), but by default we implement no-ops
-
-    def subscribe(self, game: Game) -> None:
-        pass
-
-    def unsubscribe(self, game: Game) -> None:
-        pass
-
-    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
-        return None
-
 
 class EActivateAbility(Event):
-    """Event of intent to activate an ability."""
+    """Event of intent to activate an ability.
+
+    Attributes
+    ----------
+    ability : ActivatedAbility
+        The ability to activate. Type matters!
+    params : dict
+        Keyword arguments of parameters. Check the signature of `ability`.
+    """
 
     def __init__(self, ability: ActivatedAbility, **params: Dict[str, Any]):
         self._ability = ability
@@ -435,18 +475,12 @@ class ActivatedAbility(Ability):
     Override `make_action` for your custom abilities.
     """
 
-    def __init__(self, name: str, owner: Actor, constraints: List[Constraint] = None):
-        super().__init__(name, owner, constraints=constraints)
-
     @abstractmethod
     def make_action(self, game: Game, **params) -> Optional[Action]:
         raise NotImplementedError(f"No `make_action` for {self!r}")
 
-    def subscribe(self, game: Game) -> None:
+    def __subscribe__(self, game: Game) -> None:
         game.add_sub(self, EActivateAbility.code_for(type(self)))
-
-    def unsubscribe(self, game: Game) -> None:
-        game.remove_sub(self, EActivateAbility.code_for(type(self)))
 
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         if isinstance(event, EActivateAbility):
@@ -459,7 +493,7 @@ class ActivatedAbility(Ability):
         return None
 
 
-class Constraint(ABC, GameObject):
+class Constraint(GameObject):
     """A constraint on the use of particular abilities.
 
     parent : Ability
@@ -477,6 +511,10 @@ class Constraint(ABC, GameObject):
         Overwrite this. Remember that `self.parent` is also available.
         """
         return True
+
+    @property
+    def game(self) -> Game:
+        return self._parent.game  # == self._parent._owner.game
 
     @property
     def parent(self) -> Ability:
@@ -519,115 +557,20 @@ class Phase(GameObject):
         self.action_resolution = ActionResolutionType(action_resolution)
 
 
-ETypeOrS = Union[Type[Event], str]
+class _EventEngine(ReprMixin):
+    """Runs event logic. Base class for Game."""
 
-
-def normalize_etype(etype: ETypeOrS) -> str:
-    """Normalizes event type to a string."""
-
-    if isinstance(etype, str):
-        pass
-    elif issubclass(etype, Event):
-        etype: Type[Event]
-        etype: str = etype.default_code()
-    else:
-        raise TypeError(f"Expected str or Event subclass, got {etype!r}")
-    return etype
-
-
-class Game(ReprMixin):
-    """Holds game state and logic.
-
-    Attributes
-    ----------
-    current_phase : Phase
-        Defines the current phase, including how actions are resolved.
-    game_actor : Actor
-        The fake actor that represents the game's actions.
-        By default, this is an empty actor (e.g. no automation).
-    alignments : List[Alignment]
-    actors : List[Actor]
-    subscribers : Dict[str, List[Subscriber]]
-        Map between event types (as str hierarchies) and Subscribers.
-    """
-
-    def __init__(
-        self,
-        *,
-        current_phase: Phase,
-        game_actor: Actor = None,
-        alignments: List[Alignment] = None,
-        actors: List[Actor] = None,
-        subscribers: Dict[str, List[Subscriber]] = None,
-    ):
+    def __init__(self, *, subscribers: Dict[str, List[Subscriber]] = None):
         # Fix arguments
         if subscribers is None:
             subscribers = {}
-        if alignments is None:
-            alignments: List[Alignment] = []
-        if actors is None:
-            actors: List[Actor] = []
-        if game_actor is None:
-            game_actor = Actor(name="game")
 
         # Initialize subscribers
         self._subscribers = defaultdict(list, subscribers)
 
-        # Initialize other properties as empty
-        self._game_actor = None
-        self._current_phase = None
-        self._alignments = None
-        self._actors = None
-
-        # Properly initialize via setters:
-        self.game_actor = game_actor
-        self.current_phase = current_phase
-        self.alignments = alignments
-        self.actors = actors
-
-    @property
-    def game_actor(self) -> Actor:
-        return self._game_actor
-
-    @game_actor.setter
-    def game_actor(self, v: Actor):
-        # TODO: unsub old one
-        self._game_actor = v
-        # TODO: sub new one
-
-    @property
-    def current_phase(self) -> Phase:
-        return self._current_phase
-
-    @current_phase.setter
-    def current_phase(self, v: Phase):
-        # TODO: unsub old one
-        self._current_phase = v
-        # TODO: sub new one
-
-    @property
-    def actors(self) -> List[Actor]:
-        return self._actors
-
-    @actors.setter
-    def actors(self, v: List[Actor]):
-        # TODO: unsub old one
-        self._actors = list(v)
-        # TODO: sub new one
-
-    @property
-    def alignments(self) -> List[Alignment]:
-        return self._alignments
-
-    @alignments.setter
-    def alignments(self, v: List[Alignment]):
-        # TODO: unsub old one
-        self._alignments = list(v)
-        # TODO: sub new one
-
     @property
     def subscribers(self) -> Dict[str, List[Subscriber]]:
-        return dict(self._subscribers)
+        return {k: v for k, v in self._subscribers.items() if len(v) > 0}
 
     def add_sub(self, sub: Subscriber, *etypes: Tuple[ETypeOrS, ...]) -> None:
         """Subscribes `sub` to one or more event types."""
@@ -652,7 +595,7 @@ class Game(ReprMixin):
 
         parts = event.code().split(":")
 
-        affected_subs = []
+        affected_subs: List[Subscriber] = []
         for i in range(len(parts) + 1):  # including "" and `event.code()`
             subs_i = self._subscribers[":".join(parts[:i])]
             affected_subs += [s for s in subs_i if s not in affected_subs]
@@ -663,3 +606,49 @@ class Game(ReprMixin):
             if response is not None:
                 res.append(response)
         return res
+
+
+class Game(_EventEngine):
+    """Holds game state and logic.
+
+    Attributes
+    ----------
+    current_phase : Phase
+        Defines the current phase, including how actions are resolved.
+    alignments : List[Alignment]
+    actors : List[Actor]
+    subscribers : Dict[str, List[Subscriber]]
+        Map between event types (as str hierarchies) and Subscribers.
+    """
+
+    def __init__(
+        self,
+        *,
+        current_phase: Phase,
+        alignments: List[Alignment] = None,
+        actors: List[Actor] = None,
+        subscribers: Dict[str, List[Subscriber]] = None,
+    ):
+        super().__init__(subscribers=subscribers)
+
+        if alignments is None:
+            alignments: List[Alignment] = []
+        if actors is None:
+            actors: List[Actor] = []
+
+        # Read-only properties
+        self._current_phase = current_phase
+        self._alignments = alignments
+        self._actors = actors
+
+    @property
+    def current_phase(self) -> Phase:
+        return self._current_phase
+
+    @property
+    def actors(self) -> List[Actor]:
+        return list(self._actors)
+
+    @property
+    def alignments(self) -> List[Alignment]:
+        return list(self._alignments)

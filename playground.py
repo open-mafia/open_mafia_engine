@@ -1,11 +1,11 @@
 from open_mafia_engine.core import *
 
-town = Alignment(name="town")
-mafia = Alignment(name="mafia")
-print(town.actors, mafia.actors)
+game = Game(current_phase=Phase("day"))
 
-alice = Actor(name="alice", alignments=[town])
-print(town.actors, mafia.actors)
+town = Alignment(game, name="town")
+mafia = Alignment(game, name="mafia")
+
+alice = Actor(game, name="alice", alignments=[town])
 
 alice.remove_alignment(town)
 mafia.add_actor(alice)
@@ -20,14 +20,12 @@ class VoteAbility(ActivatedAbility):
 
 
 print(alice)
-va = VoteAbility(name="vote", owner=alice)
+va = VoteAbility(owner=alice, name="vote")
 print(alice)
 
 
-game = Game(current_phase=Phase("day"), alignments=[town, mafia], actors=[alice])
-
 # TODO: Figure out how to auto subscribe?
-va.subscribe(game)
+# va.subscribe(game)
 
 game.broadcast_event(EActivateAbility(va))  # OMG it works!
 
