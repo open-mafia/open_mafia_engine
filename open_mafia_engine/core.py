@@ -465,6 +465,12 @@ class ActivatedAbility(Ability):
     """Ability that is activated by the `EActivateAbility` event.
 
     Override `make_action` for your custom abilities.
+
+    Alternatively, use the "template" to make a simple action-creating ability.
+    The following are equivalent (using the default name for the second):
+
+        MyAbility = ActivatedAbility.create_type(MyAction, name="MyAbility")
+        ActivateAbility_MyAction = ActivatedAbility[MyAction]
     """
 
     @abstractmethod
@@ -483,6 +489,37 @@ class ActivatedAbility(Ability):
                         return None
                 return self.make_action(game=game, **params)
         return None
+
+    @classmethod
+    def create_type(
+        cls, atype: Type[Action], name: str = None
+    ) -> Type[ActivatedAbility]:
+        """Dynamically creates an ability type from the action.
+
+        Parameters
+        ----------
+        atype : type
+            Subclass of Action.
+        name : str
+            The name of the type. If not given, generates one from the action type.
+        """
+
+        if not issubclass(atype, Action):
+            raise TypeError(f"Expected subclass of Action, got {atype!r}")
+        if name is None:
+            name = f"{cls.__qualname__}_{atype.__qualname__}".replace(".", "_")
+
+        # TODO: Maybe copy the signature from `atype` via the `inspect` module? :)
+
+        def make_action(self, game: Game, **params) -> Optional[Action]:
+            return atype(source=self, **params)
+
+        _GeneratedClass = type(name, (cls,), {"make_action": make_action})
+
+        return _GeneratedClass
+
+    def __class_getitem__(cls, atype: Type[Action]) -> Type[ActivatedAbility]:
+        return cls.create_type(atype=atype)
 
 
 class Constraint(GameObject):
@@ -547,6 +584,14 @@ class Phase(GameObject):
     ):
         self.name = name
         self.action_resolution = ActionResolutionType(action_resolution)
+
+
+class EPhaseEnd(Event):
+    """The current phase is about to end."""
+
+
+class EPhaseStart(Event):
+    """The next phase has just started."""
 
 
 class _EventEngine(ReprMixin):
@@ -743,6 +788,10 @@ class Game(_EventEngine):
         self._alignments = alignments
         self._actors = actors
 
+    def __repr__(self) -> str:
+        cn = type(self).__qualname__
+        return f"{cn}(...)"
+
     @property
     def action_queue(self) -> ActionQueue:
         return self._action_queue
@@ -759,9 +808,20 @@ class Game(_EventEngine):
     def alignments(self) -> List[Alignment]:
         return list(self._alignments)
 
-    def process_event(self, event: Event) -> None:
+    def process_event(self, event: Event, *, process_now: bool = False) -> None:
         """Broadcasts event and processes all responses."""
+
+        # ActionResolutionType.instant processes everything on phase change
+        # ActionResolutionType.end_of_phase should only process all on phase change
+
+        process_now = (
+            process_now
+            or isinstance(event, EPhaseEnd)
+            or (self.current_phase.action_resolution == ActionResolutionType.instant)
+        )
 
         actions = self.broadcast_event(event)
         self.action_queue.add(*actions)
-        self.action_queue.process_all(self)
+
+        if process_now:
+            self.action_queue.process_all(self)
