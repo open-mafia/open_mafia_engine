@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from enum import Enum
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, Union
 
 from sortedcontainers import SortedList
 
@@ -283,11 +283,56 @@ class Alignment(GameObject):
         return list(self._actors)
 
 
+class Status(GameObject, MutableMapping):
+    """Dict-like representation of an actor's status.
+
+    Attributes
+    ----------
+    parent: Actor
+    attribs : dict
+        Raw keyword arguments for the status.
+    """
+
+    def __init__(self, parent: Actor, **attribs: Dict[str, Any]):
+        self._parent = parent
+        self._attribs = attribs
+
+    @property
+    def game(self) -> Game:
+        return self._parent.game  # == self._parent._game
+
+    @property
+    def parent(self) -> Actor:
+        return self._parent
+
+    @property
+    def attribs(self) -> Dict[str, Any]:
+        return dict(self._attribs)
+
+    def __getitem__(self, key) -> Any:
+        return self._attribs[key]
+
+    def __delitem__(self, key) -> None:
+        # TODO: Add event of status change
+        del self._attribs[key]
+
+    def __setitem__(self, key, value) -> None:
+        # TODO: Add event of status change
+        self._attribs[key] = value
+
+    def __len__(self) -> int:
+        return len(self._attribs)
+
+    def __iter__(self):
+        return iter(self._attribs)
+
+
 class Actor(GameObject):
     """Represents a person or character.
 
     Attributes
     ----------
+    game : Game
     name : str
     alignments : List[Alignment]
     abilities : List[Ability]
@@ -299,11 +344,14 @@ class Actor(GameObject):
         name: str,
         alignments: List[Alignment] = None,
         abilities: List[Ability] = None,
+        status: Dict[str, Any] = None,
     ):
         if abilities is None:
             abilities = []
         if alignments is None:
             alignments = []
+        if status is None:
+            status = {}
 
         self.name = name
 
@@ -317,10 +365,15 @@ class Actor(GameObject):
             al.add_actor(self)
 
         self._abilities = list(abilities)
+        self._status = Status(self, **status)
 
     @property
     def game(self) -> Game:
         return self._game
+
+    @property
+    def status(self) -> Status:
+        return self._status
 
     @property
     def alignments(self) -> List[Alignment]:
