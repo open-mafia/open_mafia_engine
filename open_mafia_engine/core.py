@@ -8,6 +8,7 @@ from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, Union
 
 from sortedcontainers import SortedList
 
+from open_mafia_engine.util.enums import make_str_enum
 from open_mafia_engine.util.repr import ReprMixin
 
 
@@ -565,11 +566,18 @@ class Constraint(GameObject):
         self._parent._constraints.append(self)
 
 
-class ActionResolutionType(str, Enum):
-    """When actions are resolved."""
+ActionResolutionType = make_str_enum(
+    "ActionResolutionType",
+    ["instant", "end_of_phase"],
+    doc="How actions are resolved.",
+)
 
-    instant = "instant"
-    end_of_phase = "end_of_phase"
+
+# class ActionResolutionType(str, Enum):
+#     """When actions are resolved."""
+
+#     instant = "instant"
+#     end_of_phase = "end_of_phase"
 
 
 class Phase(GameObject):
