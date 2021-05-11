@@ -8,6 +8,7 @@ from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, Union
 from sortedcontainers import SortedList
 
 from open_mafia_engine.util.enums import make_str_enum
+from open_mafia_engine.util.namedlist import NamedList
 from open_mafia_engine.util.repr import ReprMixin
 
 
@@ -324,7 +325,7 @@ class Actor(GameObject):
 
     @property
     def alignments(self) -> List[Alignment]:
-        return list(self._alignments)
+        return NamedList(self._alignments, attr="name")
 
     @alignments.setter
     def alignments(self, new_alignments: List[Alignment]):
@@ -351,7 +352,7 @@ class Actor(GameObject):
 
     @property
     def abilities(self) -> List[Ability]:
-        return list(self._abilities)
+        return NamedList(self._abilities, attr="name")
 
     def remove_ability(self, ability: Ability):
         """Removes the ability entirely."""

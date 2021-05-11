@@ -36,7 +36,8 @@ charlie = add_townie("Charlie")
 
 
 def abil(actor: Actor, name: str) -> Ability:
-    return [x for x in actor.abilities if x.name == name][0]
+    # return [x for x in actor.abilities if x.name == name][0]
+    return actor.abilities[name]
 
 
 # Yell at everything
@@ -51,16 +52,18 @@ mortician.__subscribe__(game)
 game.process_event(ETryPhaseChange())
 
 # Do some voting (note the order - priority doesn't matter because it's instant)
-game.process_event(EActivateAbility(abil(alice, "vote"), target="Bob"))
-game.process_event(EActivateAbility(abil(bob, "vote"), target="Alice", priority=2.0))
+game.process_event(EActivateAbility(alice.abilities["vote"], target="Bob"))
+game.process_event(
+    EActivateAbility(bob.abilities["vote"], target="Alice", priority=2.0)
+)
 
 # Start first night
 game.process_event(ETryPhaseChange())
 
 # Voting will fail
-game.process_event(EActivateAbility(abil(bob, "vote"), target="Charlie"))
+game.process_event(EActivateAbility(bob.abilities["vote"], target="Charlie"))
 # But the kill will succeed
-game.process_event(EActivateAbility(abil(bob, "kill"), target="Charlie"))
+game.process_event(EActivateAbility(bob.abilities["kill"], target="Charlie"))
 
 print("This happens before votes for C, A")
 # start second day
