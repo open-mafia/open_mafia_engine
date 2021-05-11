@@ -98,6 +98,14 @@ class Action(GameObject):
             return NotImplemented
         return self._priority > other._priority  # We sort decreasing by priority!
 
+    def pre_event(self) -> EPreAction:
+        """Returns the pre-event for this action."""
+        return EPreAction(self)
+
+    def post_event(self) -> EPostAction:
+        """Returns the post-event fo this action."""
+        return EPostAction(self)
+
 
 class EPreAction(Event):
     """Pre-action event, triggered before an action is about to occur."""
@@ -591,113 +599,235 @@ class Phase(GameObject):
         return (o.name == self.name) and (o.action_resolution == self.action_resolution)
 
 
-class EPhaseEnd(Event):
+class PhaseChangeAction(Action):
+    """Action to change the phase."""
+
+    def __init__(
+        self,
+        source: GameObject,
+        old_phase: Phase,
+        new_phase: Phase,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        self._old_phase = old_phase
+        self.new_phase = new_phase
+
+    @property
+    def old_phase(self) -> Phase:
+        return self._old_phase
+
+    def pre_event(self) -> EPreAction:
+        """Returns the pre-event for this action."""
+        return EPrePhaseChange(self)
+
+    def post_event(self) -> EPostAction:
+        """Returns the post-event fo this action."""
+        return EPostPhaseChange(self)
+
+    def doit(self, game: Game) -> None:
+        game.phases.current = self.new_phase  # implicitly runs the check
+
+
+class ETryPhaseChange(Event):
+    """Try to change the phase. By default, selects the next phase"""
+
+    def __init__(self, new_phase: Optional[Phase] = None):
+        if not (new_phase is None or isinstance(new_phase, Phase)):
+            raise TypeError(f"Expected Phase or None, got {new_phase!r}")
+        self._new_phase = new_phase
+
+    @property
+    def new_phase(self) -> Optional[Phase]:
+        return self._new_phase
+
+    @property
+    def is_next(self) -> bool:
+        return self.new_phase is None
+
+
+class EPrePhaseChange(EPreAction):
     """The current phase is about to end.
 
     This will force the Game's action queue to process the whole queue.
     Note that you can always get the current phase from the Game object.
     """
 
+    def __init__(self, action: PhaseChangeAction):
+        super().__init__(action=action)
 
-class EPhaseStart(Event):
+    @property
+    def old_phase(self) -> Phase:
+        return self.action.old_phase
+
+    @property
+    def new_phase(self) -> Phase:
+        return self.action.new_phase
+
+
+class EPostPhaseChange(EPostAction):
     """The next phase has just started.
 
     Note that you can always get the current phase from the Game object.
     """
 
-
-class PhaseCycle(GameObject):
-    """Simple phase cycle."""
-
-    def __init__(self, phases: List[Phase], num: int = 0):
-        if (not isinstance(num, int)) or (num < 0):
-            raise TypeError(f"num must be a nonnegative int, got {num!r}")
-        self._phases = phases
-        self._num = num
+    def __init__(self, action: PhaseChangeAction):
+        super().__init__(action=action)
 
     @property
+    def old_phase(self) -> Phase:
+        return self.action.old_phase
+
+    @property
+    def new_phase(self) -> Phase:
+        return self.action.new_phase
+
+
+class AbstractPhaseCycle(Subscriber):
+    """The interface for a phase cycle.
+
+    Attributes
+    ----------
+    initial : Phase
+        The initial phase.
+    current : Phase
+        The current phase.
+    next : Phase
+        The next phase, assuming normal flow.
+    phases : List[Phase]
+        All possible phases in the game.
+    """
+
+    def __subscribe__(self, game: Game) -> None:
+        """Subscribe to some particular event type(s)."""
+        game.add_sub(self, ETryPhaseChange)
+
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        """Respond to an event, given the game context."""
+        if isinstance(event, ETryPhaseChange):
+            if game.phases is not self:  # ignore, we aren't the game's cycle
+                return None
+
+            np = event.new_phase
+            if np is None:
+                np = self.next
+            # TODO: Allow str, to search for phase names?...
+            elif np not in self.phases:
+                raise ValueError(f"{np!r} not in {self.phases}")
+            return PhaseChangeAction(source=self, old_phase=self.current, new_phase=np)
+        return None
+
+    @property
+    @abstractmethod
+    def initial(self) -> Phase:
+        """Returns the initial phase."""
+
+    @property
+    @abstractmethod
     def current(self) -> Phase:
-        return self._phases[self._num % len(self._phases)]
+        """Returns the current phase."""
+
+    @current.setter
+    @abstractmethod
+    def current(self, p: Phase):
+        """Sets the current phase."""
 
     @property
+    @abstractmethod
+    def next(self) -> Phase:
+        """Returns the next phase, assuming normal flow."""
+
+    @property
+    @abstractmethod
     def phases(self) -> List[Phase]:
-        return list(self._phases)
+        """Returns all possible phases."""
 
-    @property
-    def num(self) -> int:
-        return self._num
 
-    @num.setter
-    def num(self, v: int):
-        """Sets the phase number."""
+class SimplePhaseCycle(AbstractPhaseCycle):
+    """Simple phase cycle with a startup phase and several repeating ones.
 
-        if not isinstance(v, int):
-            raise TypeError(f"num must be an int, got {v!r}")
-        if v < self._num:
-            raise ValueError(f"Attempted to decrease phase: {v} < {self._num}")
-        elif v == self._num:
-            return  # ignore
-        # otherwise, we will advance to `v`
-        print("TODO: EPhaseEnd")
-        self._num = v
-        print("TODO: EPhaseStart")
+    Attributes
+    ----------
+    game : Game
+    startup : Phase
+        The startup phase. If unset, defaults to an instant phase named "startup".
+    cycle : List[Phase]
+        The cyclic phases. If unset, defaults to "day" and "night".
+    current : Phase
+        The current phase to use. If an int, -1 is `startup` and higher is `cycle`.
+    """
 
-    def advance_to(self, phase: Union[int, str, Phase]):
-        """Advances to the given phase, skipping those between.
-
-        If `phase` is an int, it does the same as setting `self.num = phase`.
-        If `phase` is a string or Phase, it matches the *next* phase that matches
-        (i.e. it always advances).
-        """
-        N = len(self._phases)
-
-        if isinstance(phase, int):
-            self.num = phase  #
-            return
-        elif isinstance(phase, str):
-            pname = phase
-
-            if pname == self.current.name:
-                return  # ignore
-            found_ph = [(i, p) for i, p in enumerate(self.phases) if p.name == pname]
-            if len(found_ph) == 0:
-                raise ValueError(f"No phase with name {pname!r} found in {self.phases}")
-            elif len(found_ph) > 1:
-                raise ValueError(f"Ambiguous phase names: {found_ph}")
-            i, phase = found_ph[0]
-        elif isinstance(phase, Phase):
-            found_ph = [(i, p) for i, p in enumerate(self.phases) if p == phase]
-            if len(found_ph) == 0:
-                raise ValueError(f"Phase {phase!r} not found in {self.phases}")
-            elif len(found_ph) > 1:
-                raise ValueError(f"Ambiguous phase names: {found_ph}")
-            i, phase = found_ph[0]
-        else:
-            raise TypeError(f"Expected int, str or Phase, got {phase!r}")
-
-        # We have i, but we need to advance to the next
-        j = self._num % N
-        forward = (i - j) % N
-        if forward == 0:  # same phase - add N
-            forward += N
-        self.num = self._num + forward
-
-    def __next__(self) -> Phase:
-        self.num += 1
-        return self.current
-
-    @classmethod
-    def make_day_night(cls) -> PhaseCycle:
-        """Makes the default day/night cycle."""
-
-        return cls(
-            phases=[
+    def __init__(
+        self,
+        startup: Phase = None,
+        cycle: List[Phase] = None,
+        current: Union[int, Phase] = -1,
+    ):
+        super().__init__()
+        if startup is None:
+            startup = Phase(
+                name="startup", action_resolution=ActionResolutionType.instant
+            )
+        if cycle is None:
+            cycle = [
                 Phase(name="day", action_resolution=ActionResolutionType.instant),
                 Phase(
                     name="night", action_resolution=ActionResolutionType.end_of_phase
                 ),
             ]
-        )
+
+        # Check that cycle & startup names are unique
+        names = set(x.name for x in cycle + [startup])
+        if len(names) != len(cycle) + 1:
+            raise ValueError("Duplicate phases detected.")
+
+        # Set internal values
+        self._startup = startup
+        self._cycle = cycle
+
+        # Set the current one
+        if isinstance(current, int):
+            if current == -1:
+                current = startup
+            elif current >= len(cycle):
+                raise ValueError(f"`current` must be in range(-1, {len(cycle)})")
+            else:
+                current = cycle[current]
+
+        if current not in self.phases:  # maybe self._cycle?
+            raise ValueError(f"Unknown phase: {current}")
+        self._current = current
+
+    @property
+    def startup(self) -> Phase:
+        return self._startup
+
+    @property
+    def initial(self) -> Phase:
+        return self.startup
+
+    @property
+    def current(self) -> Phase:
+        return self._current
+
+    @current.setter
+    def current(self, p: Phase):
+        if p not in self.phases:  # maybe self._cycle?
+            raise ValueError(f"Unknown phase: {p}")
+        self._current = p
+
+    @property
+    def phases(self) -> List[Phase]:
+        return [self._startup] + self._cycle
+
+    @property
+    def next(self) -> Phase:
+        if self._current == self._startup:
+            return self._cycle[0]
+        curr_idx = [i for i, x in enumerate(self._cycle) if x == self._current][0]
+        return self._cycle[(curr_idx + 1) % len(self._cycle)]
 
 
 class _EventEngine(ReprMixin):
@@ -820,7 +950,7 @@ class ActionQueue(GameObject):
         # Get and run all pre-action responses
         pre_responses = []
         for action in next_actions:
-            pre_responses += game.broadcast_event(EPreAction(action))
+            pre_responses += game.broadcast_event(action.pre_event())
         pre_queue = ActionQueue(queue=pre_responses, depth=self._depth + 1)
         pre_queue.process_all(game=game)
         self._history += pre_queue._history
@@ -834,7 +964,7 @@ class ActionQueue(GameObject):
         # Get and run all post-action responses
         post_responses = []
         for action in next_actions:
-            post_responses += game.broadcast_event(EPostAction(action))
+            post_responses += game.broadcast_event(action.post_event())
         post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
         post_queue.process_all(game=game)
         self._history += post_queue._history
@@ -875,14 +1005,14 @@ class Game(_EventEngine):
         *,
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
-        phases: PhaseCycle = None,
+        phases: AbstractPhaseCycle = None,
         subscribers: Dict[str, List[Subscriber]] = None,
         action_queue: ActionQueue = None,
     ):
         super().__init__(subscribers=subscribers)
 
         if phases is None:
-            phases = PhaseCycle.make_day_night()
+            phases = SimplePhaseCycle()
         if alignments is None:
             alignments: List[Alignment] = []
         if actors is None:
@@ -896,6 +1026,9 @@ class Game(_EventEngine):
         self._alignments = alignments
         self._actors = actors
 
+        # Subscribe
+        self._phases.__subscribe__(self)
+
     def __repr__(self) -> str:
         cn = type(self).__qualname__
         return f"{cn}(...)"
@@ -905,7 +1038,7 @@ class Game(_EventEngine):
         return self._action_queue
 
     @property
-    def phases(self) -> PhaseCycle:
+    def phases(self) -> AbstractPhaseCycle:
         return self._phases
 
     @property
@@ -928,7 +1061,8 @@ class Game(_EventEngine):
 
         process_now = (
             process_now
-            or isinstance(event, EPhaseEnd)
+            or isinstance(event, ETryPhaseChange)
+            # or isinstance(event, EPrePhaseChange)  # do we need this?
             or (self.current_phase.action_resolution == ActionResolutionType.instant)
         )
 
