@@ -2,18 +2,24 @@ from open_mafia_engine.core import *
 
 
 class VoteAction(Action):
+    def __init__(
+        self,
+        source: GameObject,
+        target: str = None,
+        *,
+        priority: float = 1.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        self.target = target
+
     def doit(self, game: Game) -> None:
-        print("I voted!")
+        print(f"I voted for {self.target}!")
 
 
-class VoteAbility1(ActivatedAbility):
-    def make_action(self, game: Game, **params) -> Optional[Action]:
-        return VoteAction(self)
+VoteAbility = ActivatedAbility.create_type(VoteAction, name="VoteAbility")
+# VoteAbility = ActivatedAbility[VoteAction]  # alternate, but badly named
 
-
-VoteAbility2 = ActivatedAbility[VoteAction]  # equivalent to VoteAbility1
-
-VoteAbility = VoteAbility2
 
 # Create the game
 
@@ -34,5 +40,6 @@ cv = VoteAbility(owner=charlie, name="vote")
 # Run stuff
 
 game.process_event(EActivateAbility(av))
+game.process_event(EActivateAbility(av, target="bob"))
 print(game.action_queue)
 print("Done.")
