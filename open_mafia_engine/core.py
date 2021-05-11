@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from enum import Enum
 import logging
 from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, Union
 
@@ -272,7 +271,7 @@ class EStatusChange(Event):
         return self._new_val
 
     def code(self) -> str:
-        return self.default_code() + ":" + type(self._action).__qualname__
+        return f"{self.default_code()}:{self.actor.name}:{self.key}"
 
 
 class Actor(GameObject):
