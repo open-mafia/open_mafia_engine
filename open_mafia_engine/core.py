@@ -585,6 +585,11 @@ class Phase(GameObject):
         self.name = name
         self.action_resolution = ActionResolutionType(action_resolution)
 
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, Phase):
+            return NotImplemented
+        return (o.name == self.name) and (o.action_resolution == self.action_resolution)
+
 
 class EPhaseEnd(Event):
     """The current phase is about to end.
@@ -605,12 +610,14 @@ class PhaseCycle(GameObject):
     """Simple phase cycle."""
 
     def __init__(self, phases: List[Phase], num: int = 0):
+        if (not isinstance(num, int)) or (num < 0):
+            raise TypeError(f"num must be a nonnegative int, got {num!r}")
         self._phases = phases
         self._num = num
 
     @property
     def current(self) -> Phase:
-        return self._phases[self._num]
+        return self._phases[self._num % len(self._phases)]
 
     @property
     def phases(self) -> List[Phase]:
@@ -620,10 +627,64 @@ class PhaseCycle(GameObject):
     def num(self) -> int:
         return self._num
 
+    @num.setter
+    def num(self, v: int):
+        """Sets the phase number."""
+
+        if not isinstance(v, int):
+            raise TypeError(f"num must be an int, got {v!r}")
+        if v < self._num:
+            raise ValueError(f"Attempted to decrease phase: {v} < {self._num}")
+        elif v == self._num:
+            return  # ignore
+        # otherwise, we will advance to `v`
+        print("TODO: EPhaseEnd")
+        self._num = v
+        print("TODO: EPhaseStart")
+
+    def advance_to(self, phase: Union[int, str, Phase]):
+        """Advances to the given phase, skipping those between.
+
+        If `phase` is an int, it does the same as setting `self.num = phase`.
+        If `phase` is a string or Phase, it matches the *next* phase that matches
+        (i.e. it always advances).
+        """
+        N = len(self._phases)
+
+        if isinstance(phase, int):
+            self.num = phase  #
+            return
+        elif isinstance(phase, str):
+            pname = phase
+
+            if pname == self.current.name:
+                return  # ignore
+            found_ph = [(i, p) for i, p in enumerate(self.phases) if p.name == pname]
+            if len(found_ph) == 0:
+                raise ValueError(f"No phase with name {pname!r} found in {self.phases}")
+            elif len(found_ph) > 1:
+                raise ValueError(f"Ambiguous phase names: {found_ph}")
+            i, phase = found_ph[0]
+        elif isinstance(phase, Phase):
+            found_ph = [(i, p) for i, p in enumerate(self.phases) if p == phase]
+            if len(found_ph) == 0:
+                raise ValueError(f"Phase {phase!r} not found in {self.phases}")
+            elif len(found_ph) > 1:
+                raise ValueError(f"Ambiguous phase names: {found_ph}")
+            i, phase = found_ph[0]
+        else:
+            raise TypeError(f"Expected int, str or Phase, got {phase!r}")
+
+        # We have i, but we need to advance to the next
+        j = self._num % N
+        forward = (i - j) % N
+        if forward == 0:  # same phase - add N
+            forward += N
+        self.num = self._num + forward
+
     def __next__(self) -> Phase:
-        self._num += 1
-        res = self._phases[self._num % len(self._phases)]
-        return res
+        self.num += 1
+        return self.current
 
     @classmethod
     def make_day_night(cls) -> PhaseCycle:
