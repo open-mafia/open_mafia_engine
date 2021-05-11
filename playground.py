@@ -9,20 +9,35 @@ game = Game()
 town = Alignment(game, name="town")
 mafia = Alignment(game, name="mafia")
 
-alice = Actor(game, name="Alice", alignments=[town])
-av = VoteAbility(owner=alice, name="vote")
-PhaseConstraint(av, ["day"])
 
-bob = Actor(game, name="Bob", alignments=[mafia])
-bv = VoteAbility(owner=bob, name="vote")
-PhaseConstraint(bv, ["day"])
-bk = KillAbility(owner=bob, name="kill")
-PhaseConstraint(bk, ["night"])
+def add_townie(name: str):
+    a = Actor(game, name=name, alignments=[town])
+    av = VoteAbility(owner=a, name="vote")
+    PhaseConstraint(av, ["day"])
+    AliveConstraint(av)
+    return a
 
 
-charlie = Actor(game, name="Charlie", alignments=[town])
-cv = VoteAbility(owner=charlie, name="vote")
-PhaseConstraint(cv, ["day"])
+def add_mafioso(name: str):
+    a = Actor(game, name=name, alignments=[town])
+    av = VoteAbility(owner=a, name="vote")
+    PhaseConstraint(av, ["day"])
+    AliveConstraint(av)
+
+    ak = KillAbility(owner=a, name="kill")
+    PhaseConstraint(ak, ["night"])
+    AliveConstraint(ak)
+    return a
+
+
+alice = add_townie("Alice")
+bob = add_mafioso("Bob")
+charlie = add_townie("Charlie")
+
+
+def abil(actor: Actor, name: str) -> Ability:
+    return [x for x in actor.abilities if x.name == name][0]
+
 
 # Yell at everything
 notifier = Notifier()
@@ -36,16 +51,16 @@ mortician.__subscribe__(game)
 game.process_event(ETryPhaseChange())
 
 # Do some voting (note the order - priority doesn't matter because it's instant)
-game.process_event(EActivateAbility(av, target="Bob"))
-game.process_event(EActivateAbility(bv, target="Alice", priority=2.0))
+game.process_event(EActivateAbility(abil(alice, "vote"), target="Bob"))
+game.process_event(EActivateAbility(abil(bob, "vote"), target="Alice", priority=2.0))
 
 # Start first night
 game.process_event(ETryPhaseChange())
 
 # Voting will fail
-game.process_event(EActivateAbility(bv, target="Charlie"))
+game.process_event(EActivateAbility(abil(bob, "vote"), target="Charlie"))
 # But the kill will succeed
-game.process_event(EActivateAbility(bk, target="Charlie"))
+game.process_event(EActivateAbility(abil(bob, "kill"), target="Charlie"))
 
 print("This happens before votes for C, A")
 # start second day

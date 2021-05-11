@@ -63,6 +63,16 @@ class PhaseConstraint(Constraint):
         return game.phases.current.name in self.phase_names
 
 
+class AliveConstraint(Constraint):
+    """Action can only be used while alive."""
+
+    def __init__(self, parent: Ability):
+        super().__init__(parent)
+
+    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+        return not self.parent.owner.status["dead"]
+
+
 class Notifier(Subscriber):
     def __subscribe__(self, game: Game) -> None:
         game.add_sub(self, Event)
