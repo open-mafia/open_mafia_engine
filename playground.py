@@ -1,33 +1,5 @@
 from open_mafia_engine.core import *
-
-
-class VoteAction(Action):
-    def __init__(
-        self,
-        source: GameObject,
-        target: str = None,
-        *,
-        priority: float = 1.0,
-        canceled: bool = False,
-    ):
-        super().__init__(source, priority=priority, canceled=canceled)
-        self.target = target
-
-    def doit(self, game: Game) -> None:
-        print(f"I voted for {self.target}!")
-
-
-VoteAbility = ActivatedAbility.create_type(VoteAction, name="VoteAbility")
-# VoteAbility = ActivatedAbility[VoteAction]  # alternate, but badly named
-
-
-class Notifier(Subscriber):
-    def __subscribe__(self, game: Game) -> None:
-        game.add_sub(self, Event)
-
-    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
-        print(f"  Saw event: {type(event).__qualname__}")
-        return None
+from open_mafia_engine.examples import *
 
 
 # Create the game
@@ -39,12 +11,15 @@ mafia = Alignment(game, name="mafia")
 
 alice = Actor(game, name="alice", alignments=[town])
 av = VoteAbility(owner=alice, name="vote")
+PhaseConstraint(av, ["day"])
 
 bob = Actor(game, name="bob", alignments=[mafia])
 bv = VoteAbility(owner=bob, name="vote")
+PhaseConstraint(bv, ["day"])
 
 charlie = Actor(game, name="charlie", alignments=[town])
 cv = VoteAbility(owner=charlie, name="vote")
+PhaseConstraint(cv, ["day"])
 
 # Yell at everything
 notifier = Notifier()
@@ -63,6 +38,7 @@ game.process_event(EActivateAbility(av, target="bob"))
 game.process_event(ETryPhaseChange())
 
 # voting at night - these actions should happen at day end
+# Actually, they shouldn't happen at all, due to the constraint
 game.process_event(EActivateAbility(av, target="charlie"))
 game.process_event(EActivateAbility(av, target="alice", priority=10))
 
