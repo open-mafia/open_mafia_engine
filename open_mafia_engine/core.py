@@ -758,7 +758,6 @@ class SimplePhaseCycle(AbstractPhaseCycle):
 
     Attributes
     ----------
-    game : Game
     startup : Phase
         The startup phase. If unset, defaults to an instant phase named "startup".
     cycle : List[Phase]
@@ -836,6 +835,10 @@ class SimplePhaseCycle(AbstractPhaseCycle):
             return self._cycle[0]
         curr_idx = [i for i, x in enumerate(self._cycle) if x == self._current][0]
         return self._cycle[(curr_idx + 1) % len(self._cycle)]
+
+
+class AuxGameObject(GameObject):
+    """An auxilliary (helper) game object."""
 
 
 class _EventEngine(ReprMixin):
@@ -1000,12 +1003,24 @@ class Game(_EventEngine):
 
     Attributes
     ----------
-    current_phase : Phase
-        Defines the current phase, including how actions are resolved.
     alignments : List[Alignment]
     actors : List[Actor]
+    phases : AbstractPhaseCycle
+
     subscribers : Dict[str, List[Subscriber]]
         Map between event types (as str hierarchies) and Subscribers.
+
+    Calculated Attributes
+    ---------------------
+    current_phase : Phase
+        Defines the current phase, including how actions are resolved.
+
+    Core Functions
+    --------------
+    add_sub, remove_sub
+    process_event
+    broadcast_event
+
     """
 
     def __init__(
