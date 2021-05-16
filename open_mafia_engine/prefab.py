@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 import warnings
 from pathlib import Path
@@ -12,13 +13,17 @@ from open_mafia_engine.core import (
     Ability,
     AbstractPhaseCycle,
     ActivatedAbility,
+    Actor,
+    Alignment,
     AuxGameObject,
     Constraint,
+    Game,
     get_type,
 )
 from open_mafia_engine.util.yaml import load_yaml
 
 default_search_paths: List[Path] = [Path(__file__).parent / "prefabs"]
+logger = logging.getLogger(__name__)
 
 
 class XModel(BaseModel):
@@ -286,6 +291,70 @@ class Prefab(YamlModel):
     aux: List[XAux] = []  # TODO
     variants: List[GameVariant]
 
+    def create_game(
+        self, player_names: List[str], variant: Union[None, str, GameVariant] = None
+    ) -> Game:
+        """Creates a game from the player name list.
+
+        Parameters
+        ----------
+        player_names : List[str]
+            Player names, which will become the Actor names.
+        variant : None or str or GameVariant
+            Which variant to select.
+            If None, will select a random variant with the same number of players.
+        """
+        N = len(player_names)
+        if variant is None:
+            possible_variants = [v for v in self.variants if v.players == N]
+            if len(possible_variants) == 0:
+                raise ValueError(f"No variants available for {N} players.")
+            elif len(possible_variants) > 1:
+                logger.info(f"Selecting a variant from {possible_variants}")
+            variant = random.choice(possible_variants)
+        elif isinstance(variant, str):
+            found = [v for v in self.variants if v.name == variant]
+            if len(found) == 0:
+                raise ValueError(f"No such variant found: {variant!r}")
+            variant = found[0]
+        elif isinstance(variant, GameVariant):
+            if variant not in self.variants:
+                warnings.warn(
+                    "Passed variant is not one of the included ones!"
+                    " Proceeding, but this may be risky."
+                )
+        else:
+            raise TypeError(f"Expected None, str or GameVariant, got {variant!r}")
+        variant: GameVariant
+        role_map = variant.assign_roles(player_names)
+
+        # Now for the fun stuff!
+        game = Game()
+
+        alignments = {}
+        for xal in self.alignments:
+            alignments[xal.name] = Alignment(game, name=xal.name)
+
+        actors = {}
+        for actor_name, role_name in role_map.items():
+            xrole = [r for r in self.roles if r.name == role_name][0]
+            my_aligns = [alignments[alname] for alname in xrole.alignments]
+            actors[actor_name] = Actor(game, name=actor_name, alignments=my_aligns)
+
+            for xabil in xrole.abilities:
+                # TODO
+                xabil.type
+                xabil.params
+                for xcon in xabil.constraints:
+                    xcon.type
+                    xcon.params
+
+        for xaux in self.aux:
+            xaux.type
+            xaux.params
+
+        return game
+
     @validator("alignments", always=True)
     def _chk_duplicate_names(cls, v):
         names = [x.name for x in v]
@@ -366,6 +435,8 @@ class Prefab(YamlModel):
 
     @classmethod
     def load_file(cls, file: Union[Path, TextIO, str]) -> Prefab:
+        """Loads the prefab from a given file (either Path, open file, or YAML text)."""
+
         if isinstance(file, Path):
             with file.open(mode="r") as f:
                 txt = f.read()
@@ -384,3 +455,4 @@ if __name__ == "__main__":
     # pf = Prefab.parse_file(yp, content_type="application/yaml")
     # pf = Prefab(**load_yaml(yp))
     print("Loaded prefab:", pf.name)
+    game = pf.create_game(list("ABCDE"))
