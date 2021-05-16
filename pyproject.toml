@@ -2,13 +2,13 @@
 name = "open-mafia-engine"
 version = "0.1.0"
 description = "Open Mafia Engine - a framework for mafia/werewolf games."
-authors = ["Open Mafia Team <openmafiateam@email.com>"]
+authors = ["Open Mafia Team <openmafiateam@gmail.com>"]
 license = "Apache License 2.0"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-beautifulsoup4 = {version = "^4.9.3", optional = true}
-requests = {version = "^2.25.1", optional = true}
+beautifulsoup4 = { version = "^4.9.3", optional = true }
+requests = { version = "^2.25.1", optional = true }
 pydantic = "^1.7.3"
 sortedcontainers = "^2.3.0"
 "ruamel.yaml" = "^0.17.4"
