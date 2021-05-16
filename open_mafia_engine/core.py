@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from inspect import isabstract
 import logging
 from typing import (
     Any,
@@ -25,8 +26,27 @@ from open_mafia_engine.util.repr import ReprMixin
 logger = logging.getLogger(__name__)
 
 
+__go_types__ = {}
+
+
 class GameObject(ReprMixin, ABC):
     """Core game object."""
+
+    def __init_subclass__(cls) -> None:
+        global __go_types__
+        if not isabstract(cls):
+            __go_types__[cls.__qualname__] = cls
+
+
+def get_type(name: str) -> Type[GameObject]:
+    """Loads the type by name. It must not be abstract."""
+
+    global __go_types__
+    try:
+        res = __go_types__[name]
+    except KeyError as e:
+        raise ImportError(f"Couldn't find GameObject type from {name!r}") from e
+    return res
 
 
 class Event(GameObject):
@@ -386,6 +406,8 @@ class Ability(Subscriber):
     the ActivatedAbility class. If you want a "triggered" ability, then override
     `__subscribe__()` and `respond_to_event()` with the relevant events.
 
+    Note that, unless you use ActivatedAbility, you must remember to check constraints!
+
     Attributes
     ----------
     owner : Actor
@@ -614,6 +636,14 @@ class Phase(GameObject):
         self.name = name
         self.action_resolution = ActionResolutionType(action_resolution)
 
+    @classmethod
+    def normalize(cls, obj) -> Phase:
+        if isinstance(obj, cls):
+            return obj
+        elif obj is None:
+            return cls()
+        return cls(**obj)
+
     def __eq__(self, o: object) -> bool:
         if not isinstance(o, Phase):
             return NotImplemented
@@ -790,10 +820,15 @@ class SimplePhaseCycle(AbstractPhaseCycle):
         current: Union[int, Phase] = -1,
     ):
         super().__init__()
+        # Startup phase
         if startup is None:
             startup = Phase(
                 name="startup", action_resolution=ActionResolutionType.instant
             )
+        else:
+            startup = Phase.normalize(startup)
+
+        # Cycle phases
         if cycle is None:
             cycle = [
                 Phase(name="day", action_resolution=ActionResolutionType.instant),
@@ -801,17 +836,26 @@ class SimplePhaseCycle(AbstractPhaseCycle):
                     name="night", action_resolution=ActionResolutionType.end_of_phase
                 ),
             ]
+        else:
+            cycle = [Phase.normalize(p) for p in cycle]
 
         # Check that cycle & startup names are unique
-        names = set(x.name for x in cycle + [startup])
-        if len(names) != len(cycle) + 1:
+        names = [x.name for x in [startup] + cycle]
+        if len(set(names)) != len(cycle) + 1:
             raise ValueError("Duplicate phases detected.")
 
         # Set internal values
         self._startup = startup
         self._cycle = cycle
 
-        # Set the current one
+        # Set the current phase
+        if isinstance(current, str):
+            try:
+                idx = names.index(current)
+            except IndexError as e:
+                raise ValueError(f"No phase {current!r} fount in {names}") from e
+            current = idx - 1
+        # Get from int, either initially or from str
         if isinstance(current, int):
             if current == -1:
                 current = startup
@@ -819,9 +863,9 @@ class SimplePhaseCycle(AbstractPhaseCycle):
                 raise ValueError(f"`current` must be in range(-1, {len(cycle)})")
             else:
                 current = cycle[current]
-
-        if current not in self.phases:  # maybe self._cycle?
-            raise ValueError(f"Unknown phase: {current}")
+        # It must be some phase
+        if current not in self.phases:
+            raise ValueError(f"Unknown phase: {current!r}")
         self._current = current
 
     @property
