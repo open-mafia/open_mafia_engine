@@ -1,43 +1,68 @@
-from open_mafia_engine.core.game import Game
-from open_mafia_engine.built_in.all import *
-from open_mafia_engine.state.voting import *
+from open_mafia_engine.core import *
+from open_mafia_engine.examples import *
 
 
-game = Game.from_prefab(
-    names=["Alice", "Bob", "Charlie", "Dave", "Eddie"], prefab="Vanilla Mafia"
-)
-engine = game.engine
+# Create the game
 
-# Init the game
-game.process_event(GameStartEvent())
-# game.process_action(VanillaGameInitAction())
+game = Game()
 
-# For ease of use
-a, b, c, *_ = game.state.actors
-lt: VoteTally = game.state.status["lynch_tally"]
+town = Alignment(game, name="town")
+mafia = Alignment(game, name="mafia")
 
-# Voting occurs
-for src, trg in [(a, b), (b, a), (c, a), (c, b)]:
-    # 1. Via a direct Action
-    va = VoteAction(src.name, trg.name, tally_name="lynch_tally")
-    game.process_action(va)
+game.aux.add(LynchTally())
 
-    # 2. Via an ActivationEvent; don't need the action itself, works by name!
-    # ae_c = ActivationEvent(pair[0], "Vote", target=pair[1].name)
-    # game.process_event(ae_c)
 
-assert lt.current_leaders == ["Bob"]
-assert b.status["alive"] == True
+def add_townie(name: str):
+    a = Actor(game, name=name, alignments=[town])
+    av = VoteAbility(owner=a, name="vote")
+    PhaseConstraint(av, ["day"])
+    AliveConstraint(av)
+    return a
 
-# Change phase - this will trigger the lynch to occur
-game.process_action(PhaseChangeAction())
-assert b.status["alive"] == False
 
-try:
-    va = VoteAction(b.name, c.name, tally_name="lynch_tally")
-    game.process_action(va)
-    # shouldn't do anything, but it currently does :/
-except Exception:
-    pass
+def add_mafioso(name: str):
+    a = Actor(game, name=name, alignments=[town])
+    av = VoteAbility(owner=a, name="vote")
+    PhaseConstraint(av, ["day"])
+    AliveConstraint(av)
 
-game
+    ak = KillAbility(owner=a, name="kill")
+    PhaseConstraint(ak, ["night"])
+    AliveConstraint(ak)
+    return a
+
+
+alice = add_townie("Alice")
+bob = add_mafioso("Bob")
+charlie = add_townie("Charlie")
+
+
+# Yell at everything
+notifier = Notifier()
+notifier.__subscribe__(game)
+mortician = Mortician()
+mortician.__subscribe__(game)
+
+# Run stuff
+
+# Start first day
+game.process_event(ETryPhaseChange())
+
+# Do some voting (note the order - priority doesn't matter because it's instant)
+game.process_event(EActivateAbility(alice.abilities["vote"], target=bob))
+game.process_event(EActivateAbility(bob.abilities["vote"], target=alice, priority=2.0))
+game.process_event(EActivateAbility(charlie.abilities["vote"], target=alice))
+
+# Start first night
+game.process_event(ETryPhaseChange())
+
+# Voting will fail
+game.process_event(EActivateAbility(bob.abilities["vote"], target=charlie))
+# But the kill will succeed
+game.process_event(EActivateAbility(bob.abilities["kill"], target=charlie))
+
+# start second day
+game.process_event(ETryPhaseChange())
+
+print(game.action_queue)
+print("Done.")
