@@ -31,6 +31,7 @@ class AbstractVote(GameObject):
     @property
     def source(self) -> Actor:
         """Whoever cast this vote."""
+        return self._source
 
     @source.setter
     def source(self, v: Actor):

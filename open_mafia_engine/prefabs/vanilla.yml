@@ -12,6 +12,7 @@ roles:
         type: SimpleLynchVoteAbility
         constraints:
           - type: ActorAliveConstraint
+          - type: TargetAliveConstraint
           - type: DayConstraint
   - name: Mafioso
     alignments: mafia # also accepted, since single strings are special-cased
@@ -20,14 +21,14 @@ roles:
         type: SimpleLynchVoteAbility
         constraints:
           - type: ActorAliveConstraint
+          - type: TargetAliveConstraint
           - type: DayConstraint
       - name: "Mafia Kill"
         type: KillAbility
         constraints:
           - type: ActorAliveConstraint
-          - type: PhaseConstraint # or NightConstraint; but TODO: Mafia team constraint
-            params:
-              phase_names: ["night"]
+          - type: TargetAliveConstraint
+          - type: NightConstraint
           - type: KeywordActionLimitPerPhaseConstraint
             params:
               keyword: "mafia_kill_limit"

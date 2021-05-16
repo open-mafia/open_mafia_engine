@@ -78,7 +78,7 @@ class SimpleLynchVoteAction(SimpleVoteAction):
         self,
         source: Ability,
         tally: Optional[SimpleVoteTally] = None,
-        target: Union[None, Actor, Type[UnvoteAll]] = None,
+        target: Union[None, Actor, Type[UnvoteAll], Type[VoteAgainstAll]] = None,
         *,
         priority: float = 1.0,
         canceled: bool = False,
@@ -90,6 +90,7 @@ class SimpleLynchVoteAction(SimpleVoteAction):
     def doit(self, game: Game) -> None:
         abil: Ability = self.source
         source: Actor = abil.owner
+        # Figure out which tally to use
         if self.tally is None:
             tallies = game.aux.filter_by_type(SimpleLynchTally)
             if len(tallies) != 1:
@@ -97,9 +98,13 @@ class SimpleLynchVoteAction(SimpleVoteAction):
             tally: SimpleVoteTally = tallies[0]
         else:
             tally = self.tally
-        if self.target is UnvoteAll:
+        # Figure out what type of vote to add
+        if (self.target is UnvoteAll) or (self.target is None):
             print(f"{source.name} unvoted.")  # FIXME: Remove
             tally.add(UnvoteAll(source=source))
+        elif self.target is VoteAgainstAll:
+            print(f"{source.name} voted for No-Lynch.")
+            tally.add(VoteAgainstAll(source=source))
         else:
             print(f"{source.name} voted for {self.target.name}!")  # FIXME: Remove
             tally.add(VoteForActor(source=source, targets=[self.target]))

@@ -8,6 +8,7 @@ from .constraints import (
     KeywordActionLimitPerPhaseConstraint,
     NightConstraint,
     PhaseConstraint,
+    TargetAliveConstraint,
 )
 from .debug import DebugMortician, DebugNotifier
 from .killing import KillAbility, KillAction
