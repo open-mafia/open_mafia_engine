@@ -6,19 +6,19 @@ alignments: # TODO: Make less verbose
     outcome_checkers:
       - type: FactionEliminatedOutcome
         params:
-          faction_name: "mafia"
+          faction_names: "mafia"
       - type: FactionEliminatedOutcome
         params:
-          faction_name: "town"
+          faction_names: "town"
           outcome: defeat
   - name: mafia
     outcome_checkers:
       - type: FactionEliminatedOutcome
         params:
-          faction_name: "town"
+          faction_names: "town"
       - type: FactionEliminatedOutcome
         params:
-          faction_name: "mafia"
+          faction_names: "mafia"
           outcome: defeat
 roles:
   - name: Citizen
