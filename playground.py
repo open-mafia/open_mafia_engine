@@ -9,6 +9,8 @@ game = Game()
 town = Alignment(game, name="town")
 mafia = Alignment(game, name="mafia")
 
+game.aux.add(LynchTally())
+
 
 def add_townie(name: str):
     a = Actor(game, name=name, alignments=[town])
@@ -35,11 +37,6 @@ bob = add_mafioso("Bob")
 charlie = add_townie("Charlie")
 
 
-def abil(actor: Actor, name: str) -> Ability:
-    # return [x for x in actor.abilities if x.name == name][0]
-    return actor.abilities[name]
-
-
 # Yell at everything
 notifier = Notifier()
 notifier.__subscribe__(game)
@@ -52,20 +49,18 @@ mortician.__subscribe__(game)
 game.process_event(ETryPhaseChange())
 
 # Do some voting (note the order - priority doesn't matter because it's instant)
-game.process_event(EActivateAbility(alice.abilities["vote"], target="Bob"))
-game.process_event(
-    EActivateAbility(bob.abilities["vote"], target="Alice", priority=2.0)
-)
+game.process_event(EActivateAbility(alice.abilities["vote"], target=bob))
+game.process_event(EActivateAbility(bob.abilities["vote"], target=alice, priority=2.0))
+game.process_event(EActivateAbility(charlie.abilities["vote"], target=alice))
 
 # Start first night
 game.process_event(ETryPhaseChange())
 
 # Voting will fail
-game.process_event(EActivateAbility(bob.abilities["vote"], target="Charlie"))
+game.process_event(EActivateAbility(bob.abilities["vote"], target=charlie))
 # But the kill will succeed
-game.process_event(EActivateAbility(bob.abilities["kill"], target="Charlie"))
+game.process_event(EActivateAbility(bob.abilities["kill"], target=charlie))
 
-print("This happens before votes for C, A")
 # start second day
 game.process_event(ETryPhaseChange())
 
