@@ -1,4 +1,5 @@
 from open_mafia_engine.core import *
+from open_mafia_engine.built_in.all import *
 from open_mafia_engine.prefab import Prefab
 
 pf = Prefab.load("vanilla.yml")
@@ -10,7 +11,7 @@ print("Loaded prefab:", pf.name)
 game = pf.create_game(list("ABCDE"))
 town, mafia = game.alignments
 
-t1, t2 = town.actors[0:2]
+t1, t2, t3 = town.actors[0:3]
 m1 = mafia.actors[0]
 
 # Run stuff
@@ -30,6 +31,10 @@ game.process_event(ETryPhaseChange())
 game.process_event(EActivateAbility(m1.abilities["Vote"], target=t2))
 # But the kill will succeed
 game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t2))
+# The second kill won't succeed, due to the limit
+game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t3))
+# Neither will the rhid time!
+game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t3))
 
 # start second day
 game.process_event(ETryPhaseChange())

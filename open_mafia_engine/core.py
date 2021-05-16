@@ -166,6 +166,36 @@ class EPostAction(Event):
         return self.default_code() + ":" + type(self._action).__qualname__
 
 
+class CancelAction(Action):
+    """Action that cancels another action."""
+
+    def __init__(
+        self,
+        source: GameObject,
+        target: Action,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        self.target = target
+
+    @property
+    def target(self) -> Action:
+        return self._target
+
+    @target.setter
+    def target(self, target: Action):
+        if not isinstance(target, Action):
+            raise TypeError(f"Expected Action, got {target!r}")
+        self._target = target
+
+    def doit(self, game: Game) -> None:
+        """Runs the action."""
+        if not self.canceled:
+            self._target.canceled = True
+
+
 class Subscriber(GameObject):
     """Mixin class for objects that need to recieve event broadcasts."""
 
@@ -566,7 +596,7 @@ class ActivatedAbility(Ability):
         return cls.create_type(atype=atype)
 
 
-class Constraint(GameObject):
+class Constraint(Subscriber):
     """A constraint on the use of particular abilities.
 
     parent : Ability
@@ -577,12 +607,15 @@ class Constraint(GameObject):
         self._parent = parent
         self._parent._constraints.append(self)
 
+        self.__subscribe__(self.game)
+
     @abstractmethod
     def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
         """Checks whether it is OK to make the action.
 
         Overwrite this. Remember that `self.parent` is also available.
         """
+        # TODO: Maybe remove `game` from signature, as `self.game` is available?
         return True
 
     @property
