@@ -6,6 +6,7 @@ description = "Open Mafia Engine - a framework for mafia/werewolf games."
 authors = ["Open Mafia Team <openmafiateam@gmail.com>"]
 license = "Apache-2.0"
 homepage = "https://open-mafia-engine.readthedocs.io/en/latest/"
+documentation = "https://open-mafia-engine.readthedocs.io/en/latest/"
 repository = "https://github.com/open-mafia/open_mafia_engine"
 keywords = ["mafia", "werewolf"]
 classifiers = [
@@ -15,19 +16,22 @@ classifiers = [
     "Topic :: Games/Entertainment :: Role-Playing",
     "Topic :: Games/Entertainment :: Board Games",
 ]
+include = ["open_mafia_engine/prefabs/*"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-beautifulsoup4 = { version = "^4.9.3", optional = true }
-requests = { version = "^2.25.1", optional = true }
 pydantic = "^1.7.3"
-sortedcontainers = "^2.3.0"
-"ruamel.yaml" = "^0.17.4"
 pydantic-yaml = "^0.2.3"
+sortedcontainers = "^2.3.0"
+mkdocs = { version = "^1.1.2", optional = true }
+1beautifulsoup4 = { version = "^4.9.3", optional = true }
+requests = { version = "^2.25.1", optional = true }
+"ruamel.yaml" = { version = "^0.17.4", optional = true }
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
-docs = ["mkdocs==1.1.2"]
+docs = ["mkdocs"]
+ruamel = ["ruamel.yaml"]
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
