@@ -79,7 +79,8 @@ class XConstraint(XModel):
 class XAbility(XModel):
     """Ability definition."""
 
-    # TODO: Add name and descriptions
+    # TODO: Add descriptions
+    name: str
     type: str
     params: Dict[str, Any]
     constraints: List[XConstraint] = []
@@ -325,33 +326,41 @@ class Prefab(YamlModel):
                 )
         else:
             raise TypeError(f"Expected None, str or GameVariant, got {variant!r}")
+
+        # Finalize what role each player is getting
         variant: GameVariant
         role_map = variant.assign_roles(player_names)
 
         # Now for the fun stuff!
         game = Game()
 
+        # Add alignments
         alignments = {}
         for xal in self.alignments:
+            # automatically attaches to the game
             alignments[xal.name] = Alignment(game, name=xal.name)
 
+        # Add actors
         actors = {}
         for actor_name, role_name in role_map.items():
             xrole = [r for r in self.roles if r.name == role_name][0]
             my_aligns = [alignments[alname] for alname in xrole.alignments]
-            actors[actor_name] = Actor(game, name=actor_name, alignments=my_aligns)
-
+            # automatically attaches to the game and alignments
+            actors[actor_name] = act = Actor(
+                game, name=actor_name, alignments=my_aligns
+            )
+            # Add abilities to the actor
             for xabil in xrole.abilities:
-                # TODO
-                xabil.type
-                xabil.params
+                # automatically attaches to owner
+                abil = xabil.T(owner=act, name=xabil.name, **xabil.params)
                 for xcon in xabil.constraints:
-                    xcon.type
-                    xcon.params
+                    # automatically attaches to parent
+                    con = xcon.T(parent=abil, **xcon.params)
 
+        # Add aux things to the game
         for xaux in self.aux:
-            xaux.type
-            xaux.params
+            aux = xaux.T(**xaux.params)
+            game.aux.add(aux)
 
         return game
 
