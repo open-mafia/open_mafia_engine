@@ -12,8 +12,9 @@ mkdocs:
 python:
   version: 3.7
   install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
-    # - requirements: "docs/requirements.txt"
+    # # I wish this worked, but alas I get a StopIteration error?!
+    # - method: pip
+    #   path: .
+    #   extra_requirements:
+    #     - docs
+    - requirements: "docs/requirements.txt"
