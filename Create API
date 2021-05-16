@@ -1,0 +1,5 @@
+from open_mafia_engine.api import Prefab
+
+prefab = Prefab.load("Vanilla Mafia")
+players = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eddie']
+game = prefab.create_game(players)
