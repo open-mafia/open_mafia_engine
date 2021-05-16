@@ -36,6 +36,29 @@ class XModel(BaseModel):
         validate_assignment = True
 
 
+def sh(key: str) -> XModel:
+    """Find the shorthand given the string"""
+
+    from open_mafia_engine.built_in.shorthands import Shorthand
+
+    return Shorthand[key]
+
+
+def inject_shorthand(
+    key: str,
+    each_item: bool = False,
+):
+    """Validator for a shorthand."""
+
+    @validator(key, pre=True, each_item=each_item, allow_reuse=True)
+    def inner(v):
+        if isinstance(v, str):
+            return sh(v)
+        return v
+
+    return inner
+
+
 class XPhaseCycle(XModel):
     """Cycle definition. Defaults to a default SimplePhaseCycle."""
 
@@ -77,6 +100,8 @@ class XAlignment(XModel):
 
     name: str
     outcome_checkers: List[XOutcomeChecker] = None
+
+    _sh_oc = inject_shorthand("outcome_checkers", each_item=True)
 
     @validator("outcome_checkers", always=True)
     def _chk_outcome_checker(cls, v, values):
@@ -123,6 +148,8 @@ class XAbility(XModel):
     params: Dict[str, Any] = {}
     constraints: List[XConstraint] = []
 
+    _sh_con = inject_shorthand("constraints", each_item=True)
+
     @validator("type", always=True)
     def _chk_type(cls, v):
         T = get_type(v)
@@ -142,6 +169,8 @@ class XRole(XModel):
     # TODO: descriptions
     alignments: List[str] = []  # can also do a single str, which will be normalized
     abilities: List[XAbility] = []
+
+    _sh_abil = inject_shorthand("abilities", each_item=True)
 
     @validator("alignments", pre=True)
     def _chk_single_alignment(cls, v):
@@ -327,7 +356,7 @@ class Prefab(YamlModel):
     phases: XPhaseCycle = XPhaseCycle()
     alignments: List[XAlignment]
     roles: List[XRole]
-    aux: List[XAux] = []  # TODO
+    aux: List[XAux] = []
     variants: List[GameVariant]
 
     def create_game(
@@ -404,6 +433,9 @@ class Prefab(YamlModel):
             game.aux.add(aux)
 
         return game
+
+    _sh_align = inject_shorthand("alignments", each_item=True)
+    _sh_aux = inject_shorthand("aux", each_item=True)
 
     @validator("alignments", always=True)
     def _chk_duplicate_names(cls, v):

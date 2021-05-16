@@ -1,0 +1,56 @@
+version: 1.0
+name: "Vanilla Mafia, Shorthand"
+# phases are the default ones, "day" and "night", along with a "setup" phase
+alignments:
+  - "vanilla_town"
+  - "vanilla_mafia"
+roles:
+  - name: Citizen
+    alignments: town
+    abilities:
+      - name: "Vote"
+        type: SimpleLynchVoteAbility
+        constraints:
+          - type: ActorAliveConstraint
+          - type: TargetAliveConstraint
+          - type: DayConstraint
+  - name: Mafioso
+    alignments: mafia
+    abilities:
+      - name: "Vote"
+        type: SimpleLynchVoteAbility
+        constraints:
+          - type: ActorAliveConstraint
+          - type: TargetAliveConstraint
+          - type: DayConstraint
+      - name: "Mafia Kill"
+        type: KillAbility
+        constraints:
+          - type: ActorAliveConstraint
+          - type: TargetAliveConstraint
+          - type: NightConstraint
+          - "con_mafia_kill"
+aux:
+  - type: SimpleLynchTally
+  - type: DebugNotifier
+  - type: DebugMortician
+variants:
+  - name: "5 players"
+    players: 5
+    role_counts:
+      - name: Citizen
+        guaranteed: 4
+      - name: Mafioso
+        guaranteed: 1
+  - name: "6 players"
+    players: 6
+    role_counts:
+      "Citizen": 5
+      "Mafioso": 1
+  - name: "7 players"
+    players: 7
+    role_counts:
+      - name: Citizen
+        guaranteed: 5
+      - name: Mafioso
+        guaranteed: 2
