@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, TextIO, Type, Union
 from pydantic import BaseModel, root_validator, validator
 from pydantic_yaml import YamlModel
 
+import open_mafia_engine.built_in.all as _built_ins  # noqa
 from open_mafia_engine.core import (
     Ability,
     AbstractPhaseCycle,
@@ -30,7 +31,7 @@ class XModel(BaseModel):
     """Base class for classes used in prefabs."""
 
     class Config:
-        allow_mutation = False
+        validate_assignment = True
 
 
 class XPhaseCycle(XModel):
@@ -82,7 +83,7 @@ class XAbility(XModel):
     # TODO: Add descriptions
     name: str
     type: str
-    params: Dict[str, Any]
+    params: Dict[str, Any] = {}
     constraints: List[XConstraint] = []
 
     @validator("type", always=True)
@@ -129,7 +130,7 @@ class XAux(XModel):
 
     # TODO: Add name and descriptions?
     type: str
-    params: Dict[str, Any]
+    params: Dict[str, Any] = {}
 
     @validator("type", always=True)
     def _chk_type(cls, v):
@@ -390,7 +391,7 @@ class Prefab(YamlModel):
     @validator("variants", each_item=True)
     def _chk_variant(cls, v: GameVariant, values):
         """Make sure the variant's roles are actually in the game."""
-        role_names: List[str] = [r.name for r in values["roles"]]
+        role_names: List[str] = [r.name for r in values.get("roles", [])]
         for rc in v.role_counts:
             if rc.name not in role_names:
                 raise ValueError(f"Role {rc.name!r} not found in {role_names}")
@@ -454,14 +455,3 @@ class Prefab(YamlModel):
         else:
             txt = file.read()
         return cls.parse_raw(txt, content_type="application/yaml")
-
-
-if __name__ == "__main__":
-
-    pf = Prefab.load("vanilla.yml")
-    # Other ways:
-    # yp = Path(__file__).parent / "vanilla.yml"
-    # pf = Prefab.parse_file(yp, content_type="application/yaml")
-    # pf = Prefab(**load_yaml(yp))
-    print("Loaded prefab:", pf.name)
-    game = pf.create_game(list("ABCDE"))
