@@ -28,5 +28,6 @@ from .voting import (
     VoteForActors,
     VoteForTargets,
 )
+from .outcome import FactionEliminatedOutcome
 
 # TODO: Also get built-ins from installed plugins

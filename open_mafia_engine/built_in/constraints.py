@@ -85,7 +85,7 @@ class TargetAliveConstraint(Constraint):
         if isinstance(target, Actor):
             return not target.status["dead"]
         # raise TypeError(f"Target ({self.target_key}) must be Actor, got {target!r}")
-        warnings.warn(f"Target ({self.target_key}) should be Actor, got {target!r}")
+        # warnings.warn(f"Target ({self.target_key}) should be Actor, got {target!r}")
         return True
 
 

@@ -23,7 +23,7 @@ game.process_event(ETryPhaseChange())
 game.process_event(EActivateAbility(t1.abilities["Vote"], target=m1))
 game.process_event(EActivateAbility(m1.abilities["Vote"], target=t1, priority=2.0))
 game.process_event(EActivateAbility(t2.abilities["Vote"], target=t1))
-game.process_event(EActivateAbility(t1.abilities["Vote"], target=None))  # Unvote
+game.process_event(EActivateAbility(t1.abilities["Vote"], target=None))  # or UnvoteAll
 game.process_event(EActivateAbility(t1.abilities["Vote"], target=VoteAgainstAll))
 
 # Start first night
@@ -49,6 +49,9 @@ game.process_event(EActivateAbility(t3.abilities["Vote"], target=t1))
 
 # This should succeed
 game.process_event(EActivateAbility(t3.abilities["Vote"], target=m1))
+
+# End second day - this should vote off m1, who is the only mafioso
+game.process_event(ETryPhaseChange())
 
 print(game.action_queue)
 print("Done.")
