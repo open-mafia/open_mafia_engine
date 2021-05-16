@@ -869,6 +869,10 @@ class SimplePhaseCycle(AbstractPhaseCycle):
         self._current = current
 
     @property
+    def cycle(self) -> List[Phase]:
+        return list(self._cycle)
+
+    @property
     def startup(self) -> Phase:
         return self._startup
 
@@ -1262,8 +1266,16 @@ class Game(_EventEngine):
         return list(self._actors)
 
     @property
+    def actor_names(self) -> List[str]:
+        return [a.name for a in self._actors]
+
+    @property
     def alignments(self) -> List[Alignment]:
         return list(self._alignments)
+
+    @property
+    def alignment_names(self) -> List[str]:
+        return [a.name for a in self._alignments]
 
     def process_event(self, event: Event, *, process_now: bool = False) -> None:
         """Broadcasts event and processes all responses."""
