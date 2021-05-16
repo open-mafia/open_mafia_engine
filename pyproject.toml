@@ -16,6 +16,7 @@ pydantic-yaml = "^0.2.3"
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
+docs = ["mkdocs==1.1.2"]
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
