@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-mafia-engine"
-version = "0.1.0"
+version = "0.4.0b1"
 description = "Open Mafia Engine - a framework for mafia/werewolf games."
 authors = ["Open Mafia Team <openmafiateam@gmail.com>"]
 license = "Apache License 2.0"
