@@ -1,0 +1,52 @@
+version: 1.0
+name: "Vanilla Mafia"
+# phases are the default ones, "day" and "night", along with a "setup" phase
+alignments: # TODO: Wincons
+  - name: town
+  - name: mafia
+roles:
+  - name: Citizen
+    alignments: [town]
+    abilities:
+      - name: "Vote"
+        type: SimpleLynchVoteAbility
+        constraints:
+          - type: DayConstraint
+  - name: Mafioso
+    alignments: mafia # also accepted, since single strings are special-cased
+    abilities:
+      - name: "Vote"
+        type: SimpleLynchVoteAbility
+        constraints:
+          - type: DayConstraint
+      - name: "Mafia Kill"
+        type: KillAbility
+        constraints:
+          - type: AliveConstraint
+          - type: PhaseConstraint # or NightConstraint; but TODO: Mafia team constraint
+            params:
+              phase_names: ["night"]
+aux:
+  - type: SimpleLynchTally
+  - type: DebugNotifier
+  - type: DebugMortician
+variants:
+  - name: "5 players"
+    players: 5
+    role_counts:
+      - name: Citizen
+        guaranteed: 4
+      - name: Mafioso
+        guaranteed: 1
+  - name: "6 players"
+    players: 6
+    role_counts:
+      "Citizen": 5
+      "Mafioso": 1
+  - name: "7 players"
+    players: 7
+    role_counts:
+      - name: Citizen
+        guaranteed: 5
+      - name: Mafioso
+        guaranteed: 2

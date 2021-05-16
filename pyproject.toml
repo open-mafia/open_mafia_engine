@@ -11,6 +11,8 @@ beautifulsoup4 = {version = "^4.9.3", optional = true}
 requests = {version = "^2.25.1", optional = true}
 pydantic = "^1.7.3"
 sortedcontainers = "^2.3.0"
+"ruamel.yaml" = "^0.17.4"
+pydantic-yaml = "^0.2.3"
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
