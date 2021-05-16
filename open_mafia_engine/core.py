@@ -166,6 +166,36 @@ class EPostAction(Event):
         return self.default_code() + ":" + type(self._action).__qualname__
 
 
+class CancelAction(Action):
+    """Action that cancels another action."""
+
+    def __init__(
+        self,
+        source: GameObject,
+        target: Action,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        self.target = target
+
+    @property
+    def target(self) -> Action:
+        return self._target
+
+    @target.setter
+    def target(self, target: Action):
+        if not isinstance(target, Action):
+            raise TypeError(f"Expected Action, got {target!r}")
+        self._target = target
+
+    def doit(self, game: Game) -> None:
+        """Runs the action."""
+        if not self.canceled:
+            self._target.canceled = True
+
+
 class Subscriber(GameObject):
     """Mixin class for objects that need to recieve event broadcasts."""
 
@@ -180,6 +210,97 @@ class Subscriber(GameObject):
         return None
 
 
+Outcome = make_str_enum("Outcome", values=["victory", "defeat"])
+
+
+class EPreOutcome(EPreAction):
+    """An Alignment is about to reach an Outcome!"""
+
+    def __init__(self, action: OutcomeAction):
+        super().__init__(action)
+
+    @property
+    def alignment(self) -> Alignment:
+        return self.action.alignment
+
+    @property
+    def outcome(self) -> Outcome:
+        return self.action.outcome
+
+
+class EAlignmentOutcome(EPostAction):
+    """An Alignment has reached an Outcome!"""
+
+    def __init__(self, action: OutcomeAction):
+        super().__init__(action)
+
+    @property
+    def alignment(self) -> Alignment:
+        return self.action.alignment
+
+    @property
+    def outcome(self) -> Outcome:
+        return self.action.outcome
+
+
+class OutcomeAction(Action):
+    """A 'wincon' or 'losecon' has been reached."""
+
+    def __init__(
+        self,
+        source: GameObject,
+        alignment: Alignment,
+        outcome: Outcome,
+        *,
+        priority: float = 10.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        if not isinstance(alignment, Alignment):
+            raise TypeError(f"Expected Alignment, got")
+        self._alignment = alignment
+        self.outcome = outcome
+
+    @property
+    def alignment(self) -> Alignment:
+        return self._alignment
+
+    @property
+    def outcome(self) -> Outcome:
+        return self._outcome
+
+    @outcome.setter
+    def outcome(self, outcome: Union[str, Outcome]):
+        self._outcome = Outcome(outcome)
+
+    def doit(self, game: Game) -> None:
+        # FIXME: Implement something actual, e.g. looping over the players
+        print(f"Alignment {self.alignment.name} has Outcome: {self.outcome}")
+
+    def pre_event(self) -> EPreOutcome:
+        return EPreOutcome(self)
+
+    def post_event(self) -> EAlignmentOutcome:
+        return EAlignmentOutcome(self)
+
+
+class OutcomeChecker(Subscriber):
+    """Core class for outcomes."""
+
+    def __init__(self, parent: Alignment):
+        self._parent = parent
+        parent.add_outcome_checker(self)
+        self.__subscribe__(self.game)
+
+    @property
+    def parent(self) -> Alignment:
+        return self._parent
+
+    @property
+    def game(self) -> Game:
+        return self.parent.game
+
+
 class Alignment(GameObject):
     """A 'team' of Actors.
 
@@ -188,15 +309,23 @@ class Alignment(GameObject):
     game : Game
     name : str
     actors : List[Actor]
-
-    TODO: Add wincons.
+    outcome_checkers : List[OutcomeChecker]
     """
 
-    def __init__(self, game: Game, name: str, actors: List[Actor] = None):
+    def __init__(
+        self,
+        game: Game,
+        name: str,
+        actors: List[Actor] = None,
+        outcome_checkers: List[OutcomeChecker] = None,
+    ):
         if actors is None:
             actors = []
+        if outcome_checkers is None:
+            outcome_checkers = []
         self.name = name
         self._actors = list(actors)
+        self._outcome_checkers = outcome_checkers
 
         # Register self with the parent game
         self._game = game
@@ -219,6 +348,20 @@ class Alignment(GameObject):
     @property
     def actors(self) -> List[Actor]:
         return list(self._actors)
+
+    def add_outcome_checker(self, chk: OutcomeChecker):
+        if chk not in self._outcome_checkers:
+            self._outcome_checkers.append(chk)
+            chk._parent = self
+
+    def remove_outcome_checker(self, chk: OutcomeChecker):
+        if chk in self._outcome_checkers:
+            self._outcome_checkers.remove(chk)
+            chk._parent = self
+
+    @property
+    def outcome_checkers(self) -> List[OutcomeChecker]:
+        return list(self._outcome_checkers)
 
 
 class Status(GameObject, MutableMapping):
@@ -566,7 +709,7 @@ class ActivatedAbility(Ability):
         return cls.create_type(atype=atype)
 
 
-class Constraint(GameObject):
+class Constraint(Subscriber):
     """A constraint on the use of particular abilities.
 
     parent : Ability
@@ -577,12 +720,15 @@ class Constraint(GameObject):
         self._parent = parent
         self._parent._constraints.append(self)
 
+        self.__subscribe__(self.game)
+
     @abstractmethod
     def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
         """Checks whether it is OK to make the action.
 
         Overwrite this. Remember that `self.parent` is also available.
         """
+        # TODO: Maybe remove `game` from signature, as `self.game` is available?
         return True
 
     @property
@@ -1263,7 +1409,7 @@ class Game(_EventEngine):
 
     @property
     def actors(self) -> List[Actor]:
-        return list(self._actors)
+        return NamedList(self._actors)
 
     @property
     def actor_names(self) -> List[str]:
@@ -1271,7 +1417,7 @@ class Game(_EventEngine):
 
     @property
     def alignments(self) -> List[Alignment]:
-        return list(self._alignments)
+        return NamedList(self._alignments)
 
     @property
     def alignment_names(self) -> List[str]:

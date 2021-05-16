@@ -19,6 +19,8 @@ from open_mafia_engine.core import (
     AuxGameObject,
     Constraint,
     Game,
+    Outcome,
+    OutcomeChecker,
     get_type,
 )
 from open_mafia_engine.util.yaml import load_yaml
@@ -52,11 +54,46 @@ class XPhaseCycle(XModel):
         return get_type(self.type)
 
 
+class XOutcomeChecker(XModel):
+    """Outcome checker."""
+
+    type: str
+    params: Dict[str, Any] = {}
+
+    @validator("type", always=True)
+    def _chk_type(cls, v):
+        T = get_type(v)
+        if not issubclass(T, OutcomeChecker):
+            raise ValueError(f"Is not an OutcomeChecker subclass: {v!r}")
+        return v
+
+    @property
+    def T(self) -> Type[OutcomeChecker]:
+        return get_type(self.type)
+
+
 class XAlignment(XModel):
     """Alignment definition."""
 
     name: str
-    # TODO: wincons
+    outcome_checkers: List[XOutcomeChecker] = None
+
+    @validator("outcome_checkers", always=True)
+    def _chk_outcome_checker(cls, v, values):
+        name = values["name"]
+        if v is None:
+            v = cls.default_oc(name)
+        return v
+
+    @classmethod
+    def default_oc(cls, name: str) -> List[XOutcomeChecker]:
+        """Gets default outcome conditions (lose if you are eliminated)."""
+        return [
+            XOutcomeChecker(
+                type="FactionEliminatedOutcome",
+                params=dict(outcome=Outcome.defeat, faction_name=name),
+            )
+        ]
 
 
 class XConstraint(XModel):
@@ -339,7 +376,10 @@ class Prefab(YamlModel):
         alignments = {}
         for xal in self.alignments:
             # automatically attaches to the game
-            alignments[xal.name] = Alignment(game, name=xal.name)
+            alignments[xal.name] = al = Alignment(game, name=xal.name)
+            # add outcome checkers (auto-attach)
+            for xoc in xal.outcome_checkers:
+                oc = xoc.T(parent=al, **xoc.params)
 
         # Add actors
         actors = {}
