@@ -3,7 +3,17 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import defaultdict
 import logging
-from typing import Any, Dict, List, MutableMapping, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    MutableMapping,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from sortedcontainers import SortedList
 
@@ -141,6 +151,9 @@ class Subscriber(GameObject):
 
     def __subscribe__(self, game: Game) -> None:
         """Subscribe to some particular event type(s)."""
+
+    def __unsubscribe__(self, game: Game) -> None:
+        """Unsubscribe from the same event type(s) that we subscribed to."""
 
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         """Respond to an event, given the game context."""
@@ -712,6 +725,10 @@ class AbstractPhaseCycle(Subscriber):
         """Subscribe to some particular event type(s)."""
         game.add_sub(self, ETryPhaseChange)
 
+    def __unsubscribe__(self, game: Game) -> None:
+        """Unsubscribe from the same event type(s) that we subscribed to."""
+        game.remove_sub(self, ETryPhaseChange)
+
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         """Respond to an event, given the game context."""
         if isinstance(event, ETryPhaseChange):
@@ -837,8 +854,118 @@ class SimplePhaseCycle(AbstractPhaseCycle):
         return self._cycle[(curr_idx + 1) % len(self._cycle)]
 
 
-class AuxGameObject(GameObject):
-    """An auxilliary (helper) game object."""
+class AuxEndOfLife(Event):
+    """Aux object has reached end-of-life, and is about to be removed.
+
+    Note that this event will keep the object in memory (in the game action history).
+    This is on purpose (to help debugging), but may be problematic in terms of memory.
+    """
+
+    def __init__(self, obj: AuxGameObject):
+        self._obj = obj
+
+    @property
+    def obj(self) -> AuxGameObject:
+        return self._obj
+
+    def code(self) -> str:
+        """Gets the code for this particular event."""
+        return self.default_code() + ":" + type(self._obj).__qualname__
+
+
+class CreateAuxObject(Action):
+    """Action to add the auxiliary object."""
+
+    def __init__(
+        self,
+        source: GameObject,
+        aux_obj: AuxGameObject,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(source, priority=priority, canceled=canceled)
+        self._aux_obj = aux_obj
+
+    @property
+    def aux_obj(self) -> AuxGameObject:
+        return self._aux_obj
+
+    def doit(self, game: Game) -> None:
+        """Runs the action."""
+        game.aux.add(self._aux_obj)
+
+
+class AuxGameObject(Subscriber):
+    """An auxiliary (helper) game object."""
+
+    def __subscribe__(self, game: Game) -> None:
+        """Subscribe to some particular event type(s)."""
+
+    def __unsubscribe__(self, game: Game) -> None:
+        """Unsubscribe from the same event type(s) that we subscribed to."""
+
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        """Respond to an event, given the game context."""
+        return None
+
+
+class AuxHelper(GameObject):
+    """Helper for auxiliary objects.
+
+    Attributes
+    ----------
+    game : Game
+    objs : List[AuxGameObject]
+        The list of objects.
+
+    Class Attributes
+    ----------------
+    max_objects : int = 100
+        The maximum number of helper objects (to prevent runaway scenarios).
+    """
+
+    max_objects: int = 100
+
+    def __init__(self, game: Game, objs: List[AuxGameObject] = None):
+        if objs is None:
+            objs = []
+        self._game = game
+        self._objs: List[AuxGameObject] = list(objs)
+
+    @property
+    def game(self) -> Game:
+        return self._game
+
+    @property
+    def objs(self) -> List[AuxGameObject]:
+        return list(self._objs)
+
+    def add(self, obj: AuxGameObject) -> None:
+        """Adds an aux object to the game."""
+        if obj in self._objs:
+            logger.warning(f"Tried to add aux object that already exists: {obj!r}")
+            return
+        # Make sure we
+        if len(self._objs) >= self.max_objects:
+            raise ValueError("Too many aux objects. Try increasing `max_objects`?")
+
+        self._objs.append(obj)
+        obj.__subscribe__(self.game)
+
+    def remove(self, obj: AuxGameObject) -> None:
+        """Remove an aux object from the game."""
+        if obj not in self._objs:
+            logger.warning(f"Tried to remove aux object that doesn't exist: {obj!r}")
+            return
+        # TODO: Do we need to process these events?
+        self.game.process_event(AuxEndOfLife(obj))
+        self._objs.remove(obj)
+        obj.__unsubscribe__(self.game)
+
+    def filter_by_type(self, typ: Type[AuxGameObject]) -> List[AuxGameObject]:
+        """Returns objects of a given type."""
+        return [x for x in self._objs if isinstance(x, typ)]
 
 
 class _EventEngine(ReprMixin):
@@ -1006,9 +1133,13 @@ class Game(_EventEngine):
     alignments : List[Alignment]
     actors : List[Actor]
     phases : AbstractPhaseCycle
-
+    aux : AuxHelper
+        Helper for auxiliary objects.
     subscribers : Dict[str, List[Subscriber]]
-        Map between event types (as str hierarchies) and Subscribers.
+        Map between event types (as str hierarchies) and `Subscribers`.
+    action_queue : ActionQueue
+        The queued and historical actions.
+        Other `ActionQueue`s may be created during the resolution of actions.
 
     Calculated Attributes
     ---------------------
@@ -1020,7 +1151,6 @@ class Game(_EventEngine):
     add_sub, remove_sub
     process_event
     broadcast_event
-
     """
 
     def __init__(
@@ -1029,6 +1159,7 @@ class Game(_EventEngine):
         alignments: List[Alignment] = None,
         actors: List[Actor] = None,
         phases: AbstractPhaseCycle = None,
+        aux: AuxHelper = None,
         subscribers: Dict[str, List[Subscriber]] = None,
         action_queue: ActionQueue = None,
     ):
@@ -1043,8 +1174,18 @@ class Game(_EventEngine):
         if action_queue is None:
             action_queue = ActionQueue()
 
+        if aux is None:
+            aux = AuxHelper(self)
+        elif isinstance(aux, list):
+            aux = AuxHelper(self, objs=aux)
+        elif isinstance(aux, AuxHelper):
+            aux = AuxHelper(self, objs=aux.objs)
+        else:
+            raise TypeError(f"Expected None, AuxHelper or list, got {aux!r}")
+
         # Read-only properties
         self._phases = phases
+        self._aux = aux
         self._action_queue = action_queue
         self._alignments = alignments
         self._actors = actors
@@ -1063,6 +1204,10 @@ class Game(_EventEngine):
     @property
     def phases(self) -> AbstractPhaseCycle:
         return self._phases
+
+    @property
+    def aux(self) -> AuxHelper:
+        return self._aux
 
     @property
     def current_phase(self) -> Phase:
