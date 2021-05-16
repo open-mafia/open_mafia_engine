@@ -1,1 +1,6 @@
 site_name: Open Mafia Engine
+nav:
+  - Home: ../index.md
+  # - "User Guide":
+  #   - "Installing": installing.md
+  - About: about.md
