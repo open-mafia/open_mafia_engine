@@ -7,9 +7,13 @@ version: 2
 
 mkdocs:
   configuration: mkdocs.yml
+  fail_on_warning: false
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.9
+  version: 3.8
   # install:
-  #   - requirements: docs/requirements.txt
+  #   - method: pip
+  #     path: .
+  #     extra_requirements:
+  #       - docs
