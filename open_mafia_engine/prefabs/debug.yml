@@ -1,7 +1,7 @@
 version: 1.0
-name: "Vanilla"
+name: "Debug"
 # phases are the default ones, "day" and "night", along with a "setup" phase
-alignments: # TODO: Make less verbose
+alignments:
   - name: town
     outcome_checkers:
       - type: FactionEliminatedOutcome
@@ -51,7 +51,24 @@ roles:
 aux:
   - type: SimpleLynchTally
   - type: GameEnder
+  - type: DebugNotifier
+  - type: DebugMortician
 variants:
+  - name: "2 players"
+    players: 2
+    role_counts:
+      "Citizen": 1
+      "Mafioso": 1
+  - name: "3 players"
+    players: 3
+    role_counts:
+      "Citizen": 2
+      "Mafioso": 1
+  - name: "4 players"
+    players: 4
+    role_counts:
+      "Citizen": 3
+      "Mafioso": 1
   - name: "5 players"
     players: 5
     role_counts:
@@ -69,5 +86,12 @@ variants:
     role_counts:
       - name: Citizen
         guaranteed: 5
+      - name: Mafioso
+        guaranteed: 2
+  - name: "8 players"
+    players: 8
+    role_counts:
+      - name: Citizen
+        guaranteed: 6
       - name: Mafioso
         guaranteed: 2

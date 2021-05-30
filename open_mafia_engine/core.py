@@ -1103,6 +1103,49 @@ class AuxGameObject(Subscriber):
         return None
 
 
+class EGameEnded(EPostAction):
+    """The game has ended."""
+
+
+class EndTheGame(Action):
+    """This action ends the game."""
+
+    def __init__(self, source, *, priority: float = 100, canceled: bool = False):
+        super().__init__(source, priority=priority, canceled=canceled)
+
+    def doit(self, game: Game) -> None:
+        """Ends the game."""
+
+        # TODO - Implement
+        # Maybe add a "block all actions" aux object?
+        # Or just nothing, let someone else hook on EGameEnded.
+
+    def post_event(self) -> EGameEnded:
+        return EGameEnded(self)
+
+
+class GameEnder(AuxGameObject):
+    """Ends the game when all alignments get an Outcome."""
+
+    def __init__(self, outcomes: Dict[str, Outcome] = None):
+        if outcomes is None:
+            outcomes = {}
+        self.outcomes: Dict[str, Outcome] = {k: Outcome(v) for k, v in outcomes.items()}
+
+    def __subscribe__(self, game: Game) -> None:
+        game.add_sub(self, EAlignmentOutcome)
+
+    def __unsubscribe__(self, game: Game) -> None:
+        game.remove_sub(self, EAlignmentOutcome)
+
+    def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
+        if isinstance(event, EAlignmentOutcome):
+            self.outcomes[event.alignment.name] = event.outcome
+            if all(self.outcomes.get(al) is not None for al in game.alignment_names):
+                return EndTheGame(source=self)
+        return
+
+
 class AuxHelper(GameObject):
     """Helper for auxiliary objects.
 
