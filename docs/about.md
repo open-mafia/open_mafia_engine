@@ -1,5 +1,7 @@
 # About
 
+## Developing
+
 This project is developed by the Open Mafia Team.
 The primary author is Anatoly "NowanIlfideme" Makarevich.
 
@@ -8,3 +10,9 @@ the Bay12Games (Dwarf Fortress) forums.
 
 If you would like to help, please contant us directly on GitHub or at
 [openmafiateam@gmail.com](mailto://openmafiateam@gmail.com).
+
+## Projects Using Open Mafia Engine
+
+The [open_mafia_discord_bot](https://github.com/open-mafia/open_mafia_discord_bot)
+is a reference implementation of bot functionality for [Discord](https://discord.com/).
+Note that the library is currently private, until sufficiently developed.
