@@ -1,4 +1,4 @@
-# Main Concepts
+# Core Concepts
 
 ## Game
 
@@ -31,7 +31,7 @@ A `Subscriber` is a very base object. It `subscribe`s to particular types of
 events. `Subscriber.respond_to_event` takes an `Event` and `Game` context and
 optionally returns an `Action` (the response).
 
-## Core Logic
+## Event and Action Logic
 
 ### Handling Events
 
