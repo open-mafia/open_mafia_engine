@@ -2,5 +2,7 @@ site_name: Open Mafia Engine
 nav:
   - Home: index.md
   - "User Guide":
-      - "Main Concepts": concepts.md
+      - "Main Concepts": user_guide/concepts.md
+  - "Development":
+      - "Writing Docs": development/writing_docs.md
   - About: about.md
