@@ -5,6 +5,7 @@ nav:
       - "Main Concepts": user_guide/concepts.md
       - "Game State": user_guide/state.md
       - "Abilities": user_guide/abilities.md
+      - "Outcomes": user_guide/outcomes.md
       - "Prefabs": user_guide/prefabs.md
   - "Development":
       - "Installing for dev": development/installing_dev.md

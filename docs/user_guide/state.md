@@ -30,6 +30,9 @@ happen in priority order, irrespective of what time they were actually submitted
 The `Alignment` class represents a particular "team"/"faction". It has a name
 (for example, "town" or "mafia") and some members (`Alignment.actors`).
 
+Each `Alignment` also has `OutcomeCheckers` (to see who wins/loses), described
+[later in the tutorial](outcomes.md).
+
 ## Actors
 
 The `Actor` class represents a player character (or NPC). Each actor has a
