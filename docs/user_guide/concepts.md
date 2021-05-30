@@ -27,7 +27,7 @@ An `Action` is essentially a delayed function call.
 Each `Action` object references its `source` (the entity that created the action),
 some parameters, `priority` and whether it's `cancelled`.
 
-A `Subscriber` is a very base object. It `subscribe`s to particular types of
+A `Subscriber` object `subscribe`s to particular types of
 events. `Subscriber.respond_to_event` takes an `Event` and `Game` context and
 optionally returns an `Action` (the response).
 
@@ -48,7 +48,7 @@ Essentially, each `Subscriber` returns a delayed `Action` in response to the `Ev
 ### Action Queues
 
 An `ActionQueue` is just that - a queue of delayed actions.
-Actions are sorted by their `priority` (higher priority go first), then by the
+Actions are sorted by their `priority` (higher priority goes first), then by the
 order they were recieved. This means the action order should be deterministic.
 
 The `Game` object contains the main queue, but more can be created temporarily
@@ -74,12 +74,12 @@ For each action:
 In reality, the above happens for all actions of the same priority, as a batch.
 It's much easier to understand it as single actions, though:
 
-1. "I'm about to do ACTION, any objections?"
-2. "No, wait, I need to do PRE-RESPONSE first."
+1. You: "I'm about to do ACTION, any objections?"
+2. Sub A: "No, wait, I need to do PRE-RESPONSE first."
 3. (PRE-RESPONSE occurs)
 4. (action occurs, assuming PRE-RESPONSE didn't cancel it)
-5. "OK, guys, I did ACTION."
-6. "You did? Okay, let me POST-PRESPONSE."
+5. You: "OK, guys, I did ACTION."
+6. Sub B: "You did? Okay, let me POST-PRESPONSE."
 7. (POST-RESPONSE occurs)
 
 ### Why make it this complicated?
@@ -100,5 +100,7 @@ This flexibility is very similar to how action resolution works the game
 triggered abilities. In fact, *MTG* had a large influence on the development
 of the Open Mafia Engine.
 
-Creating an action should be fairly simple, since all this response logic is
-part of the Engine itself. It can make debugging action interaction difficult, though.
+Creating a simple action is fairly simple, since all this response logic is part
+of the Engine itself. More involved actions can require multiple types (e. g. an
+`Action`, `ActivatedAbility` and some sort of watcher), but another framework would
+not be this flexible. Events can make debugging interactions fairly difficult, though.

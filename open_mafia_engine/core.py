@@ -609,6 +609,10 @@ class Ability(Subscriber):
             constraint.parent = self
 
 
+# class TriggeredAbility(Ability):
+#     """TODO: Check whether we need some interface for triggered abilities?"""
+
+
 class EActivateAbility(Event):
     """Event of intent to activate an ability.
 
@@ -657,7 +661,7 @@ class ActivatedAbility(Ability):
     The following are equivalent (using the default name for the second):
 
         MyAbility = ActivatedAbility.create_type(MyAction, name="MyAbility")
-        ActivateAbility_MyAction = ActivatedAbility[MyAction]
+        ActivatedAbility_MyAction = ActivatedAbility[MyAction]
     """
 
     @abstractmethod
