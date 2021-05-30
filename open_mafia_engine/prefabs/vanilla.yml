@@ -50,6 +50,7 @@ roles:
               keyword: "mafia_kill_limit"
 aux:
   - type: SimpleLynchTally
+  - type: GameEnder
   - type: DebugNotifier
   - type: DebugMortician
 variants:
