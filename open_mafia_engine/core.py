@@ -86,7 +86,7 @@ def normalize_etype(etype: ETypeOrS) -> str:
 
 
 class Action(GameObject):
-    """Some action.
+    """A delayed action.
 
     Attributes
     ----------
@@ -459,6 +459,7 @@ class Actor(GameObject):
     name : str
     alignments : List[Alignment]
     abilities : List[Ability]
+    status : Status
     """
 
     def __init__(

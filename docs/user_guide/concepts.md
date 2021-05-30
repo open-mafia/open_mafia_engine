@@ -1,6 +1,6 @@
 # Main Concepts
 
-## Games and Prefabs
+## Game
 
 `Game` is the main class of the Engine. It does the following:
 
@@ -11,37 +11,37 @@
 These things will be discussed later. The main thing to keep in mind for now
 is that you can reach *anything* game-related via the `Game` instance.
 
-A `Prefab` is a template for a game, which defines different roles, alignments,
-and role combinations for different numbers of players.
+## Events, Actions and Subscribers
 
-### Creating a Game
+The Open Mafia Engine is primarily Event-based, see
+[Event-driven Architecture on Wikipedia](https://en.wikipedia.org/wiki/Event-driven_architecture).
 
-You can load a Prefab:
+An `Event` typically represents some change in the game's state.
 
-- from a YAML file `Prefab.load_file(file_path)`
-- by file name `Prefab.load("name.yml")`
-- by prefab name `Prefab.load("Vanilla")`
+An `Action` is essentially a delayed function call.
+Each `Action` object references its `source` (the entity that created the action),
+some parameters, `priority` and whether it's `cancelled`.
 
-In the last two cases, it will look through `default_search_paths` and
-`extra_search_paths` for a matching Prefab. In the future, this may be cached.
+A `Subscriber` is a very base object. It `subscribe`s to particular types of
+events. `Subscriber.respond_to_event` takes an `Event` and `Game` context and
+optionally returns an `Action` (the response).
 
-To create a game from a Prefab:
+## Core Logic
 
-```python
-names = ["Alice", "Bob", "Charlie", "David", "Eevee"]
-prefab = Prefab.load("Vanilla")
-game = prefab.create_game(player_names=names)
-# game = prefab.create_game(player_names=names, variant="5 players")
-```
+### Handling Events
 
-Note that `variant` can be omitted, since there is only a single 5-player variant.
+Let's go through the event handling logic.
 
-## Actors, Alignments
+1. The `game` begins to `process_event(e)` for some event `e`.
+2. The `game` goes through all `game.subscribers` that are relevant for `e`.
+3. Each (relevant) `Subscriber` responds to the event, returning `None` or some `Action`.
+4. Each non-None `Action` is added to the `game.action_queue`
+5. Depending on the phase, the `ActionQueue` is proccessed either immediately or at the end of the phase.
 
-The `Actor` class represents a player character (or NPC).
+Essentially, each `Subscriber` returns a delayed `Action` in response to the `Event`.
 
-The `Alignment` class represents a particular "team"/"faction".
-An `Alignment` has a particular name (for example, "town" or "mafia") and some
-members (`Alignment.actors`).
-Winning or losing is called an `Outcome`, and each Alignment also has particular
-`OutcomeChecker`s associated with it - how they work will be explained later.
+### Action Queues
+
+An `ActionQueue` is just that - a queue of delayed actions.
+The `Game` object contains the main queue, but more can be created temporarily
+as part of the branching structure.

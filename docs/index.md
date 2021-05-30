@@ -1,53 +1,32 @@
 # Open Mafia Engine
 
-The Open Mafia Engine is a flexible, open-source game engine
+The Open Mafia Engine is a flexible, open-source game engine for Mafia-like games.
+
+See the [Wikipedia article](https://en.wikipedia.org/wiki/Mafia_%28party_game%29)
+for information on what Mafia/Werewolf is.
+
+The Open Mafia Engine actually allows a much broader type of game to be played,
+with custom roles and very intricate "setups". Most of these custom roles come
+from either "real-life" games or online forums such as
+[MafiaScum](https://wiki.mafiascum.net/index.php?title=Main_Page) and
+[Bay12Games Mafia Subforum](http://www.bay12forums.com/smf/index.php?board=20.0).
 
 ## Features
 
 - Event-based architecture, which allows for very complex interactions.
 - Many built-in abilities, victory conditions, etc.
+  (This is a lie, but we're working on it!)
 - YAML `Prefab`s let you define a game in a (mostly) human-readable fashion.
 - Open source & extensible, with a plugin system in the works.
 
 ## Installing
 
-### From PyPI
-
-It should be pretty easy to install a stable version:
+Install the latest stable version via pip:
 
 `pip install open_mafia_engine`
 
-### For development
-
-Development is done via [Poetry](https://python-poetry.org/), which is a
-packaging and dependency management tool.
-
-#### Poetry
-
-[Install poetry](https://python-poetry.org/docs/#installation)
-
-Clone the repo and install everything via poetry:
-
-`git clone https://github.com/open-mafia/open_mafia_engine.git`
-
-`poetry install`
-
-This should become easier when [PEP 660](https://www.python.org/dev/peps/pep-0660/)
-is implemented (will just be `pip install -e .`)
-
-#### Conda
-
-If you use `conda`, you can install `poetry` in any virtual environment:
-
-`conda activate YOUR_ENV_NAME`
-
-`conda install -c conda-forge poetry`
-
-Then clone and install:
-
-`git clone https://github.com/open-mafia/open_mafia_engine.git`
-
-`poetry install`
+See the [dev docs](development/installing_dev.md) to install for local
+development (using Poetry).
 
 ## Getting started
 
