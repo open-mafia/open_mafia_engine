@@ -1339,7 +1339,8 @@ class ActionQueue(GameObject):
         # Get and run all post-action responses
         post_responses = []
         for action in next_actions:
-            post_responses += game.broadcast_event(action.post_event())
+            if not action.canceled:
+                post_responses += game.broadcast_event(action.post_event())
         post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
         post_queue.process_all(game=game)
         self._history += post_queue._history
