@@ -86,7 +86,7 @@ def normalize_etype(etype: ETypeOrS) -> str:
 
 
 class Action(GameObject):
-    """Some action.
+    """A delayed action.
 
     Attributes
     ----------
@@ -459,6 +459,7 @@ class Actor(GameObject):
     name : str
     alignments : List[Alignment]
     abilities : List[Ability]
+    status : Status
     """
 
     def __init__(
@@ -608,6 +609,10 @@ class Ability(Subscriber):
             constraint.parent = self
 
 
+# class TriggeredAbility(Ability):
+#     """TODO: Check whether we need some interface for triggered abilities?"""
+
+
 class EActivateAbility(Event):
     """Event of intent to activate an ability.
 
@@ -656,7 +661,7 @@ class ActivatedAbility(Ability):
     The following are equivalent (using the default name for the second):
 
         MyAbility = ActivatedAbility.create_type(MyAction, name="MyAbility")
-        ActivateAbility_MyAction = ActivatedAbility[MyAction]
+        ActivatedAbility_MyAction = ActivatedAbility[MyAction]
     """
 
     @abstractmethod
@@ -1338,7 +1343,8 @@ class ActionQueue(GameObject):
         # Get and run all post-action responses
         post_responses = []
         for action in next_actions:
-            post_responses += game.broadcast_event(action.post_event())
+            if not action.canceled:
+                post_responses += game.broadcast_event(action.post_event())
         post_queue = ActionQueue(queue=post_responses, depth=self._depth + 1)
         post_queue.process_all(game=game)
         self._history += post_queue._history
