@@ -77,9 +77,9 @@ class SimpleLynchVoteAction(SimpleVoteAction):
     def __init__(
         self,
         source: Ability,
-        tally: Optional[SimpleVoteTally] = None,
         target: Union[None, Actor, Type[UnvoteAll], Type[VoteAgainstAll]] = None,
         *,
+        tally: Optional[SimpleVoteTally] = None,
         priority: float = 1.0,
         canceled: bool = False,
     ):
