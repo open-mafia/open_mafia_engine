@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from inspect import isabstract
+import inspect
 import logging
 from typing import (
     Any,
@@ -33,7 +33,7 @@ class GameObject(ReprMixin, ABC):
 
     def __init_subclass__(cls) -> None:
         global __go_types__
-        if not isabstract(cls):
+        if not inspect.isabstract(cls):
             __go_types__[cls.__qualname__] = cls
 
 
@@ -613,6 +613,18 @@ class Ability(Subscriber):
 #     """TODO: Check whether we need some interface for triggered abilities?"""
 
 
+def to_params(_sig: inspect.Signature, /, *args, **kwargs):
+    param_objs = list(_sig.parameters.values())
+    params = {}
+    for i, arg in enumerate(args):
+        pi: inspect.Parameter = param_objs[i]
+        if pi.kind == inspect.Parameter.KEYWORD_ONLY:
+            raise TypeError(f"No more positional args, got: {arg!r}")
+        params[pi.name] = arg
+    params.update(kwargs)
+    return params
+
+
 class EActivateAbility(Event):
     """Event of intent to activate an ability.
 
@@ -620,21 +632,39 @@ class EActivateAbility(Event):
     ----------
     ability : ActivatedAbility
         The ability to activate. Type matters!
-    params : dict
+    args : dict
+        Positional arguments of parameters. Check the signature of `ability`.
+    kwargs : dict
         Keyword arguments of parameters. Check the signature of `ability`.
+    params : dict
+        Full arguments, including both args (with name) and keyword args.
     """
 
-    def __init__(self, ability: ActivatedAbility, **params: Dict[str, Any]):
+    def __init__(
+        self, ability: ActivatedAbility, *args: Tuple, **kwargs: Dict[str, Any]
+    ):
         self._ability = ability
-        self._params = dict(params)
+
+        # TODO: Fill params with args
+        self._args = args
+        self._kwargs = kwargs
 
     @property
     def ability(self) -> ActivatedAbility:
         return self._ability
 
     @property
+    def args(self) -> Tuple[Any, ...]:
+        return self._args
+
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        return dict(self._kwargs)
+
+    @property
     def params(self) -> Dict[str, Any]:
-        return dict(self._params)
+        sig: inspect.Signature = self.ability.signature()
+        return to_params(sig, *self._args, **self._kwargs)
 
     def code(self) -> str:
         return self.code_for(type(self._ability))
@@ -665,8 +695,16 @@ class ActivatedAbility(Ability):
     """
 
     @abstractmethod
-    def make_action(self, game: Game, **params) -> Optional[Action]:
+    def make_action(self, game: Game, *args, **kwargs) -> Optional[Action]:
         raise NotImplementedError(f"No `make_action` for {self!r}")
+
+    @abstractmethod
+    def signature(self) -> inspect.Signature:
+        """Returns the Action call signature, ignoring the `source` argument."""
+
+    def fill_params(self, *args, **kwargs) -> Dict[str, Any]:
+        """Converts args and kwargs to 'kwargs-style' param dict."""
+        return to_params(self.signature(), *args, **kwargs)
 
     def __subscribe__(self, game: Game) -> None:
         game.add_sub(self, EActivateAbility.code_for(type(self)))
@@ -674,11 +712,10 @@ class ActivatedAbility(Ability):
     def respond_to_event(self, event: Event, game: Game) -> Optional[Action]:
         if isinstance(event, EActivateAbility):
             if event.ability is self:
-                params = event.params
                 for con in self.constraints:
-                    if not con.is_ok(game, **params):
+                    if not con.is_ok(game, *event.args, **event.kwargs):
                         return None
-                return self.make_action(game=game, **params)
+                return self.make_action(game, *event.args, **event.kwargs)
         return None
 
     @classmethod
@@ -702,10 +739,19 @@ class ActivatedAbility(Ability):
 
         # TODO: Maybe copy the signature from `atype` via the `inspect` module? :)
 
-        def make_action(self, game: Game, **params) -> Optional[Action]:
-            return atype(source=self, **params)
+        def make_action(self, game: Game, *args, **kwargs) -> Optional[atype]:
+            return atype(source=self, *args, **kwargs)
 
-        _GeneratedClass = type(name, (cls,), {"make_action": make_action})
+        raw_sig = inspect.signature(atype)
+        param_objs = list(raw_sig.parameters.values())[1:]
+        sig = inspect.Signature(param_objs, return_annotation=atype)
+
+        def signature(self) -> inspect.Signature:
+            return sig
+
+        _GeneratedClass = type(
+            name, (cls,), {"make_action": make_action, "signature": signature}
+        )
 
         return _GeneratedClass
 
@@ -727,11 +773,12 @@ class Constraint(Subscriber):
         self.__subscribe__(self.game)
 
     @abstractmethod
-    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+    def is_ok(self, game: Game, *args, **kwargs) -> bool:
         """Checks whether it is OK to make the action.
 
         Overwrite this. Remember that `self.parent` is also available.
         """
+        # params = self.parent.fill_params(*args, **kwargs)
         # TODO: Maybe remove `game` from signature, as `self.game` is available?
         return True
 

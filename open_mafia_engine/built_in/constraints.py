@@ -5,6 +5,7 @@ import warnings
 
 from open_mafia_engine.core import (
     Ability,
+    ActivatedAbility,
     Actor,
     CancelAction,
     Constraint,
@@ -27,7 +28,7 @@ class PhaseConstraint(Constraint):
     def phase_names(self) -> List[str]:
         return self._phase_names
 
-    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+    def is_ok(self, game: Game, *args, **kwargs) -> bool:
         return game.phases.current.name in self.phase_names
 
 
@@ -51,7 +52,7 @@ class ActorAliveConstraint(Constraint):
     def __init__(self, parent: Ability):
         super().__init__(parent)
 
-    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+    def is_ok(self, game: Game, *args, **kwargs) -> bool:
         return not self.parent.owner.status["dead"]
 
 
@@ -68,15 +69,33 @@ class TargetAliveConstraint(Constraint):
     NOTE: This currently doesn't check during the Action, only before Ability is used.
     """
 
-    def __init__(self, parent: Ability, target_key: str = "target"):
+    def __init__(self, parent: ActivatedAbility, target_key: str = "target"):
+        if not isinstance(parent, ActivatedAbility):
+            raise TypeError("Does not make sense for a non-activated ability.")
+
         super().__init__(parent)
         self._target_key = str(target_key)
+
+    @property
+    def parent(self) -> ActivatedAbility:
+        return self._parent
+
+    @parent.setter
+    def parent(self, new_parent: ActivatedAbility):
+        """Changing parent."""
+        if not isinstance(new_parent, ActivatedAbility):
+            raise TypeError("Does not make sense for a non-activated ability.")
+
+        self._parent._constraints.remove(self)
+        self._parent = new_parent
+        self._parent._constraints.append(self)
 
     @property
     def target_key(self) -> str:
         return self._target_key
 
-    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+    def is_ok(self, game: Game, *args, **kwargs) -> bool:
+        params = self.parent.fill_params(*args, **kwargs)
         if self.target_key not in params:
             raise ValueError(
                 f"Improperly set `target_key`: {self.target_key!r} vs {list(params)}"
@@ -102,7 +121,7 @@ class KeywordActionLimitPerPhaseConstraint(Constraint):
     def _helper(self) -> IntPerPhaseKeyAux:
         return IntPerPhaseKeyAux.get_or_create(self.game, key=self.keyword)
 
-    def is_ok(self, game: Game, **params: Dict[str, Any]) -> bool:
+    def is_ok(self, game: Game, *args, **kwargs) -> bool:
         """Preemptive check, to avoid making too many actions and canellations."""
         # TODO: Check if this is correct!
         return self._helper.value < self.n_actions
