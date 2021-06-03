@@ -677,7 +677,8 @@ class EActivateAbility(Event):
         cn = type(self).__qualname__
         kv = ", ".join(
             [f"ability={self._ability!r}"]
-            + [f"{k}={v!r}" for k, v in self._params.items()]
+            + [f"{v!r}" for v in self._args]
+            + [f"{k}={v!r}" for k, v in self._kwargs.items()]
         )
         return f"{cn}({kv})"
 
