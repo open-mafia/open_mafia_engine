@@ -31,7 +31,7 @@ class MafiaTypeNotFound(MafiaError):
         super().__init__(f"Couldn't find GameObject subtype {type_name!r}")
 
 
-class MafiaConverterError(MafiaError):
+class MafiaConverterError(MafiaError, TypeError):
     """Could not convert object to the requested type."""
 
     def __init__(self, obj: str, type_: Type):
