@@ -219,6 +219,14 @@ six = ">=1.11.0"
 languages = ["nltk (>=3.2.5,<3.5)", "nltk (>=3.2.5)"]
 
 [[package]]
+name = "makefun"
+version = "1.11.3"
+description = "Small library to dynamically create python functions."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "markdown"
 version = "3.3.4"
 description = "Python implementation of Markdown."
@@ -589,7 +597,7 @@ ruamel = ["ruamel.yaml"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "fc6327f5b2177fa71f496acd3f644e6fcc7dee6567adeaad2c6ff1b62c02e2a0"
+content-hash = "8f6418746e679a203e5c6028f2ced3ab62e317967f3a75d57a8e0489039743d3"
 
 [metadata.files]
 appdirs = [
@@ -665,6 +673,10 @@ livereload = [
 lunr = [
     {file = "lunr-0.5.8-py2.py3-none-any.whl", hash = "sha256:aab3f489c4d4fab4c1294a257a30fec397db56f0a50273218ccc3efdbf01d6ca"},
     {file = "lunr-0.5.8.tar.gz", hash = "sha256:c4fb063b98eff775dd638b3df380008ae85e6cb1d1a24d1cd81a10ef6391c26e"},
+]
+makefun = [
+    {file = "makefun-1.11.3-py2.py3-none-any.whl", hash = "sha256:a19bddf07efb6bf92e3ccde5d593e49bc59001fd6c17cf7301d7a73a2647ae83"},
+    {file = "makefun-1.11.3.tar.gz", hash = "sha256:033eed65e2c1804fca84161a38d1fc8bb8650d32a89ac1c5dc7e54b2b2c2e88c"},
 ]
 markdown = [
     {file = "Markdown-3.3.4-py3-none-any.whl", hash = "sha256:96c3ba1261de2f7547b46a00ea8463832c921d3f9d6aba3f255a6f71386db20c"},

@@ -27,6 +27,7 @@ mkdocs = { version = "^1.1.2", optional = true }
 beautifulsoup4 = { version = "^4.9.3", optional = true }
 requests = { version = "^2.25.1", optional = true }
 "ruamel.yaml" = { version = "^0.17.4", optional = true }
+makefun = "^1.11.3"
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
