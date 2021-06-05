@@ -45,6 +45,16 @@ class _BAD_HINT(object):
     pass
 
 
+def _get_ns() -> dict:
+    from open_mafia_engine.core.api import Game
+
+    res = locals()
+    res.update(__concrete_types__)
+    res.update(__abstract_types__)
+    res["Game"] = Game
+    return res
+
+
 class GameObjectMeta(ABCMeta):
     """Metaclass for game objects."""
 
@@ -210,7 +220,7 @@ def inject_converters(func: Callable) -> Callable:
         sb = sig.bind(*args, **kwargs)
         sb.apply_defaults()  # we want to convert the default,s too!
         # TODO: Not require type hints maybe?
-        type_hints = get_type_hints(func)
+        type_hints = get_type_hints(func, localns=_get_ns())
 
         game_param = sig.parameters.get("game")
 
@@ -256,6 +266,7 @@ class GameObject(ReprMixin, metaclass=GameObjectMeta):
 
     def __init__(self, game, /):
         from open_mafia_engine.core.game import Game
+
         if not isinstance(game, Game):
             raise TypeError(f"Expected Game, got {game!r}")
         self._game = game

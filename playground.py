@@ -1,8 +1,8 @@
-from open_mafia_engine.core.game import *
-from open_mafia_engine.core.game_object import *
+from open_mafia_engine.core.api import *
 
-from open_mafia_engine.converters.basic import *
+from open_mafia_engine.converters.core import *
 
 game = Game()
-Actor(game, name="Alice")
-Ability(game, owner="Alice")
+alice = Actor(game, name="Alice")
+abil = Ability(game, owner="Alice")
+game

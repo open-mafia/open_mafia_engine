@@ -14,8 +14,23 @@ class ReprMixin(object):
         used_keys = []
         s_args = []
         for k, param in sig.parameters.items():
-            if param.kind == inspect._VAR_KEYWORD:
-                # 'kwargs'
+            if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+                try:
+                    val = getattr(self, k)
+                    if val != param.default:
+                        s_args.append(repr(val))
+                except AttributeError:
+                    s_args.append("<?>")
+            elif param.kind == inspect.Parameter.VAR_POSITIONAL:
+                # *args
+                try:
+                    val = getattr(self, k)
+                    for v in val:
+                        s_args.append(repr(v))
+                except AttributeError:
+                    s_args.append("...")
+            elif param.kind == inspect.Parameter.VAR_KEYWORD:
+                # **kwargs
                 dct = getattr(self, "__dict__", {})
                 for k, v in dct.items():
                     if k not in used_keys:
@@ -25,7 +40,10 @@ class ReprMixin(object):
                         except AttributeError:
                             s_args.append(f"{k}=<?>")
                         used_keys.append(k)
-            elif param.kind in [inspect._KEYWORD_ONLY, inspect._POSITIONAL_OR_KEYWORD]:
+            elif param.kind in [
+                inspect.Parameter.KEYWORD_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            ]:
                 # keyword-able
                 try:
                     val = getattr(self, k)
