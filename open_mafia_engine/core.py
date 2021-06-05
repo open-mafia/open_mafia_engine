@@ -721,7 +721,7 @@ class ActivatedAbility(Ability):
 
     @classmethod
     def create_type(
-        cls, atype: Type[Action], name: str = None
+        cls, atype: Type[Action], name: str = None, doc: str = None
     ) -> Type[ActivatedAbility]:
         """Dynamically creates an ability type from the action.
 
@@ -731,6 +731,8 @@ class ActivatedAbility(Ability):
             Subclass of Action.
         name : str
             The name of the type. If not given, generates one from the action type.
+        doc : str
+            The docstring of the type. If not given, defaults to an empty
         """
 
         if not issubclass(atype, Action):
@@ -750,9 +752,11 @@ class ActivatedAbility(Ability):
         def signature(self) -> inspect.Signature:
             return sig
 
-        _GeneratedClass = type(
-            name, (cls,), {"make_action": make_action, "signature": signature}
-        )
+        __dict__ = {"make_action": make_action, "signature": signature}
+        if doc is not None:
+            __dict__["doc"] = doc
+
+        _GeneratedClass = type(name, (cls,), __dict__)
 
         return _GeneratedClass
 
