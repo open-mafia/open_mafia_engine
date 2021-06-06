@@ -162,14 +162,18 @@ class Status(GameObject, MutableMapping):
             del self._attribs[key]
         if old_val is None:  # TODO: Maybe broadcast always?
             return
-        self.game.process_event(EStatusChange(self, key, old_val, None))
+        self.game.process_event(
+            EStatusChange(self.game, self.parent, key, old_val, None)
+        )
 
     def __setitem__(self, key, value) -> None:
         old_val = self[key]
         self._attribs[key] = value
         if old_val == value:  # TODO: Maybe broadcast always?
             return
-        self.game.process_event(EStatusChange(self, key, old_val, value))
+        self.game.process_event(
+            EStatusChange(self.game, self.parent, key, old_val, value)
+        )
 
     def __len__(self) -> int:
         return len(self._attribs)
@@ -197,7 +201,7 @@ class EStatusChange(Event):
 
     @property
     def actor(self) -> Actor:
-        return self.actor
+        return self._actor
 
     @property
     def status(self) -> Status:

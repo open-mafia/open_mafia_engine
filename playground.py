@@ -79,6 +79,10 @@ c = C(game)
 
 e = EFake(game)
 
+#
+
+alice.status["hi"] = 1
+
 # Normally process
 game.process_event(e, process_now=True)
 
@@ -86,5 +90,7 @@ game.process_event(e, process_now=True)
 print("---- Removing subscriber c ----")
 game.event_engine.remove_subscriber(c)
 game.process_event(e, process_now=True)
+
+#
 
 game

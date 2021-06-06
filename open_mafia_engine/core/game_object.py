@@ -124,8 +124,12 @@ class _Converter(object):
         elif _t_origin is not None:
             return False
 
-        if issubclass(type_, GameObject):
-            return True
+        try:
+            if issubclass(type_, GameObject):
+                return True
+        except Exception:
+            # For example, if `type_` is a Typing object...
+            return False
 
         return False
 
