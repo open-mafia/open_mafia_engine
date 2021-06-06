@@ -248,9 +248,17 @@ class Subscriber(GameObject):
     def __init__(self, game: Game, /):
         super().__init__(game)
         self._handler_funcs: List[_HandlerFunc] = []
+        self._sub()
+
+    def _sub(self):
+        """Subscribe to events in the current game. This should happen automatically."""
         for handler in self.get_handlers():
             hf = self.game.event_engine.add_handler(handler, self)
             self._handler_funcs.append(hf)
+
+    def _unsub(self):
+        """Unsubscrive all handlers from the current game."""
+        self.game.event_engine.remove_subscriber(self)
 
     @classmethod
     def get_handlers(cls) -> List[EventHandler]:
@@ -437,6 +445,24 @@ class EventEngine(GameObject):
         return f
 
     # TODO: Unsubscription
+    def remove_subscriber(self, sub: Subscriber):
+        """Removes all subscriptions from the subscriber.
+
+        FIXME: This operation is very hackish and iterates over EVERYTHING.
+        This can probably be fixed by adding back-references, somehow.
+        """
+        hfs = sub.handler_funcs
+        for etype in self._subscribers.keys():
+            try:
+                self._subscribers[etype].remove(sub)
+                for hf in hfs:
+                    try:
+                        self._handlers[etype].remove(hf)
+                    except ValueError:
+                        pass
+            except ValueError:
+                pass
+        sub._handler_funcs = []
 
     def broadcast(self, event: Event) -> List[Action]:
         """Broadcasts event to all handlers."""

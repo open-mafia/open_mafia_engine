@@ -64,8 +64,12 @@ c = C(game)
 
 e = EFake(game)
 
-# game.event_engine.broadcast(e)
+# Normally process
 game.process_event(e, process_now=True)
 
+# What if we remove `c` from the subscriptions?
+print("---- Removing subscriber c ----")
+game.event_engine.remove_subscriber(c)
+game.process_event(e, process_now=True)
 
 game
