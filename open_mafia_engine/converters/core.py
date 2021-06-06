@@ -71,4 +71,4 @@ def get_trigger_by_path(game: Game, obj: str) -> Trigger:
         idx = owner.trigger_names.index(abil_name)
     except ValueError as e:
         raise ValueError(f"Could not find Trigger by path: {obj!r}") from e
-    return owner.abilities[idx]
+    return owner.triggers[idx]

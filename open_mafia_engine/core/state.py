@@ -149,8 +149,8 @@ class Actor(GameObject):
             raise TypeError(f"Expected Ability or Trigger, got {obj!r}")
 
 
-class _AbilityBase(Subscriber):
-    """Basic Ability object.
+class _ATBase(Subscriber):
+    """Base object for abilities and triggers.
 
     Attributes
     ----------
@@ -188,7 +188,7 @@ class _AbilityBase(Subscriber):
         return self._desc
 
 
-class Trigger(_AbilityBase):
+class Trigger(_ATBase):
     """Basic Trigger object.
 
     Attributes
@@ -206,7 +206,7 @@ class Trigger(_AbilityBase):
         return get_path(self.owner.name, "trigger", self.name)
 
 
-class Ability(_AbilityBase):
+class Ability(_ATBase):
     """Basic Ability object.
 
     Attributes
