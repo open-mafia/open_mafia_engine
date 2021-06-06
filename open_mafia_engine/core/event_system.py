@@ -1,7 +1,9 @@
 from __future__ import annotations
+from abc import abstractmethod
 from collections import defaultdict
 from enum import Enum
 import inspect
+import logging
 from typing import (
     Callable,
     DefaultDict,
@@ -15,19 +17,17 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-from makefun.main import partial
+from makefun import partial
 from open_mafia_engine.core.game_object import GameObject
-from open_mafia_engine.util.enums import make_str_enum
+from open_mafia_engine.errors import MafiaBadHandler
 from sortedcontainers.sortedlist import SortedList
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
 
-# ActionResolutionType = make_str_enum(
-#     "ActionResolutionType",
-#     ["instant", "end_of_phase"],
-#     doc="How actions are resolved.",
-# )
+NoneType = type(None)
+
+logger = logging.getLogger(__name__)
 
 
 class ActionResolutionType(str, Enum):
@@ -79,6 +79,10 @@ class Action(GameObject):
         self._priority = float(priority)
         self._canceled = bool(canceled)
         super().__init__(game)
+
+    @abstractmethod
+    def doit(self):
+        """Performs the action."""
 
     @property
     def priority(self) -> float:
@@ -230,12 +234,23 @@ class ActionQueue(GameObject):
 
 
 class Subscriber(GameObject):
-    """"""
+    """Base class for objects that must listen to events.
+
+    Creating Event Handlers
+    -----------------------
+    Subclass from this and use a `handler` or `handles` decorator:
+
+        class MySub(Subscriber):
+            @handles(Event)
+            def handler_1(self, event: Event) ->
+    """
 
     def __init__(self, game: Game, /):
         super().__init__(game)
+        self._handler_funcs: List[_HandlerFunc] = []
         for handler in self.get_handlers():
-            self.game.event_engine.add_handler(handler, self)
+            hf = self.game.event_engine.add_handler(handler, self)
+            self._handler_funcs.append(hf)
 
     @classmethod
     def get_handlers(cls) -> List[EventHandler]:
@@ -247,15 +262,110 @@ class Subscriber(GameObject):
                     res.append(x)
         return res
 
+    @property
+    def handler_funcs(self) -> List[_HandlerFunc]:
+        return list(self._handler_funcs)
+
 
 _HandlerFunc = Callable[[Subscriber, Event], Optional[List[Action]]]
 
 
+def _assert_legal_handler(func: _HandlerFunc):
+    """Checks whether the function can be used as an event handler.
+
+    Notes
+    -----
+    The logic for this is very complicated. Here are the basic ideas.
+
+    - The bare signature (without annotations) should be `func(self, event)`
+    - The names must be "self" and "event"!
+    - Allowed annotations for "self":
+        - `self` (empty)
+        - `self: ST` where issubclass(ST, Subscriber)
+    - Allowed annotations for "event":
+        - `event` (empty)
+        - `event: ET` where issubclass(ET, Event)
+    - Allowed annotations for the return type:
+        - `): ` (empty)
+        - `: -> None` (no returned value)
+        - `: -> List[AT]` where issubclass(AT, Action)
+        - `: -> Optional[List[AT]]` where issubclass(AT, Action)
+        - `: -> Union[List[AT1], List[AT2]]` where issubclass(AT#, Action)
+
+    """
+
+    # This should always work
+    sig = inspect.signature(func)
+    try:
+        p_self, p_event = list(sig.parameters.values())
+        assert p_self.name == "self"
+        assert p_event.name == "event"
+    except Exception as e:
+        raise MafiaBadHandler(func) from e
+
+    # This may not work, if import schenanigans occur
+    try:
+        type_hints = get_type_hints(func)
+    except Exception:
+        logger.exception("Could not get type hints for event handler:")
+        return
+
+    # Assuming typing worked, we can check these
+    try:
+        # Argument "self"
+        # `self`, `self: SubscriberSubtype`
+        th_self = type_hints.get("self")
+        if th_self is not None:
+            assert issubclass(th_self, Subscriber)
+
+        # Argument "event"
+        # `event`, `event: EventSubtype`, `event: Union[Event1, Event2]`
+        th_event = type_hints.get("event")
+        if th_event is None:
+            # No type hints
+            pass
+        elif get_origin(th_event) is None:
+            # `event: Event`
+            assert issubclass(th_event, Event)
+        elif get_origin(th_event) is Union:
+            # `event: Union[Event1, Event2]`
+            for arg in get_args(th_event):
+                assert issubclass(arg, Event)
+        else:
+            raise TypeError(f"Bad typing hint for 'event': {th_event!r}")
+
+        # Return Type
+        # `: `, `-> None`, `: -> List[Action]`, `: -> Optional[List[Action]]`
+        th_return = type_hints.get("return")
+        if th_return in [None, NoneType]:
+            # None or no return type
+            pass
+        elif get_origin(th_return) is None:
+            # This might just be `Action`, for example
+            raise TypeError(f"Must return None or List[Action], got {th_return!r}")
+        elif get_origin(th_return) == list:
+            # List[Action]
+            for arg in get_args(th_return):
+                assert issubclass(arg, Action)
+        elif get_origin(th_return) == Union:
+            # Optional[List[Action]] or Union[List[Action1], List[Action2]]
+            for arg in get_args(th_return):
+                if arg in [None, NoneType]:
+                    pass
+                elif get_origin(arg) == list:
+                    for a2 in get_args(arg):
+                        assert issubclass(a2, Action)
+                else:
+                    raise TypeError(f"Union contains unsupported arg: {arg!r}")
+    except Exception as e:
+        raise MafiaBadHandler(func) from e
+
+
 class EventHandler(object):
-    """"""
+    """Descriptor that implements event handling logic."""
 
     def __init__(self, func: _HandlerFunc, *etypes: List[Event]):
-        # TODO: Inspect func to make sure it returns list
+        _assert_legal_handler(func)
         self.func: _HandlerFunc = func
         self.etypes: List[Event] = list(etypes)
 
@@ -311,13 +421,20 @@ class EventEngine(GameObject):
 
     def __init__(self, game: Game):
         self._handlers: DefaultDict[Type[Event], List[Callable]] = defaultdict(list)
+        self._subscribers: DefaultDict[Type[Event], List[Subscriber]] = defaultdict(
+            list
+        )
         super().__init__(game)
 
-    def add_handler(self, handler: EventHandler, parent: Subscriber):
+    def add_handler(self, handler: EventHandler, parent: Subscriber) -> _HandlerFunc:
         """Adds the handler, with given parent, to own subscribers."""
         f = partial(handler.func, parent)
         for etype in handler.etypes:
             self._handlers[etype].append(f)
+
+        if parent not in self._handlers[etype]:
+            self._subscribers[etype].append(parent)
+        return f
 
     # TODO: Unsubscription
 
