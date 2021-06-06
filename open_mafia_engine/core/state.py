@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, MutableMapping, TYPE_CHECKING, List
+from typing import Any, Dict, MutableMapping, TYPE_CHECKING, List, Union
+import warnings
 
 from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Event, Subscriber
@@ -84,6 +85,7 @@ class Actor(GameObject):
             status = {}
         self.name = name
         self._abilities: List[Ability] = []
+        self._triggers: List[Trigger] = []
         self._factions: List[Faction] = []
         self._status: Status = Status(game, self, **status)
         super().__init__(game)
@@ -101,6 +103,14 @@ class Actor(GameObject):
         return [a.name for a in self._abilities]
 
     @property
+    def triggers(self) -> List[Trigger]:
+        return list(self._triggers)
+
+    @property
+    def trigger_names(self) -> List[str]:
+        return [t.name for t in self._triggers]
+
+    @property
     def factions(self) -> List[Faction]:
         return list(self._factions)
 
@@ -115,8 +125,31 @@ class Actor(GameObject):
             ability._owner._abilities.remove(ability)
             ability._owner = self
 
+    def add_trigger(self, trigger: Trigger):
+        """Adds this trigger to self, possibly removing the old owner."""
+        if not isinstance(trigger, Trigger):
+            raise TypeError(f"Expected Trigger, got {trigger!r}")
+        if trigger in self._triggers:
+            return
+        self._triggers.append(trigger)
+        if trigger._owner is not self:
+            trigger._owner._triggers.remove(trigger)
+            trigger._owner = self
 
-class Ability(Subscriber):
+    def add(self, obj: Union[Ability, Trigger, Faction]):
+        """Adds """
+        if isinstance(obj, Ability):
+            self.add_ability(obj)
+        elif isinstance(obj, Trigger):
+            self.add_trigger(obj)
+        elif isinstance(obj, Faction):
+            warnings.warn("Better to do `Faction.add_actor(me)` directly.")
+            obj.add_actor(self)
+        else:
+            raise TypeError(f"Expected Ability or Trigger, got {obj!r}")
+
+
+class _AbilityBase(Subscriber):
     """Basic Ability object.
 
     Attributes
@@ -139,6 +172,7 @@ class Ability(Subscriber):
         self._name = str(name)
         self._desc = str(desc)
         super().__init__(game)
+        owner.add(self)
         owner.add_ability(self)
 
     @property
@@ -153,9 +187,43 @@ class Ability(Subscriber):
     def desc(self) -> str:
         return self._desc
 
+
+class Trigger(_AbilityBase):
+    """Basic Trigger object.
+
+    Attributes
+    ----------
+    game
+    owner : Actor
+    name : str
+        The Trigger's name.
+    desc : str
+        Description. Default is "".
+    """
+
     @property
     def path(self) -> str:
-        return get_path(self.owner.name, self.name)
+        return get_path(self.owner.name, "trigger", self.name)
+
+
+class Ability(_AbilityBase):
+    """Basic Ability object.
+
+    Attributes
+    ----------
+    game
+    owner : Actor
+    name : str
+        The Ability's name.
+    desc : str
+        Description. Default is "".
+    """
+
+    # TODO: Ability is "activated"
+
+    @property
+    def path(self) -> str:
+        return get_path(self.owner.name, "ability", self.name)
 
 
 class Status(GameObject, MutableMapping):

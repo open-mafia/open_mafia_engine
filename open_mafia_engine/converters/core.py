@@ -1,7 +1,7 @@
 from open_mafia_engine.core.naming import PATH_SEP, get_parts
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.core.game_object import converter
-from open_mafia_engine.core.state import Ability, Actor, Faction
+from open_mafia_engine.core.state import Ability, Actor, Faction, Trigger
 
 
 @converter.register
@@ -36,14 +36,39 @@ def get_ability_by_path(game: Game, obj: str) -> Ability:
 
     Assuming PATH_SEP is "/", this will parse as:
 
-        "{actor_name}/{ability_name}"
+        "{actor_name}/ability/{ability_name}"
 
     TODO: Add fuzzy matching here.
     """
-    owner_name, abil_name = get_parts(obj)
+    owner_name, _abil, abil_name = get_parts(obj)
+
+    assert _abil == "ability"
+
     owner: Actor = get_actor_by_name(game, owner_name)
     try:
         idx = owner.ability_names.index(abil_name)
     except ValueError as e:
         raise ValueError(f"Could not find Ability by path: {obj!r}") from e
+    return owner.abilities[idx]
+
+
+@converter.register
+def get_trigger_by_path(game: Game, obj: str) -> Trigger:
+    """Gets the trigger by 'path' made of names.
+
+    Assuming PATH_SEP is "/", this will parse as:
+
+        "{actor_name}/trigger/{trigger_name}"
+
+    TODO: Add fuzzy matching here.
+    """
+    owner_name, _abil, abil_name = get_parts(obj)
+
+    assert _abil == "trigger"
+
+    owner: Actor = get_actor_by_name(game, owner_name)
+    try:
+        idx = owner.trigger_names.index(abil_name)
+    except ValueError as e:
+        raise ValueError(f"Could not find Trigger by path: {obj!r}") from e
     return owner.abilities[idx]
