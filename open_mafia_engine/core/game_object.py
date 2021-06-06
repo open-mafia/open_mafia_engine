@@ -1,29 +1,21 @@
 from __future__ import annotations
-from collections import defaultdict
-
-NoneType = type(None)
 
 import inspect
 import logging
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from collections import defaultdict
 from typing import (
-    DefaultDict,
-    Generic,
-    List,
-    MutableMapping,
-    Optional,
     TYPE_CHECKING,
     Any,
     Callable,
+    DefaultDict,
     Dict,
-    Protocol,
-    Tuple,
+    Optional,
     Type,
     Union,
     get_args,
     get_origin,
     get_type_hints,
-    TypeVar,
 )
 
 from makefun import wraps
@@ -32,17 +24,19 @@ from open_mafia_engine.errors import MafiaAmbiguousTypeName, MafiaConverterError
 from open_mafia_engine.util.classes import class_name
 from open_mafia_engine.util.repr import ReprMixin
 
+if TYPE_CHECKING:
+    from open_mafia_engine.core.game import Game
+
+NoneType = type(None)
+
 logger = logging.getLogger(__name__)
 
 __abstract_types__: Dict[str, Type[GameObject]] = {}
 __concrete_types__: Dict[str, Type[GameObject]] = {}
 
-if TYPE_CHECKING:
-    from open_mafia_engine.core.game import Game
-
 
 class _BAD_HINT(object):
-    pass
+    """Sentinel for a bad type hint."""
 
 
 def _get_ns() -> dict:
@@ -126,7 +120,7 @@ class _Converter(object):
         _t_args = get_args(type_)
 
         if _t_origin is Union:
-            return all(self.can_convert_to(_t_args))
+            return all(self.can_convert_to(x) for x in _t_args)
         elif _t_origin is not None:
             return False
 
@@ -180,31 +174,6 @@ class _Converter(object):
 
 
 converter = _Converter()
-
-
-# def converter(func: Callable) -> Callable:
-#     """Decorator that registers `func` to a converter."""
-
-#     global __converters__
-#     sig = inspect.signature(func)
-#     params = list(sig.parameters.values())
-#     try:
-#         p_game, p_arg = params
-#     except Exception:
-#         raise TypeError(f"Expected exactly 2 arguments, got signature: {sig!r}")
-
-#     th = get_type_hints(func)
-#     try:
-#         return_type = th["return"]
-#         game_type = th[p_game.name]
-#         arg_type = th[p_arg.name]
-#     except KeyError as e:
-#         raise TypeError(f"converter() requires type annotations!") from e
-#     # if not issubclass(game_type, Game):  # Can't check due to circular import!
-
-#     __converters__[return_type].funcs[arg_type] = func
-
-#     return func
 
 
 def inject_converters(func: Callable) -> Callable:

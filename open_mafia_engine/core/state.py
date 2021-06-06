@@ -59,7 +59,7 @@ class Actor(GameObject):
 
 
 class Ability(GameObject):
-    """Fake Ability object."""
+    """Basic Ability object."""
 
     def __init__(self, game: Game, /, owner: Actor):
         if not isinstance(owner, Actor):
