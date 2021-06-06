@@ -31,8 +31,16 @@ class Game(ReprMixin):
         return list(self._actors)
 
     @property
+    def actor_names(self) -> List[str]:
+        return [x.name for x in self._actors]
+
+    @property
     def factions(self) -> List[Faction]:
         return list(self._factions)
+
+    @property
+    def faction_names(self) -> List[str]:
+        return [x.name for x in self._factions]
 
     @property
     def aux(self) -> AuxHelper:

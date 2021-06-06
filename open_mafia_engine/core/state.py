@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, List
 
 from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Subscriber
-from open_mafia_engine.core.outcome import Outcome, OutcomeAction
-from open_mafia_engine.old_core import OutcomeChecker
+
+# from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
@@ -23,6 +23,10 @@ class Faction(GameObject):
     @property
     def actors(self) -> List[Actor]:
         return list(self._actors)
+
+    @property
+    def actor_names(self) -> List[str]:
+        return [x.name for x in self._actors]
 
     @property
     def outcome_checkers(self) -> List[OutcomeChecker]:
