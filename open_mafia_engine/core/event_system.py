@@ -29,18 +29,6 @@ NoneType = type(None)
 
 logger = logging.getLogger(__name__)
 
-
-class ActionResolutionType(str, Enum):
-    """How actions are resolved."""
-
-    instant = "instant"
-    end_of_phase = "end_of_phase"
-
-    def __repr__(self):
-        cn = type(self).__qualname__
-        return f"{cn}({self.value!r})"
-
-
 class Event(GameObject):
     """Core event object."""
 
@@ -49,6 +37,8 @@ class Event(GameObject):
 
 
 class _ActionEvent(Event):
+    """Base class for pre- and post-action events."""
+
     def __init__(self, game, action: Action, /):
         self._action = action
         super().__init__(game)
@@ -71,14 +61,32 @@ class Action(GameObject):
 
     Attributes
     ----------
+    game : Game
     priority : float
     canceled : bool
+
+    Abstract Methods
+    ----------------
+    doit(self) -> None
+        Performs the action.
+
+    Class Attributes
+    ----------------
+    Pre : Type[EPreAction]
+    Post : Type[EPostAction]
+        Pre- and post-action event classes to use with `action.pre` and `action.post`.
+        You may override these with your own when subclassing.
     """
 
     def __init__(self, game, /, *, priority: float = 0.0, canceled: bool = False):
         self._priority = float(priority)
         self._canceled = bool(canceled)
         super().__init__(game)
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        assert issubclass(cls.Pre, EPreAction)
+        assert issubclass(cls.Post, EPostAction)
 
     @abstractmethod
     def doit(self):

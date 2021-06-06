@@ -1,4 +1,5 @@
 from typing import Optional, Union
+from open_mafia_engine.core.enums import ActionResolutionType
 from open_mafia_engine.core.event_system import (
     EPostAction,
     EPreAction,
@@ -6,7 +7,6 @@ from open_mafia_engine.core.event_system import (
     Subscriber,
     handler,
     Action,
-    ActionResolutionType,
 )
 from open_mafia_engine.core.game_object import GameObject
 
@@ -21,8 +21,20 @@ class Phase(GameObject):
     ):
         super().__init__(game)
 
-        self.name = name
-        self.action_resolution = ActionResolutionType(action_resolution)
+        self._name = name
+        self._action_resolution = ActionResolutionType(action_resolution)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def action_resolution(self) -> ActionResolutionType:
+        return self._action_resolution
+
+    @action_resolution.setter
+    def action_resolution(self, v: str):
+        self._action_resolution = ActionResolutionType(v)
 
 
 class ETryPhaseChange(Event):

@@ -5,8 +5,18 @@ from open_mafia_engine.converters.core import *
 from open_mafia_engine.core.event_system import EPostAction, EPreAction
 
 game = Game()
+town = Faction(game, name="Town")
+mafia = Faction(game, name="Mafia")
+
 alice = Actor(game, name="Alice")
-abil = Ability(game, owner="Alice")
+a_abil = Ability(game, owner="Alice")
+# mafia.add_actor("Alice")
+mafia.add_actor(alice)
+
+bob = Actor(game, name="Bob")
+b_abil = Ability(game, owner="Bob")
+# town.add_actor("Bob")
+town.add_actor(bob)
 
 
 class EFake(Event):
