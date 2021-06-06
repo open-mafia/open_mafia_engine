@@ -1,17 +1,19 @@
 from __future__ import annotations
+
 from typing import List
+
 from open_mafia_engine.core.event_system import (
-    EventEngine,
-    Event,
-    ActionQueue,
     Action,
+    ActionQueue,
+    Event,
+    EventEngine,
     Subscriber,
 )
 from open_mafia_engine.core.game_object import GameObject
 
 
 class AuxObject(Subscriber):
-    pass
+    """Base class for auxiliary objects."""
 
 
 class AuxHelper(GameObject):

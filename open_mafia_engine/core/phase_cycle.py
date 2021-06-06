@@ -1,12 +1,15 @@
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import Optional
+
 from open_mafia_engine.core.enums import ActionResolutionType
 from open_mafia_engine.core.event_system import (
+    Action,
     EPostAction,
     EPreAction,
     Event,
     Subscriber,
     handler,
-    Action,
 )
 from open_mafia_engine.core.game_object import GameObject
 

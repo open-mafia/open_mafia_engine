@@ -1,26 +1,29 @@
 from __future__ import annotations
+
+import inspect
+import logging
 from abc import abstractmethod
 from collections import defaultdict
 from enum import Enum
-import inspect
-import logging
 from typing import (
+    TYPE_CHECKING,
     Callable,
     DefaultDict,
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Type,
     Union,
     get_args,
     get_origin,
     get_type_hints,
 )
+
 from makefun import partial
+from sortedcontainers import SortedList
+
 from open_mafia_engine.core.game_object import GameObject
 from open_mafia_engine.errors import MafiaBadHandler
-from sortedcontainers.sortedlist import SortedList
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
@@ -28,6 +31,7 @@ if TYPE_CHECKING:
 NoneType = type(None)
 
 logger = logging.getLogger(__name__)
+
 
 class Event(GameObject):
     """Core event object."""

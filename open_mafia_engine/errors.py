@@ -1,5 +1,6 @@
-from typing import Callable, Type
 import inspect
+from typing import Callable, Type
+
 from open_mafia_engine.util.repr import ReprMixin
 
 
@@ -38,6 +39,7 @@ class MafiaConverterError(MafiaError, TypeError):
         self.obj = obj
         self.type_ = type_
         super().__init__(f"Couldn't convert {obj!r} to {type_!r}")
+
 
 class MafiaBadHandler(MafiaError, TypeError):
     """Function can't be used as an event handler."""

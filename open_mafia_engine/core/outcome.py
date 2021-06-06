@@ -2,14 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from open_mafia_engine.core.game_object import GameObject
 from open_mafia_engine.core.enums import Outcome
-from open_mafia_engine.core.event_system import (
-    Action,
-    EPostAction,
-    EPreAction,
-    Subscriber,
-)
+from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
