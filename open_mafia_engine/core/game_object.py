@@ -194,8 +194,15 @@ def inject_converters(func: Callable) -> Callable:
         game_param = sig.parameters.get("game")
 
         if game_param is None:
-            raise TypeError(f"`game` param is required, got {sig!r}")
-        game: Game = sb.arguments["game"]
+            self_param = sig.parameters.get("self")
+            if self_param is None:
+                raise TypeError(f"`game` or `self` are required, got {sig!r}")
+            self: GameObject = sb.arguments["self"]
+            if not isinstance(self, GameObject):
+                raise TypeError(f"`self` must be GameObject, got {self!r}")
+            game: Game = self.game
+        else:
+            game: Game = sb.arguments["game"]
         params = list(sig.parameters.values())
 
         nargs = []

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from open_mafia_engine.core.game_object import GameObject
+from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Subscriber
 from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 from open_mafia_engine.old_core import OutcomeChecker
@@ -28,6 +28,7 @@ class Faction(GameObject):
     def outcome_checkers(self) -> List[OutcomeChecker]:
         return list(self._outcome_checkers)
 
+    @inject_converters
     def add_actor(self, actor: Actor):
         if not isinstance(actor, Actor):
             raise TypeError(f"Expected Actor, got {actor!r}")
@@ -36,6 +37,7 @@ class Faction(GameObject):
         self._actors.append(actor)
         actor._factions.append(self)
 
+    @inject_converters
     def remove_actor(self, actor: Actor):
         if actor in self._actors:
             self._actors.remove(actor)

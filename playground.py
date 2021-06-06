@@ -10,12 +10,12 @@ mafia = Faction(game, name="Mafia")
 
 alice = Actor(game, name="Alice")
 a_abil = Ability(game, owner="Alice")
-# mafia.add_actor("Alice")
-mafia.add_actor(alice)
+mafia.add_actor("Alice")
+# mafia.add_actor(alice)  # also works
 
 bob = Actor(game, name="Bob")
 b_abil = Ability(game, owner="Bob")
-# town.add_actor("Bob")
+# town.add_actor("Bob")  # also works
 town.add_actor(bob)
 
 
