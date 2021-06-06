@@ -47,3 +47,11 @@ class MafiaBadHandler(MafiaError, TypeError):
     def __init__(self, func: Callable):
         self.func = func
         super().__init__(f"Function isn't a legal event handler: {func!r}")
+
+
+class MafiaBadBuilder(MafiaError, TypeError):
+    """Function can't be used as a game builder."""
+
+    def __init__(self, func: Callable):
+        self.func = func
+        super().__init__(f"Function isn't a legal game builder: {func!r}")

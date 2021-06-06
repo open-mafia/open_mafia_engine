@@ -3,22 +3,44 @@ from typing import List, Optional, Union
 from open_mafia_engine.converters.core import *
 from open_mafia_engine.core.api import *
 
+
+@game_builder("test")
+def test_build(player_names: List[str]) -> Game:
+    """Game builder for testing purposes."""
+
+    N = len(player_names)
+    assert N > 1
+
+    game = Game()
+    mafia = Faction(game, "Mafia")
+    town = Faction(game, "Town")
+
+    N_mafia = 1
+    N_town = N - 1
+
+    for i in range(N_mafia):
+        act = Actor(game, player_names[i])
+        mafia.add_actor(act)
+        # TODO: Abilities
+
+    for i in range(N_town):
+        act = Actor(game, player_names[N_mafia + i])
+        town.add_actor(act)
+        # TODO: Abilities
+
+    return game
+
+
 # Testing game state
 
-game = Game()
-town = Faction(game, name="Town")
-mafia = Faction(game, name="Mafia")
+builder = GameBuilder.load("test")
+game = builder.build(["Alice", "Bob"])
 
-# Directly
-alice = Actor(game, name="Alice")
-a_abil = Ability(game, owner=alice, name="a_abil")
-mafia.add_actor(alice)
-
-# Via converter!
-bob = Actor(game, name="Bob")
+a_abil = Ability(game, owner="Alice", name="a_abil")
 b_abil = Ability(game, owner="Bob", name="b_abil")
-town.add_actor("Bob")
 
+alice = game.actors[0]
+bob = game.actors[1]
 
 # Testing events
 

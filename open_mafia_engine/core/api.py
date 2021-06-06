@@ -1,6 +1,7 @@
 # flake8: noqa
 
 from .auxiliary import AuxObject
+from .builder import game_builder, GameBuilder
 from .event_system import (
     Action,
     ActionQueue,

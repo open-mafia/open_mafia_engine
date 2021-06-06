@@ -132,6 +132,8 @@ class Ability(Subscriber):
     def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
         if not isinstance(owner, Actor):
             raise TypeError(f"Expected Actor, got {owner!r}")
+        if desc is None:
+            desc = ""
 
         self._owner = owner
         self._name = str(name)
