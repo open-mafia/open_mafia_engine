@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import Any, Dict, MutableMapping, TYPE_CHECKING, List
 
 from open_mafia_engine.core.game_object import GameObject, inject_converters
-from open_mafia_engine.core.event_system import Subscriber
+from open_mafia_engine.core.event_system import Event, Subscriber
 
 # from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 
@@ -78,11 +78,18 @@ class OutcomeChecker(Subscriber):
 class Actor(GameObject):
     """Actor object."""
 
-    def __init__(self, game: Game, /, name: str):
+    def __init__(self, game: Game, /, name: str, status: Dict[str, Any] = None):
+        if status is None:
+            status = {}
         self.name = name
         self._abilities: List[Ability] = []
         self._factions: List[Faction] = []
+        self._status: Status = Status(game, self, **status)
         super().__init__(game)
+
+    @property
+    def status(self) -> Status:
+        return self._status
 
     @property
     def abilities(self) -> List[Ability]:
@@ -118,3 +125,92 @@ class Ability(GameObject):
     @property
     def owner(self) -> Actor:
         return self._owner
+
+
+class Status(GameObject, MutableMapping):
+    """dict-like representation of an actor's status.
+
+    Access of empty attribs gives None.
+    Changing an attribute emits an EStatusChange event.
+
+    Attributes
+    ----------
+    parent: Actor
+    attribs : dict
+        Raw keyword arguments for the status.
+    """
+
+    def __init__(self, game, /, parent: Actor, **attribs: Dict[str, Any]):
+        super().__init__(game)
+        self._parent = parent
+        self._attribs = attribs
+
+    @property
+    def parent(self) -> Actor:
+        return self._parent
+
+    @property
+    def attribs(self) -> Dict[str, Any]:
+        return dict(self._attribs)
+
+    def __getitem__(self, key) -> Any:
+        return self._attribs.get(key, None)
+
+    def __delitem__(self, key) -> None:
+        old_val = self[key]
+        if old_val is not None:
+            del self._attribs[key]
+        if old_val is None:  # TODO: Maybe broadcast always?
+            return
+        self.game.process_event(EStatusChange(self, key, old_val, None))
+
+    def __setitem__(self, key, value) -> None:
+        old_val = self[key]
+        self._attribs[key] = value
+        if old_val == value:  # TODO: Maybe broadcast always?
+            return
+        self.game.process_event(EStatusChange(self, key, old_val, value))
+
+    def __len__(self) -> int:
+        return len(self._attribs)
+
+    def __iter__(self):
+        return iter(self._attribs)
+
+    def __repr__(self):
+        cn = type(self).__qualname__
+        parts = [repr(self.game), repr(self.parent)]
+        for k, v in self._attribs.items():
+            parts.append(f"{k}={v!r}")
+        return f"{cn}(" + ", ".join(parts) + ")"
+
+
+class EStatusChange(Event):
+    """The Status has changed for some Actor."""
+
+    def __init__(self, game, /, actor: Actor, key: str, old_val: Any, new_val: Any):
+        super().__init__(game)
+        self._actor = actor
+        self._key = key
+        self._old_val = old_val
+        self._new_val = new_val
+
+    @property
+    def actor(self) -> Actor:
+        return self.actor
+
+    @property
+    def status(self) -> Status:
+        return self._actor.status
+
+    @property
+    def key(self) -> str:
+        return self._key
+
+    @property
+    def old_val(self) -> Any:
+        return self._old_val
+
+    @property
+    def new_val(self) -> Any:
+        return self._new_val
