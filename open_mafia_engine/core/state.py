@@ -4,6 +4,7 @@ from typing import Any, Dict, MutableMapping, TYPE_CHECKING, List
 
 from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Event, Subscriber
+from open_mafia_engine.core.naming import get_path
 
 # from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 
@@ -96,6 +97,10 @@ class Actor(GameObject):
         return list(self._abilities)
 
     @property
+    def ability_names(self) -> List[str]:
+        return [a.name for a in self._abilities]
+
+    @property
     def factions(self) -> List[Faction]:
         return list(self._factions)
 
@@ -111,20 +116,44 @@ class Actor(GameObject):
             ability._owner = self
 
 
-class Ability(GameObject):
-    """Basic Ability object."""
+class Ability(Subscriber):
+    """Basic Ability object.
 
-    def __init__(self, game: Game, /, owner: Actor):
+    Attributes
+    ----------
+    game
+    owner : Actor
+    name : str
+        The Ability's name.
+    desc : str
+        Description. Default is "".
+    """
+
+    def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
         if not isinstance(owner, Actor):
             raise TypeError(f"Expected Actor, got {owner!r}")
 
         self._owner = owner
+        self._name = str(name)
+        self._desc = str(desc)
         super().__init__(game)
         owner.add_ability(self)
 
     @property
     def owner(self) -> Actor:
         return self._owner
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def desc(self) -> str:
+        return self._desc
+
+    @property
+    def path(self) -> str:
+        return get_path(self.owner.name, self.name)
 
 
 class Status(GameObject, MutableMapping):

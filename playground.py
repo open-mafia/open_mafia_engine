@@ -2,7 +2,6 @@ from typing import List, Optional, Union
 
 from open_mafia_engine.converters.core import *
 from open_mafia_engine.core.api import *
-from open_mafia_engine.core.event_system import EPostAction, EPreAction
 
 # Testing game state
 
@@ -10,15 +9,15 @@ game = Game()
 town = Faction(game, name="Town")
 mafia = Faction(game, name="Mafia")
 
+# Directly
 alice = Actor(game, name="Alice")
-a_abil = Ability(game, owner="Alice")
-mafia.add_actor("Alice")
-# mafia.add_actor(alice)  # also works
+a_abil = Ability(game, owner=alice, name="a_abil")
+mafia.add_actor(alice)
 
+# Via converter!
 bob = Actor(game, name="Bob")
-b_abil = Ability(game, owner="Bob")
-# town.add_actor("Bob")  # also works
-town.add_actor(bob)
+b_abil = Ability(game, owner="Bob", name="b_abil")
+town.add_actor("Bob")
 
 
 # Testing events
@@ -79,10 +78,6 @@ c = C(game)
 
 e = EFake(game)
 
-#
-
-alice.status["hi"] = 1
-
 # Normally process
 game.process_event(e, process_now=True)
 
@@ -92,5 +87,7 @@ game.event_engine.remove_subscriber(c)
 game.process_event(e, process_now=True)
 
 #
+print("---- Changing Alice's status ----")
+alice.status["hi"] = 1
 
 game
