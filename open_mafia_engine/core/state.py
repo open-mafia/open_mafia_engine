@@ -1,16 +1,35 @@
 from __future__ import annotations
+from abc import abstractmethod
+import inspect
 
-from typing import Any, Dict, MutableMapping, TYPE_CHECKING, List, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    MutableMapping,
+    Optional,
+    TYPE_CHECKING,
+    List,
+    Tuple,
+    Type,
+    Union,
+)
+import logging
 import warnings
 
+from makefun import wraps
+from makefun.main import with_signature
+
 from open_mafia_engine.core.game_object import GameObject, inject_converters
-from open_mafia_engine.core.event_system import Event, Subscriber
+from open_mafia_engine.core.event_system import Action, Event, Subscriber, handler
 from open_mafia_engine.core.naming import get_path
 
 # from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
+
+logger = logging.getLogger(__name__)
 
 
 class Faction(GameObject):
@@ -206,6 +225,31 @@ class Trigger(_ATBase):
         return get_path(self.owner.name, "trigger", self.name)
 
 
+class EActivate(Event):
+    """Event of ability activation.
+
+    That is, this event is triggered by a player trying to activate their Ability.
+    """
+
+    def __init__(self, game, ability: Ability, /, *args, **kwargs):
+        self._ability = ability
+        self._args = args
+        self._kwargs = kwargs
+        super().__init__(game)
+
+    @property
+    def ability(self) -> Ability:
+        return self._ability
+
+    @property
+    def args(self) -> Tuple:
+        return self._args
+
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        return dict(self._kwargs)
+
+
 class Ability(_ATBase):
     """Basic Ability object.
 
@@ -219,11 +263,96 @@ class Ability(_ATBase):
         Description. Default is "".
     """
 
-    # TODO: Ability is "activated"
-
     @property
     def path(self) -> str:
         return get_path(self.owner.name, "ability", self.name)
+
+    @abstractmethod
+    def activate(self, *args, **kwargs) -> Optional[List[Action]]:
+        """Activate this ability with some arguments."""
+
+        # TODO: Implement argument constraints!
+        # TODO: Make the signature be the same as the Action's
+
+    @handler
+    def handle_activate(self, event: EActivate) -> Optional[List[Action]]:
+        """Handler to activate this ability."""
+        if isinstance(event, EActivate) and event.ability is self:
+            return self.activate(*event.args, **event.kwargs)
+        return None
+
+    @classmethod
+    def generate(
+        cls,
+        action_or_func: Union[Type[Action], Callable],
+        params: List[str] = None,
+        name: str = None,
+        doc: str = None,
+        desc: str = None,
+    ) -> Type[Ability]:
+        """Create an Ability subtype from an Action or function.
+
+        Parameters
+        ----------
+        action_or_func : Type[Action] or Callable
+            If an Action subclass, uses it directly.
+            If a callable (function), generates an action type and uses it.
+        params : List[str]
+            The names of parameters to leave as activation parameters.
+            The rest will be taken as arguments for the Ability itself.
+        """
+
+        # Create an action type
+        if issubclass(action_or_func, Action):
+            TAction = action_or_func
+        elif callable(action_or_func):
+            gen_name: Optional[str] = f"{name}_Action" if name else name
+            TAction = Action.generate(action_or_func, name=gen_name, doc=doc)
+        else:
+            raise TypeError(f"Expected Action or function, got {action_or_func!r}")
+        TAction: Type[Action]
+
+        # Fix input arguments
+        if params is None:
+            params = []
+        if name is None:
+            name = f"{cls.__name__}_{TAction.__name__}"
+            # TODO - add random bits to avoid conflict?
+        if doc is None:
+            doc = "(GENERATED ABILITY) " + (TAction.__doc__ or "")
+
+        # Split the signature into __init__() and activate() args
+        sig_action = inspect.signature(TAction.__init__)
+        par_action = list(sig_action.parameters.values())
+
+        par_activate = [
+            inspect.Parameter("self", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
+        ] + [p for p in par_action if p.name in params]
+        sig_activate = inspect.Signature(
+            par_activate, return_annotation=Optional[List[Action]]
+        )
+
+        def _ta():
+            return TAction
+
+        class GeneratedAbility(cls):
+            TAction = _ta()
+
+            @with_signature(sig_activate)
+            def activate(self, *args, **kwargs) -> Optional[List[Action]]:
+                """Activate this ability with some arguments."""
+
+                try:
+                    return [self.TAction(self.game, *args, **kwargs)]
+                except Exception:
+                    logger.exception("Error executing action:")
+                    return None
+
+        GeneratedAbility.__name__ = name
+        GeneratedAbility.__qualname__ = name
+        GeneratedAbility.__doc__ = doc
+
+        return GeneratedAbility
 
 
 class Status(GameObject, MutableMapping):

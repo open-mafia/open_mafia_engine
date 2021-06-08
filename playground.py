@@ -36,13 +36,25 @@ def test_build(player_names: List[str]) -> Game:
 builder = GameBuilder.load("test")
 game = builder.build(["Alice", "Bob"])
 
-a_abil = Ability(game, owner="Alice", name="a_abil")
-b_abil = Ability(game, owner="Bob", name="b_abil")
+
+@Action.generate
+def AcFake(self: Action):  # TODO - whoops! We need `game` here at least!
+    print("Fake ability!")
+    print(self.game.actor_names)
+
+
+AbFake = Ability.generate(AcFake)
+
+a_abil = AbFake(game, owner="Alice", name="a_abil")
+b_abil = AbFake(game, owner="Bob", name="b_abil")
 
 alice = game.actors[0]
 bob = game.actors[1]
 
 # Testing events
+
+print("----- Test ability activation ----")
+game.process_event(EActivate(game, a_abil), process_now=True)
 
 
 class EFake(Event):
@@ -101,6 +113,7 @@ c = C(game)
 e = EFake(game)
 
 # Normally process
+print("---- Testing subscribers ----")
 game.process_event(e, process_now=True)
 
 # What if we remove `c` from the subscriptions?

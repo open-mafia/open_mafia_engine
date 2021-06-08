@@ -25,4 +25,4 @@ from .phase_cycle import (
     Phase,
     PhaseChangeAction,
 )
-from .state import Ability, Actor, EStatusChange, Faction, Status, Trigger
+from .state import Ability, Actor, EStatusChange, EActivate, Faction, Status, Trigger

@@ -18,8 +18,9 @@ from typing import (
     get_origin,
     get_type_hints,
 )
+import warnings
 
-from makefun import partial
+from makefun import partial, wraps
 from sortedcontainers import SortedList
 
 from open_mafia_engine.core.game_object import GameObject
@@ -87,14 +88,20 @@ class Action(GameObject):
         self._canceled = bool(canceled)
         super().__init__(game)
 
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-        assert issubclass(cls.Pre, EPreAction)
-        assert issubclass(cls.Post, EPostAction)
+    # NOTE: You can override these classes, even inline.
+    Pre = EPreAction
+    Post = EPostAction
 
     @abstractmethod
     def doit(self):
         """Performs the action."""
+
+        # Override this.
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        assert issubclass(cls.Pre, EPreAction)
+        assert issubclass(cls.Post, EPostAction)
 
     @property
     def priority(self) -> float:
@@ -116,16 +123,147 @@ class Action(GameObject):
         # TODO - Event?
         self._canceled = v
 
-    Pre = EPreAction
-    Post = EPostAction
-
     def pre(self) -> EPreAction:
-        """Get a pre-event for this action."""
+        """Create a pre-event for this action."""
         return self.Pre(self.game, self)
 
     def post(self) -> EPostAction:
-        """Get a post-event for this action."""
+        """Create a post-event for this action."""
         return self.Post(self.game, self)
+
+    @classmethod
+    def generate(
+        cls, func: Callable, name: str = None, doc: str = None
+    ) -> Type[Action]:
+        """Create an Action subtype from a function.
+
+        Parameters
+        ----------
+        func : Callable
+            Function that does something. :)
+        name : str
+            What name to use. By default, will auto-generate a name from the func name.
+        doc : str
+            Docstring. By default, will use func doc, with prepended Action info.
+        """
+
+        if name is None:
+            name = f"{cls.__name__}_{func.__name__}"
+            # TODO - add random bits to avoid conflict?
+
+        if doc is None:
+            doc = "(GENERATED ACTION) " + (func.__doc__ or "")
+
+        # Get all signatures, parameters to merge
+        sig_core = inspect.signature(cls.__init__)
+        params_core = list(sig_core.parameters.values())
+        sig_func = inspect.signature(func)
+        params_func = list(sig_func.parameters.values())
+
+        # Make sure the function has "self" as 0th arg
+        if (len(params_func) < 1) or (params_func[0].name != "self"):
+            raise TypeError(f"Function requires `self` argument to be first.")
+        # Give a hint via warnings :)
+        if params_func[0].annotation is None:
+            warnings.warn(
+                "We suggest you annotate like this to improve code editor experience:\n"
+                f"  {func.__name__}(self: Action, ...)"
+            )
+
+        # Generate the list of params by merging
+        DEFAULTS = {k: v.default for k, v in sig_core.parameters.items()}
+        DEFAULTS.update({k: v.default for k, v in sig_func.parameters.items()})
+        params_res: List[inspect.Parameter] = []
+        attr_names = []
+        kinds = [
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.KEYWORD_ONLY,
+            inspect.Parameter.VAR_KEYWORD,
+        ]
+        i_core = 0
+        i_func = 0
+        for kind in kinds:
+            while (i_core < len(params_core)) and (params_core[i_core].kind == kind):
+                params_res.append(params_core[i_core])
+                i_core += 1
+            while (i_func < len(params_func)) and (params_func[i_func].kind == kind):
+                pfi = params_func[i_func]
+                conflict_params = [p for p in params_res if p.name == pfi.name]
+                if len(conflict_params) == 0:
+                    params_res.append(pfi)
+                    attr_names.append(pfi.name)
+                elif len(conflict_params) == 1:
+                    # conflict_params[0].default = pfi.default, except can't set param!
+                    conf = conflict_params[0]
+                    replacement = conf.replace(default=pfi.default)
+                    params_res[params_res.index(conf)] = replacement
+                    # don't add it - will conflict
+                i_func += 1
+        # Note: we make sure that we don't have duplicate *args, **kwargs
+        sig_res = inspect.Signature(params_res)
+
+        class GeneratedAction(cls):
+            @wraps(cls.__init__, new_sig=sig_res)
+            def __init__(
+                self,
+                game,
+                /,
+                *args,
+                priority: float = DEFAULTS.get("priority", 0.0),
+                canceled: bool = DEFAULTS.get("canceled", False),
+                **kwargs,
+            ):
+                super().__init__(game, priority=priority, canceled=canceled)
+
+                # Set attributes
+                bs = sig_res.bind(
+                    self, game, *args, priority=priority, canceled=canceled, **kwargs
+                )  # FIXME: Should we pass in `game`?
+                bs.apply_defaults()
+                for attr_name in attr_names:
+                    setattr(self, attr_name, bs.arguments[attr_name])
+                # NOTE: We can't keep the signature, because someone might change
+                # the arguments on the class instance; we have to "re-parse" instead
+
+                # Housekeeping
+                self._func = func
+                self._sig = sig_res
+                self._attr_names = tuple(attr_names)
+
+            def doit(self):
+                """Performs the action (generated from function)."""
+
+                func = self._func
+                sig = self._sig
+                attr_names = self._attr_names
+
+                # "re-parse" the signature
+                args = []
+                kwargs = {}
+                for k, p in sig.parameters.items():
+                    if k not in attr_names:
+                        continue
+                    v = getattr(self, k)
+                    if p.kind in [
+                        inspect.Parameter.POSITIONAL_ONLY,
+                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    ]:
+                        args += v
+                    elif p.kind == inspect.Parameter.VAR_POSITIONAL:
+                        args.extend(v)
+                    elif p.kind == inspect.Parameter.KEYWORD_ONLY:
+                        kwargs[k] = v
+                    elif p.kind == inspect.Parameter.VAR_KEYWORD:
+                        kwargs.update(v)
+
+                func(self, *args, **kwargs)
+
+        GeneratedAction.__name__ = name
+        GeneratedAction.__qualname__ = name
+        GeneratedAction.__doc__ = doc
+        return GeneratedAction
 
 
 class ActionQueue(GameObject):
