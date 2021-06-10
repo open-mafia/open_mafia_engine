@@ -37,16 +37,23 @@ builder = GameBuilder.load("test")
 game = builder.build(["Alice", "Bob"])
 
 
-@Action.generate
-def AcFake(self: Action):  # TODO - whoops! We need `game` here at least!
-    print("Fake ability!")
+def fake_action(self: Action):  # TODO - whoops! We need `game` here at least!
+    print("Fake action!")
     print(self.game.actor_names)
 
 
-AbFake = Ability.generate(AcFake)
+AcFake = Action.generate(fake_action, name="AcFake", doc="Fake action")
+AbFake = Ability.generate(AcFake, name="AbFake", doc="Fake ability")
+
+
+@Ability.generate
+def AbFake2(self: Action):
+    print("fake ability 2")
+    print(self.game.actor)
+
 
 a_abil = AbFake(game, owner="Alice", name="a_abil")
-b_abil = AbFake(game, owner="Bob", name="b_abil")
+b_abil = AbFake2(game, owner="Bob", name="b_abil")
 
 alice = game.actors[0]
 bob = game.actors[1]

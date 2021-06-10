@@ -303,10 +303,10 @@ class Ability(_ATBase):
         """
 
         # Create an action type
-        if issubclass(action_or_func, Action):
+        if isinstance(action_or_func, type) and issubclass(action_or_func, Action):
             TAction = action_or_func
         elif callable(action_or_func):
-            gen_name: Optional[str] = f"{name}_Action" if name else name
+            gen_name: str = name if name else f"{action_or_func.__name__}_Action"
             TAction = Action.generate(action_or_func, name=gen_name, doc=doc)
         else:
             raise TypeError(f"Expected Action or function, got {action_or_func!r}")
@@ -332,25 +332,28 @@ class Ability(_ATBase):
             par_activate, return_annotation=Optional[List[Action]]
         )
 
-        def _ta():
-            return TAction
+        sig_init = "TODO"
 
-        class GeneratedAbility(cls):
-            TAction = _ta()
+        # TODO: Set sig_init
+        def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
+            super().__init__(game, owner, name, desc=desc)
 
-            @with_signature(sig_activate)
-            def activate(self, *args, **kwargs) -> Optional[List[Action]]:
-                """Activate this ability with some arguments."""
+        @with_signature(sig_activate)
+        def activate(self, *args, **kwargs) -> Optional[List[Action]]:
+            """Activate this ability with some arguments."""
 
-                try:
-                    return [self.TAction(self.game, *args, **kwargs)]
-                except Exception:
-                    logger.exception("Error executing action:")
-                    return None
+            try:
+                return [self.TAction(self.game, *args, **kwargs)]
+            except Exception as e:
+                logger.exception("Error executing action:")
+                if False:  # Set for debugging errors :)
+                    raise
+                return None
 
-        GeneratedAbility.__name__ = name
-        GeneratedAbility.__qualname__ = name
-        GeneratedAbility.__doc__ = doc
+        GeneratedAbility = type(
+            name, (cls,), {"__init__": __init__, "activate": activate, "__doc__": doc}
+        )
+        GeneratedAbility.TAction = TAction
 
         return GeneratedAbility
 

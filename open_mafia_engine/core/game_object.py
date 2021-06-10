@@ -67,7 +67,7 @@ class GameObjectMeta(ABCMeta):
         cn = class_name(cls)
         existing = __abstract_types__.get(cn, __concrete_types__.get(cn))
         if existing is not None:
-            raise MafiaAmbiguousTypeName(existing, cls)
+            raise MafiaAmbiguousTypeName(cls, existing)
         if inspect.isabstract(cls):
             __abstract_types__[cn] = cls
         else:

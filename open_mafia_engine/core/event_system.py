@@ -204,65 +204,64 @@ class Action(GameObject):
         # Note: we make sure that we don't have duplicate *args, **kwargs
         sig_res = inspect.Signature(params_res)
 
-        class GeneratedAction(cls):
-            @wraps(cls.__init__, new_sig=sig_res)
-            def __init__(
-                self,
-                game,
-                /,
-                *args,
-                priority: float = DEFAULTS.get("priority", 0.0),
-                canceled: bool = DEFAULTS.get("canceled", False),
-                **kwargs,
-            ):
-                super().__init__(game, priority=priority, canceled=canceled)
+        @wraps(cls.__init__, new_sig=sig_res)
+        def __init__(
+            self,
+            game,
+            /,
+            *args,
+            priority: float = DEFAULTS.get("priority", 0.0),
+            canceled: bool = DEFAULTS.get("canceled", False),
+            **kwargs,
+        ):
+            super(type(self), self).__init__(game, priority=priority, canceled=canceled)
 
-                # Set attributes
-                bs = sig_res.bind(
-                    self, game, *args, priority=priority, canceled=canceled, **kwargs
-                )  # FIXME: Should we pass in `game`?
-                bs.apply_defaults()
-                for attr_name in attr_names:
-                    setattr(self, attr_name, bs.arguments[attr_name])
-                # NOTE: We can't keep the signature, because someone might change
-                # the arguments on the class instance; we have to "re-parse" instead
+            # Set attributes
+            bs = sig_res.bind(
+                self, game, *args, priority=priority, canceled=canceled, **kwargs
+            )  # FIXME: Should we pass in `game`?
+            bs.apply_defaults()
+            for attr_name in attr_names:
+                setattr(self, attr_name, bs.arguments[attr_name])
+            # NOTE: We can't keep the signature, because someone might change
+            # the arguments on the class instance; we have to "re-parse" instead
 
-                # Housekeeping
-                self._func = func
-                self._sig = sig_res
-                self._attr_names = tuple(attr_names)
+            # Housekeeping
+            self._func = func
+            self._sig = sig_res
+            self._attr_names = tuple(attr_names)
 
-            def doit(self):
-                """Performs the action (generated from function)."""
+        def doit(self):
+            """Performs the action (generated from function)."""
 
-                func = self._func
-                sig = self._sig
-                attr_names = self._attr_names
+            func = self._func
+            sig = self._sig
+            attr_names = self._attr_names
 
-                # "re-parse" the signature
-                args = []
-                kwargs = {}
-                for k, p in sig.parameters.items():
-                    if k not in attr_names:
-                        continue
-                    v = getattr(self, k)
-                    if p.kind in [
-                        inspect.Parameter.POSITIONAL_ONLY,
-                        inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    ]:
-                        args += v
-                    elif p.kind == inspect.Parameter.VAR_POSITIONAL:
-                        args.extend(v)
-                    elif p.kind == inspect.Parameter.KEYWORD_ONLY:
-                        kwargs[k] = v
-                    elif p.kind == inspect.Parameter.VAR_KEYWORD:
-                        kwargs.update(v)
+            # "re-parse" the signature
+            args = []
+            kwargs = {}
+            for k, p in sig.parameters.items():
+                if k not in attr_names:
+                    continue
+                v = getattr(self, k)
+                if p.kind in [
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                ]:
+                    args += v
+                elif p.kind == inspect.Parameter.VAR_POSITIONAL:
+                    args.extend(v)
+                elif p.kind == inspect.Parameter.KEYWORD_ONLY:
+                    kwargs[k] = v
+                elif p.kind == inspect.Parameter.VAR_KEYWORD:
+                    kwargs.update(v)
 
-                func(self, *args, **kwargs)
+            func(self, *args, **kwargs)
 
-        GeneratedAction.__name__ = name
-        GeneratedAction.__qualname__ = name
-        GeneratedAction.__doc__ = doc
+        GeneratedAction = type(
+            name, (cls,), {"__init__": __init__, "doit": doit, "__doc__": doc}
+        )
         return GeneratedAction
 
 
