@@ -1,7 +1,7 @@
-from open_mafia_engine.core.naming import PATH_SEP, get_parts
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.core.game_object import converter
-from open_mafia_engine.core.phase_cycle import AbstractPhaseSystem, Phase
+from open_mafia_engine.core.naming import PATH_SEP, get_parts
+from open_mafia_engine.core.phase_cycle import Phase
 from open_mafia_engine.core.state import Ability, Actor, Faction, Trigger
 
 

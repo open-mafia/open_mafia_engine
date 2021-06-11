@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from typing import Callable, List
+
 from open_mafia_engine.core.auxiliary import AuxHelper, AuxObject
-from open_mafia_engine.core.event_system import EventEngine, Event, ActionQueue, Action
+from open_mafia_engine.core.event_system import Action, ActionQueue, Event, EventEngine
 from open_mafia_engine.core.game_object import GameObject
 from open_mafia_engine.core.phase_cycle import (
     AbstractPhaseSystem,

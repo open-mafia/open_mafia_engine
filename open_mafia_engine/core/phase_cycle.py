@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from logging import shutdown
-from typing import Iterable, TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Iterable, List, Optional, Tuple, Union
 
 from open_mafia_engine.core.enums import ActionResolutionType
 from open_mafia_engine.core.event_system import (
     Action,
     EPostAction,
     EPreAction,
-    Event,
     Subscriber,
-    handler,
 )
 from open_mafia_engine.core.game_object import GameObject
 

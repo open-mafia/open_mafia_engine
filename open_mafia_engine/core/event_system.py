@@ -538,7 +538,18 @@ class EventHandler(object):
 
 
 def handler(func: _HandlerFunc) -> EventHandler:
-    """Decorator to automatically infer event handler."""
+    """Decorator to automatically infer event handler.
+
+    Usage
+    -----
+    Use this as a decorator with a mandatory type hint for `event`:
+
+        class A(Subscriber):
+            @handler
+            def f(self, event: Union[EPreAction, EPostAction]):
+                return []
+    """
+
     type_hints = get_type_hints(func)
     th = type_hints.get("event")
     if th is None:
@@ -560,10 +571,11 @@ def handles(*etypes: List[Event]) -> Callable[[_HandlerFunc], EventHandler]:
 
     Usage
     -----
+    Use this as a decorator factory with the event types as arguments:
 
-        class A(GameObject):
-            @handles(Event)
-            def f(self, event: Event) -> Optional[Action]:
+        class A(Subscriber):
+            @handles(EPreAction, EPostAction)
+            def f(self, event) -> Optional[List[Action]]:
                 return None
     """
 

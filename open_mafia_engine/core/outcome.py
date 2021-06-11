@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from open_mafia_engine.core.enums import Outcome
 from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction

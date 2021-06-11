@@ -1,26 +1,26 @@
 from __future__ import annotations
-from abc import abstractmethod
-import inspect
 
+import inspect
+import logging
+import warnings
+from abc import abstractmethod
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
+    List,
     MutableMapping,
     Optional,
-    TYPE_CHECKING,
-    List,
     Tuple,
     Type,
     Union,
 )
-import logging
-import warnings
 
 from makefun import with_signature
 
-from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Action, Event, Subscriber, handler
+from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.naming import get_path
 
 # from open_mafia_engine.core.outcome import Outcome, OutcomeAction
