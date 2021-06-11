@@ -11,10 +11,9 @@ from open_mafia_engine.core.phase_cycle import (
     SimplePhaseCycle,
 )
 from open_mafia_engine.core.state import Actor, Faction
-from open_mafia_engine.util.repr import ReprMixin
 
 
-class Game(ReprMixin):
+class Game(object):
     """Defines the state of an entire game, including the execution context.
 
     Parameters
@@ -50,6 +49,10 @@ class Game(ReprMixin):
         self._factions: List[Faction] = []
         self._phase_system: AbstractPhaseSystem = gen_phases(self)
         self._aux = AuxHelper(self)
+
+    def __repr__(self):
+        cn = type(self).__qualname__
+        return f"{cn}()"
 
     @property
     def event_engine(self) -> EventEngine:
@@ -100,8 +103,9 @@ class Game(ReprMixin):
                 self._factions.append(obj)
         elif isinstance(obj, AuxObject):
             self._aux.add(obj)
-        # TODO: More stuff.
-        # raise NotImplementedError(f"Don't know how to add to game: {obj!r}")
+        # TODO: Add more types, if required.
+
+        # NOTE: We ignore all other objects, but don't throw.
 
     # TODO: remove()?
 

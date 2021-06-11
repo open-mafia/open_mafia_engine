@@ -67,7 +67,8 @@ bob = game.actors[1]
 # Testing events
 
 print("----- Test ability activation ----")
-game.process_event(EActivate(game, a_abil), process_now=True)
+# game.process_event(EActivate(game, a_abil), process_now=True)
+game.process_event(EActivate(game, "Alice/ability/a_abil"), process_now=True)
 
 
 class EFake(Event):
