@@ -84,7 +84,7 @@ class PhaseChangeAction(Action):
     def doit(self):
         if self.new_phase is None:
             self.game.phase_system.bump_phase()
-        return super().doit()
+        self.game.phase_system.current_phase = self.new_phase
 
     class Pre(EPreAction):
         """Phase is about to change."""

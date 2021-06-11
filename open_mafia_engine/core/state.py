@@ -17,8 +17,7 @@ from typing import (
 import logging
 import warnings
 
-from makefun import wraps
-from makefun.main import with_signature
+from makefun import with_signature
 
 from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.event_system import Action, Event, Subscriber, handler
