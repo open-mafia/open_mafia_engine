@@ -28,6 +28,10 @@ def test_build(player_names: List[str]) -> Game:
         town.add_actor(act)
         # TODO: Abilities
 
+    # Aux objects
+
+    GameEnder(game)  # ends the game when all factions get an Outcome
+
     return game
 
 
@@ -36,8 +40,10 @@ def test_build(player_names: List[str]) -> Game:
 builder = GameBuilder.load("test")
 game = builder.build(["Alice", "Bob"])
 
+# Do fake stuff
 
-def fake_action(self: Action):  # TODO - whoops! We need `game` here at least!
+
+def fake_action(self: Action):
     print("Fake action!")
     print(self.game.actor_names)
 

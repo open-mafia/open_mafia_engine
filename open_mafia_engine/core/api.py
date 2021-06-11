@@ -2,6 +2,7 @@
 
 from .auxiliary import AuxObject
 from .builder import GameBuilder, game_builder
+from .ender import EGameEnded, EndTheGame, GameEnder
 from .event_system import (
     Action,
     ActionQueue,
