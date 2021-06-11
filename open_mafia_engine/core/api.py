@@ -2,6 +2,13 @@
 
 from .auxiliary import AuxObject
 from .builder import GameBuilder, game_builder
+from .converters import (
+    get_ability_by_path,
+    get_actor_by_name,
+    get_faction_by_name,
+    get_phase_by_name,
+    get_trigger_by_path,
+)
 from .ender import EGameEnded, EndTheGame, GameEnder
 from .event_system import (
     Action,

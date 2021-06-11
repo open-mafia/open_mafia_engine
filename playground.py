@@ -1,6 +1,5 @@
 from typing import List, Optional, Union
 
-from open_mafia_engine.converters.core import *
 from open_mafia_engine.core.api import *
 
 
