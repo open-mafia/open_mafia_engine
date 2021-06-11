@@ -1,6 +1,7 @@
 from open_mafia_engine.core.naming import PATH_SEP, get_parts
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.core.game_object import converter
+from open_mafia_engine.core.phase_cycle import AbstractPhaseSystem, Phase
 from open_mafia_engine.core.state import Ability, Actor, Faction, Trigger
 
 
@@ -72,3 +73,9 @@ def get_trigger_by_path(game: Game, obj: str) -> Trigger:
     except ValueError as e:
         raise ValueError(f"Could not find Trigger by path: {obj!r}") from e
     return owner.triggers[idx]
+
+
+@converter.register
+def get_phase_by_name(game: Game, obj: str) -> Phase:
+    """Gets the phase by name from the cycle. Can raise KeyError."""
+    return game.phase_system[obj]

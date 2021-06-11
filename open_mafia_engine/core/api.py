@@ -19,10 +19,10 @@ from .game import Game
 from .game_object import GameObject, converter, inject_converters
 from .naming import get_parts, get_path
 from .phase_cycle import (
-    AbstractPhaseCycle,
+    AbstractPhaseSystem,
     ActionResolutionType,
-    ETryPhaseChange,
     Phase,
     PhaseChangeAction,
+    SimplePhaseCycle,
 )
-from .state import Ability, Actor, EStatusChange, EActivate, Faction, Status, Trigger
+from .state import Ability, Actor, EActivate, EStatusChange, Faction, Status, Trigger

@@ -1,21 +1,53 @@
 from __future__ import annotations
 
-from typing import List
+from typing import Callable, List, Optional
 from open_mafia_engine.core.auxiliary import AuxHelper, AuxObject
 from open_mafia_engine.core.event_system import EventEngine, Event, ActionQueue, Action
 from open_mafia_engine.core.game_object import GameObject
+from open_mafia_engine.core.phase_cycle import (
+    AbstractPhaseSystem,
+    Phase,
+    SimplePhaseCycle,
+)
 from open_mafia_engine.core.state import Actor, Faction
 from open_mafia_engine.util.repr import ReprMixin
 
 
 class Game(ReprMixin):
-    """Defines a single game state."""
+    """Defines the state of an entire game, including the execution context.
 
-    def __init__(self):
+    Parameters
+    ----------
+    gen_phases : Callable[[Game], AbstractPhaseSystem]
+        A function that creates a phase system, given a Game.
+        Use `AbstractPhaseSystem.gen(*args, **kwargs)` to create this function.
+        The default is `SimplePhaseCycle.gen()`, which creates a day-night cycle.
+
+    Attributes
+    ----------
+    event_engine : EventEngine
+        The event engine, which handles all subscription and broadcasting.
+    action_queue : ActionQueue
+        The base action queue, which holds all core-level actions & all history.
+    phase_system : AbstractPhaseSystem
+        System that defines phases and their transitions.
+    actors : List[Actor]
+        All the actors (players) of the game.
+    factions : List[Faction]
+        All the factions (teams) of the game.
+    aux : AuxHelper
+        Helper object for auxiliary game objects.
+    """
+
+    def __init__(
+        self,
+        gen_phases: Callable[[Game], AbstractPhaseSystem] = SimplePhaseCycle.gen(),
+    ):
         self._event_engine = EventEngine(self)
         self._action_queue = ActionQueue(self)
         self._actors: List[Actor] = []
         self._factions: List[Faction] = []
+        self._phase_system: AbstractPhaseSystem = gen_phases(self)
         self._aux = AuxHelper(self)
 
     @property
@@ -43,6 +75,14 @@ class Game(ReprMixin):
         return [x.name for x in self._factions]
 
     @property
+    def phase_system(self) -> AbstractPhaseSystem:
+        return self._phase_system
+
+    @property
+    def current_phase(self) -> Phase:
+        return self.phase_system.current_phase
+
+    @property
     def aux(self) -> AuxHelper:
         return self._aux
 
@@ -59,7 +99,10 @@ class Game(ReprMixin):
                 self._factions.append(obj)
         elif isinstance(obj, AuxObject):
             self._aux.add(obj)
-        # TODO
+        # TODO: More stuff.
+        # raise NotImplementedError(f"Don't know how to add to game: {obj!r}")
+
+    # TODO: remove()?
 
     def process_event(self, event: Event, *, process_now: bool = False):
         """Processes the action."""

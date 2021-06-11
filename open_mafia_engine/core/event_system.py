@@ -83,7 +83,7 @@ class Action(GameObject):
         You may override these with your own when subclassing.
     """
 
-    def __init__(self, game, /, *, priority: float = 0.0, canceled: bool = False):
+    def __init__(self, game: Game, /, *, priority: float = 0.0, canceled: bool = False):
         self._priority = float(priority)
         self._canceled = bool(canceled)
         super().__init__(game)
