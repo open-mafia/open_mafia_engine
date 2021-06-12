@@ -1,18 +1,24 @@
 from __future__ import annotations
-from typing import Any, List
+from typing import Any, List, Optional
 
 from open_mafia_engine.core.all import (
-    Action,
-    ATConstraint,
     AuxObject,
-    Constraint,
-    ConstraintActorTargetsAlive,
-    ConstraintOwnerAlive,
     Game,
-    Subscriber,
     PhaseChangeAction,
     handler,
+    RemoveAuxAction,
 )
+
+
+class TempPhaseAux(AuxObject):
+    """Aux object that removes itself after the phase."""
+
+    @handler
+    def remove_self(
+        self, event: PhaseChangeAction.Post
+    ) -> Optional[List[RemoveAuxAction]]:
+        if isinstance(event, PhaseChangeAction.Post):
+            return [RemoveAuxAction(self.game, self, target=self)]
 
 
 class ValueAux(AuxObject):

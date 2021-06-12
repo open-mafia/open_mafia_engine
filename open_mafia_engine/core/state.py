@@ -257,8 +257,6 @@ class ConstraintOwnerAlive(ATConstraint):
         if self.owner.status["dead"]:  # default is None, which is falsey
             return self.Violation(f"{self.owner.name!r} (owner) is dead.")
 
-    # TODO: Subscribe to EPreAction and check its source! Should automatically happen...
-
 
 class ConstraintActorTargetsAlive(ATConstraint):
     """Any targets for the action, if they are Actors, must be alive."""
@@ -272,8 +270,6 @@ class ConstraintActorTargetsAlive(ATConstraint):
                 bads.append(f"{p!r} ({a.name!r})")
         if len(bads) > 0:
             return self.Violation("Targets are dead: " + ", ".join(bads))
-
-    # TODO: Subscribe to EPreAction and check its source! Should automatically happen...
 
 
 class Trigger(ATBase):

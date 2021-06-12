@@ -96,6 +96,7 @@ class AuxHelper(GameObject, Mapping):
         return len(self._key_map)
 
     def add(self, obj: AuxObject):
+        """Adds the aux object to self."""
         if not isinstance(obj, AuxObject):
             raise TypeError(f"Expected AuxObject, got {obj!r}")
         if self._key_map.get(obj.key) == obj:
@@ -111,7 +112,19 @@ class AuxHelper(GameObject, Mapping):
             raise ValueError(f"Reached {self.max_objects} (max) aux objects!")
         self._key_map[obj.key] = obj
 
-    # TODO - remove?
+    def remove(self, obj: AuxObject):
+        """Removes `obj` from self."""
+        if not isinstance(obj, AuxObject):
+            raise TypeError(f"Expected AuxObject, got {obj!r}")
+        found = self._key_map.get(obj.key)
+        if found is None:
+            return
+        elif found == obj:
+            del self._key_map[obj.key]
+            obj._unsub()
+        else:
+            # FIXME: Object has different key, or another object has same key
+            return
 
     def filter_by_type(self, T: Type[AuxObject]) -> List[AuxObject]:
         """Returns all `AuxObject`s with the given type."""
@@ -120,3 +133,27 @@ class AuxHelper(GameObject, Mapping):
             return isinstance(x, T)
 
         return [x for x in self._key_map.values() if chk(x)]
+
+
+class RemoveAuxAction(Action):
+    """Removes the aux object, at the end of the stack."""
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        target: AuxObject,
+        *,
+        priority: float = -100,
+        canceled: bool = False,
+    ):
+        self._target = target
+        super().__init__(game, source, priority=priority, canceled=canceled)
+
+    @property
+    def target(self) -> AuxObject:
+        return self._target
+
+    def doit(self):
+        self.game.aux.remove(self.target)

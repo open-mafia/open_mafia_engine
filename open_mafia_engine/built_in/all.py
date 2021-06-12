@@ -1,4 +1,7 @@
-from .auxiliary import CounterAux, CounterPerPhaseAux, ValueAux
+# flake8: noqa
+
+from .actions import DeathCausingAction, KillAction, LynchAction, RemoveAuxAction
+from .auxiliary import CounterAux, CounterPerPhaseAux, TempPhaseAux, ValueAux
 from .constraints import (
     ConstraintActorTargetsAlive,
     ConstraintOwnerAlive,
