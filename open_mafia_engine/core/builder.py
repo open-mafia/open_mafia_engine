@@ -4,6 +4,7 @@ from typing import Callable, Dict, List
 
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.errors import MafiaBadBuilder
+from open_mafia_engine.util.matcher import FuzzyMatcher
 from open_mafia_engine.util.repr import ReprMixin
 
 
@@ -25,8 +26,6 @@ class GameBuilder(ReprMixin):
     """Specification for a Game Builder.
 
     TODO: Allow lazy loading of specs, somehow.
-
-    TODO: Allow various options to be passed to `func`?
     """
 
     def __init__(self, func: _GameBuilderFunc, /, name: str):
@@ -39,7 +38,8 @@ class GameBuilder(ReprMixin):
         __builders__[name] = self
 
     def build(self, player_names: List[str], *args, **kwargs) -> Game:
-        return self.func(player_names=player_names, *args, **kwargs)
+        """Builds the game based on passed players and other options."""
+        return self.func(player_names, *args, **kwargs)
 
     @property
     def func(self) -> _GameBuilderFunc:
@@ -51,9 +51,10 @@ class GameBuilder(ReprMixin):
 
     @classmethod
     def load(cls, name: str) -> GameBuilder:
-        """Load a spec by name"""
+        """Load a spec by exact or closest name."""
         global __builders__
-        return __builders__[name]
+        matcher = FuzzyMatcher(__builders__, score_cutoff=10)
+        return matcher.match(name)
 
     @classmethod
     def available(cls) -> List[str]:
