@@ -19,7 +19,7 @@ classifiers = [
 include = ["open_mafia_engine/prefabs/*"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 pydantic = "^1.7.3"
 pydantic-yaml = "^0.2.3"
 sortedcontainers = "^2.3.0"
