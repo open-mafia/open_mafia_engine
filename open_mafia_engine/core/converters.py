@@ -1,7 +1,7 @@
 import warnings
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.core.game_object import converter
-from open_mafia_engine.core.naming import PATH_SEP, get_parts
+from open_mafia_engine.core.naming import ABILITY, PATH_SEP, TRIGGER, get_parts
 from open_mafia_engine.core.phase_cycle import Phase
 from open_mafia_engine.core.state import Ability, Actor, Faction, Trigger
 
@@ -43,7 +43,7 @@ def get_ability_by_path(game: Game, obj: str) -> Ability:
     try:
         owner_name, _abil, abil_name = get_parts(obj)
 
-        assert _abil == "ability"
+        assert _abil == ABILITY
     except Exception as e:
         raise ValueError(f"Bad/non-existing path for Ability: {obj}") from e
 
@@ -69,7 +69,7 @@ def get_trigger_by_path(game: Game, obj: str) -> Trigger:
     try:
         owner_name, _trig, trig_name = get_parts(obj)
 
-        assert _trig == "trigger"
+        assert _trig == TRIGGER
     except Exception as e:
         raise ValueError(f"Bad/non-existing path for Trigger: {obj}") from e
 
