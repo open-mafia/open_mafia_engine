@@ -1,12 +1,17 @@
 from __future__ import annotations
+
 from typing import Any, List, Optional
 
 from open_mafia_engine.core.all import (
+    Actor,
+    ATBase,
     AuxObject,
+    CancelAction,
+    EPreAction,
     Game,
     PhaseChangeAction,
-    handler,
     RemoveAuxAction,
+    handler,
 )
 
 
@@ -19,6 +24,38 @@ class TempPhaseAux(AuxObject):
     ) -> Optional[List[RemoveAuxAction]]:
         if isinstance(event, PhaseChangeAction.Post):
             return [RemoveAuxAction(self.game, self, target=self)]
+
+
+class RoleBlockerAux(TempPhaseAux):
+    """Aux object that blocks actions made by the target.
+
+    It removes itself after the end of the phase.
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        target: Actor,
+        key: str = None,
+        *,
+        use_default_constraints: bool = True,
+    ):
+        self._target = target
+        super().__init__(game, key=key, use_default_constraints=use_default_constraints)
+
+    @property
+    def target(self) -> Actor:
+        return self._target
+
+    @handler
+    def handle_to_cancel(self, event: EPreAction) -> Optional[List[CancelAction]]:
+        """Cancels the action if"""
+        if isinstance(event, EPreAction):
+            src = event.action.source
+            if isinstance(src, ATBase):
+                if src.owner == self.target:
+                    return [CancelAction(self.game, self, target=event.action)]
 
 
 class ValueAux(AuxObject):
