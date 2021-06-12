@@ -29,13 +29,20 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
     for i in range(n_mafia):
         act = Actor(game, player_names[i])
         mafia.add_actor(act)
-        VoteAbility(game, act, name="Vote", tally=tally)
-        # TODO: Mafia abilities
+        # Voting
+        vote = VoteAbility(game, act, name="Vote", tally=tally)
+        PhaseConstraint(game, vote, phase="day")
+        # Mafia kill
+        mk = KillAbility(game, act, name="Mafia Kill")
+        LimitPerPhaseKeyConstraint(game, mk, key="mafia_kill_limit")
+        PhaseConstraint(game, mk, phase="night")
 
     for i in range(n_town):
         act = Actor(game, player_names[n_mafia + i])
         town.add_actor(act)
-        VoteAbility(game, act, name="Vote", tally=tally)
+        # Voting
+        vote = VoteAbility(game, act, name="Vote", tally=tally)
+        PhaseConstraint(game, vote, phase="day")
         # TODO: Other abilities
 
     return game

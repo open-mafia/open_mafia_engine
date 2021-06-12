@@ -1,6 +1,7 @@
 from open_mafia_engine.builders.for_testing import make_test_game
 from open_mafia_engine.built_in.voting import Tally
 from open_mafia_engine.core.event_system import Action
+from open_mafia_engine.core.phase_cycle import PhaseChangeAction
 from open_mafia_engine.core.state import Ability, EActivate
 
 
@@ -14,6 +15,8 @@ def test_activation_by_event():
     a_v = alice.abilities[0]  # VoteAbility(game, owner=alice, name="Vote")
     b_v = bob.abilities[0]  # VoteAbility(game, owner=bob, name="Vote")
 
+    game.phase_system.bump_phase()  # start the day
+
     tally: Tally = game.aux.filter_by_type(Tally)[0]
     game.process_event(EActivate(game, a_v, target=bob), process_now=True)
     assert tally.results.vote_leaders == [bob]
@@ -21,6 +24,29 @@ def test_activation_by_event():
         EActivate(game, "Alice/ability/Vote", target="unvote"), process_now=True
     )
     assert tally.results.vote_leaders == []
+
+
+def test_phase_constraint():
+    """Tests phase constraint for voting."""
+
+    game = make_test_game(["Alice", "Bob"])
+    alice = game.actors[0]
+    bob = game.actors[1]
+
+    a_v = alice.abilities[0]  # VoteAbility(game, owner=alice, name="Vote")
+    b_v = bob.abilities[0]  # VoteAbility(game, owner=bob, name="Vote")
+
+    tally: Tally = game.aux.filter_by_type(Tally)[0]
+
+    # Won't work - game still in "startup"
+    game.process_event(EActivate(game, a_v, target=bob), process_now=True)
+    assert tally.results.vote_leaders == []
+
+    game.phase_system.bump_phase()  # start the day
+
+    # Now it should work :)
+    game.process_event(EActivate(game, a_v, target=bob), process_now=True)
+    assert tally.results.vote_leaders == [bob]
 
 
 def test_gen_action_ability():

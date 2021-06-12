@@ -1,4 +1,4 @@
-from open_mafia_engine.core.all import Action, Actor, Game, GameObject
+from open_mafia_engine.core.all import Ability, Action, Actor, Game, GameObject
 
 
 class DeathCausingAction(Action):
@@ -36,6 +36,15 @@ class DeathCausingAction(Action):
 
 class KillAction(DeathCausingAction):
     """Action that kills the target."""
+
+
+KillAbility = Ability.generate(
+    KillAction,
+    params=["target"],
+    name="KillAbility",
+    doc="Ability to perform kills",
+    desc="Kills the target.",
+)
 
 
 class LynchAction(DeathCausingAction):

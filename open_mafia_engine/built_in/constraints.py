@@ -10,6 +10,7 @@ from open_mafia_engine.core.all import (
     ConstraintActorTargetsAlive,
     ConstraintOwnerAlive,
     Game,
+    Phase,
     PhaseChangeAction,
     Subscriber,
     handler,
@@ -18,6 +19,25 @@ from open_mafia_engine.core.event_system import EPostAction, EPreAction
 from open_mafia_engine.core.state import Actor
 
 from .auxiliary import CounterPerPhaseAux
+
+
+class PhaseConstraint(Constraint):
+    """Allow only using in a particular phase."""
+
+    def __init__(self, game, /, parent: Subscriber, phase: Phase):
+        self._phase = phase
+        super().__init__(game, parent)
+
+    @property
+    def phase(self) -> Phase:
+        return self._phase
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        cp = self.game.current_phase
+        if cp != self.phase:
+            return self.Violation(
+                f"Wrong phase: currently {cp.name!r}, need {self.phase.name!r}."
+            )
 
 
 class LimitPerPhaseKeyConstraint(Constraint):

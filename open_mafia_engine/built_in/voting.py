@@ -120,6 +120,9 @@ class VotingResults(GameObject):
     def vote_leaders(self) -> List[GameObject]:
         """Gets the current vote leaders, if any."""
         vc = self.vote_counts
+        if len(vc) == 0:
+            return []
+
         max_cnt = vc[0][1]
         # This short-circuits any votes :)
         if max_cnt <= 0:
