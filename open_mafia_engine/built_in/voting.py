@@ -10,10 +10,14 @@ from open_mafia_engine.core.all import (
     Action,
     Actor,
     AuxObject,
+    EPreAction,
+    EPostAction,
     Game,
     GameObject,
+    PhaseChangeAction,
     converter,
     get_actor_by_name,
+    handler,
     inject_converters,
 )
 
@@ -232,7 +236,7 @@ class ActorTargets(AbstractVoteTarget):
             vr._set(voter, a)
 
 
-# TODO: Weighted votes?
+# TODO: Weighted votes? Weighted targets?
 
 
 class Vote(GameObject):
@@ -274,10 +278,43 @@ class Vote(GameObject):
         self._target = v
 
 
+class VoteAction(Action):
+    """Votes for someone."""
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        voter: Actor,
+        target: AbstractVoteTarget,
+        tally: Tally = None,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(game, source, priority=priority, canceled=canceled)
+        self.voter = voter
+        self.target = target
+        if tally is None:
+            tally = get_default_tally(game, tally)
+        self.tally = tally
+
+    def doit(self):
+        self.tally.add_vote(Vote(self.game, voter=self.voter, target=self.target))
+
+    class Pre(EPreAction):
+        """We are about to vote."""
+
+    class Post(EPostAction):
+        """We have voted."""
+
+
 class Tally(AuxObject):
     """Voting tally.
 
-    TODO: Add voting options to this tally.
+    Tallies select the leader before each phase end. Override `respond_leader()`.
+    Tallies reset after each phase end.
     """
 
     def __init__(
@@ -293,6 +330,11 @@ class Tally(AuxObject):
         self._options = VotingOptions(
             game, allow_unvote=allow_unvote, allow_against_all=allow_against_all
         )
+
+    @abstractmethod
+    def respond_leader(self, leader: GameObject) -> Optional[List[Action]]:
+        """Override this for particular behavior."""
+        return None
 
     @property
     def options(self) -> VotingOptions:
@@ -324,34 +366,28 @@ class Tally(AuxObject):
             raise TypeError(f"Can only add a Vote, got {vote!r}")
         self._vote_history.append(vote)
 
+    @handler
+    def reset_on_phase(self, event: PhaseChangeAction.Post):
+        """Resets votes every phase change."""
+        self._vote_history = []
 
-# TODO: LynchTally
+    @handler
+    def handle_leader(self, event: PhaseChangeAction.Pre):
+        leaders = self.results.vote_leaders
+        if len(leaders) == 0:
+            return
+        elif len(leaders) > 1:
+            return  # TODO: Tiebreaks, but they must be deterministic!
+        leader = leaders[0]
+        return self.respond_leader(leader)
 
+    @handler
+    def check_hammer(self, event: VoteAction.Post):
+        """TODO: Hammers."""
 
-class VoteAction(Action):
-    """Votes for someone."""
-
-    def __init__(
-        self,
-        game: Game,
-        source: GameObject,
-        /,
-        voter: Actor,
-        target: AbstractVoteTarget,
-        tally: Tally = None,
-        *,
-        priority: float = 0.0,
-        canceled: bool = False,
-    ):
-        super().__init__(game, source, priority=priority, canceled=canceled)
-        self.voter = voter
-        self.target = target
-        if tally is None:
-            tally = get_default_tally(game, tally)
-        self.tally = tally
-
-    def doit(self):
-        self.tally.add_vote(Vote(self.game, voter=self.voter, target=self.target))
+        # Check if hammers are set.
+        # If yes, check if this vote hammers.
+        # If yes, end the phase.
 
 
 class VoteAbility(Ability):
