@@ -8,7 +8,7 @@ from open_mafia_engine.core.all import (
     handler,
 )
 
-from .actions import KillAction, LynchAction
+from .kills import KillAction, LynchAction
 
 
 class UnkillableTrigger(Trigger):

@@ -1,7 +1,5 @@
 from open_mafia_engine.core.all import Action, Actor, Game, GameObject
 
-from .auxiliary import RoleBlockerAux
-
 
 class DeathCausingAction(Action):
     """Action that causes an Actor to die.
@@ -42,27 +40,3 @@ class KillAction(DeathCausingAction):
 
 class LynchAction(DeathCausingAction):
     """Action that lynches the target."""
-
-
-class RoleBlockAction(Action):
-    """Action that prevents the target from actioning until the end of the phase."""
-
-    def __init__(
-        self,
-        game: Game,
-        source: GameObject,
-        /,
-        target: Actor,
-        *,
-        priority: float = 90,
-        canceled: bool = False,
-    ):
-        self._target = target
-        super().__init__(game, source, priority=priority, canceled=canceled)
-
-    @property
-    def target(self) -> Actor:
-        return self._target
-
-    def doit(self):
-        RoleBlockerAux(self.game, target=self.target, only_abilities=True)

@@ -1,11 +1,9 @@
 # flake8: noqa
 
-from .actions import DeathCausingAction, KillAction, LynchAction, RoleBlockAction
 from .auxiliary import (
     CounterAux,
     CounterPerPhaseAux,
     RemoveAuxAction,
-    RoleBlockerAux,
     TempPhaseAux,
     ValueAux,
 )
@@ -14,7 +12,10 @@ from .constraints import (
     ConstraintOwnerAlive,
     LimitPerPhaseKeyConstraint,
 )
-from .triggers import UnkillableTrigger
+from .kills import DeathCausingAction, KillAction, LynchAction
+from .protect import KillProtectAction, KillProtectorAux
+from .roleblock import RoleBlockAction, RoleBlockerAux
+from .triggers import UnkillableTrigger, UnlynchableTrigger
 from .voting import (
     AbstractVoteTarget,
     ActorTarget,
