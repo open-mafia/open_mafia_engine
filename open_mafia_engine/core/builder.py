@@ -54,7 +54,7 @@ class GameBuilder(ReprMixin):
         """Load a spec by exact or closest name."""
         global __builders__
         matcher = FuzzyMatcher(__builders__, score_cutoff=10)
-        return matcher.match(name)
+        return matcher[name]
 
     @classmethod
     def available(cls) -> List[str]:

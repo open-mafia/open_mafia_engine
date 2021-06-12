@@ -8,4 +8,4 @@ def test_fuzzy():
     """
 
     matcher = FuzzyMatcher[str]({"abacus": "a", "peter": "p"}, score_cutoff=0)
-    assert matcher.match("poodle") == "p"
+    assert matcher["poodle"] == "p"
