@@ -1,7 +1,7 @@
 """Tests for building games."""
 
-from open_mafia_engine.core.builder import GameBuilder
 from open_mafia_engine.builders.for_testing import make_test_game
+from open_mafia_engine.core.builder import GameBuilder
 
 
 def test_builder_direct():

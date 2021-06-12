@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 from abc import abstractmethod
 from collections import defaultdict
-import logging
 from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 from open_mafia_engine.core.all import (
@@ -10,10 +10,14 @@ from open_mafia_engine.core.all import (
     Action,
     Actor,
     AuxObject,
+    EPostAction,
+    EPreAction,
     Game,
     GameObject,
+    PhaseChangeAction,
     converter,
     get_actor_by_name,
+    handler,
     inject_converters,
 )
 
@@ -27,7 +31,7 @@ class AbstractVoteTarget(GameObject):
     """A target for voting. Don't use directly."""
 
     @abstractmethod
-    def apply(self, vr: VotingResults, source: Actor):
+    def apply(self, vr: VotingResults, voter: Actor):
         """Apply self on the voting results."""
 
     def __eq__(self, o: object) -> bool:
@@ -53,7 +57,7 @@ class VotingOptions(GameObject):
     allow_against_all : bool
         Whether a "VoteAgainstAll" (e.g. "no lynch") is allowed. Default is True.
 
-    TODO: Hammers?
+    TODO: Hammers? Tiebreaks?
     """
 
     def __init__(
@@ -166,12 +170,12 @@ class VotingResults(GameObject):
 class UnvoteAll(AbstractVoteTarget):
     """Symbolic class for unvoting."""
 
-    def apply(self, vr: VotingResults, source: Actor):
-        """Removes all votes made by `source`."""
+    def apply(self, vr: VotingResults, voter: Actor):
+        """Removes all votes made by `voter`."""
         if not vr.options.allow_unvote:
             # Warn?
             return
-        vr._reset(source)
+        vr._reset(voter)
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, UnvoteAll) and self.game == o.game:
@@ -182,14 +186,14 @@ class UnvoteAll(AbstractVoteTarget):
 class VoteAgainstAll(AbstractVoteTarget):
     """Symbolic class for voting against all options."""
 
-    def apply(self, vr: VotingResults, source: Actor):
+    def apply(self, vr: VotingResults, voter: Actor):
         """Unvotes-all, then votes for `VoteAgainstAll` object."""
         if not vr.options.allow_against_all:
             # Warn?
             return
-        vr._reset(source)
+        vr._reset(voter)
         vr._set(
-            source,
+            voter,
             VoteAgainstAll(self.game),
         )
 
@@ -210,9 +214,9 @@ class ActorTarget(AbstractVoteTarget):
     def actor(self) -> Actor:
         return self._actor
 
-    def apply(self, vr: VotingResults, source: Actor):
-        vr._reset(source)
-        vr._set(source, self.actor)
+    def apply(self, vr: VotingResults, voter: Actor):
+        vr._reset(voter)
+        vr._set(voter, self.actor)
 
 
 class ActorTargets(AbstractVoteTarget):
@@ -226,13 +230,13 @@ class ActorTargets(AbstractVoteTarget):
     def actors(self) -> List[Actor]:
         return list(self._actors)
 
-    def apply(self, vr: VotingResults, source: Actor):
-        vr._reset(source)
+    def apply(self, vr: VotingResults, voter: Actor):
+        vr._reset(voter)
         for a in self.actors:
-            vr._set(source, a)
+            vr._set(voter, a)
 
 
-# TODO: Weighted votes?
+# TODO: Weighted votes? Weighted targets?
 
 
 class Vote(GameObject):
@@ -240,26 +244,24 @@ class Vote(GameObject):
 
     Attributes
     ----------
-    source : Actor
-        The actor who is the source of the vote.
+    voter : Actor
+        The actor who is voting.
     target : AbstractVoteTarget
         The target, or targets, or UnvoteAll...
-
-    TODO: tiebreaking, allow unvotes, allow against all?
     """
 
-    def __init__(self, game: Game, /, source: Actor, target: AbstractVoteTarget):
+    def __init__(self, game: Game, /, voter: Actor, target: AbstractVoteTarget):
         super().__init__(game)
-        self.source = source
+        self.voter = voter
         self.target = target
 
     @property
-    def source(self) -> Actor:
+    def voter(self) -> Actor:
         return self._source
 
-    @source.setter
+    @voter.setter
     @inject_converters
-    def source(self, v: Actor):
+    def voter(self, v: Actor):
         if not isinstance(v, Actor):
             raise TypeError(f"Expected Actor, got {v!r}")
         self._source = v
@@ -276,10 +278,43 @@ class Vote(GameObject):
         self._target = v
 
 
+class VoteAction(Action):
+    """Votes for someone."""
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        voter: Actor,
+        target: AbstractVoteTarget,
+        tally: Tally = None,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(game, source, priority=priority, canceled=canceled)
+        self.voter = voter
+        self.target = target
+        if tally is None:
+            tally = get_default_tally(game, tally)
+        self.tally = tally
+
+    def doit(self):
+        self.tally.add_vote(Vote(self.game, voter=self.voter, target=self.target))
+
+    class Pre(EPreAction):
+        """We are about to vote."""
+
+    class Post(EPostAction):
+        """We have voted."""
+
+
 class Tally(AuxObject):
     """Voting tally.
 
-    TODO: Add voting options to this tally.
+    Tallies select the leader before each phase end. Override `respond_leader()`.
+    Tallies reset after each phase end.
     """
 
     def __init__(
@@ -295,6 +330,11 @@ class Tally(AuxObject):
         self._options = VotingOptions(
             game, allow_unvote=allow_unvote, allow_against_all=allow_against_all
         )
+
+    @abstractmethod
+    def respond_leader(self, leader: GameObject) -> Optional[List[Action]]:
+        """Override this for particular behavior."""
+        return None
 
     @property
     def options(self) -> VotingOptions:
@@ -317,7 +357,7 @@ class Tally(AuxObject):
         """Applies vote history to get current results."""
         res = VotingResults(self.game, self.options)
         for v in self.vote_history:
-            v.target.apply(res, v.source)
+            v.target.apply(res, v.voter)
         return res
 
     def add_vote(self, vote: Vote):
@@ -326,30 +366,28 @@ class Tally(AuxObject):
             raise TypeError(f"Can only add a Vote, got {vote!r}")
         self._vote_history.append(vote)
 
+    @handler
+    def reset_on_phase(self, event: PhaseChangeAction.Post):
+        """Resets votes every phase change."""
+        self._vote_history = []
 
-class VoteAction(Action):
-    """Votes for someone."""
+    @handler
+    def handle_leader(self, event: PhaseChangeAction.Pre):
+        leaders = self.results.vote_leaders
+        if len(leaders) == 0:
+            return
+        elif len(leaders) > 1:
+            return  # TODO: Tiebreaks, but they must be deterministic!
+        leader = leaders[0]
+        return self.respond_leader(leader)
 
-    def __init__(
-        self,
-        game: Game,
-        /,
-        source: Actor,
-        target: AbstractVoteTarget,
-        tally: Tally = None,
-        *,
-        priority: float = 0.0,
-        canceled: bool = False,
-    ):
-        super().__init__(game, priority=priority, canceled=canceled)
-        self.source = source
-        self.target = target
-        if tally is None:
-            tally = get_default_tally(game, tally)
-        self.tally = tally
+    @handler
+    def check_hammer(self, event: VoteAction.Post):
+        """TODO: Hammers."""
 
-    def doit(self):
-        self.tally.add_vote(Vote(self.game, source=self.source, target=self.target))
+        # Check if hammers are set.
+        # If yes, check if this vote hammers.
+        # If yes, end the phase.
 
 
 class VoteAbility(Ability):
@@ -375,7 +413,7 @@ class VoteAbility(Ability):
         try:
             return [
                 VoteAction(
-                    self.game, source=self.owner, target=target, tally=self.tally
+                    self.game, self, voter=self.owner, target=target, tally=self.tally
                 )
             ]
         except Exception:

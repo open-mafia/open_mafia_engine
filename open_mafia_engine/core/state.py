@@ -19,9 +19,16 @@ from typing import (
 
 from makefun import with_signature
 
-from open_mafia_engine.core.event_system import Action, Event, Subscriber, handler
+from open_mafia_engine.core.event_system import (
+    Action,
+    ActionInspector,
+    Constraint,
+    Event,
+    Subscriber,
+    handler,
+)
 from open_mafia_engine.core.game_object import GameObject, inject_converters
-from open_mafia_engine.core.naming import get_path
+from open_mafia_engine.core.naming import ABILITY, TRIGGER, get_path
 
 # from open_mafia_engine.core.outcome import Outcome, OutcomeAction
 
@@ -85,8 +92,10 @@ class Faction(GameObject):
 class OutcomeChecker(Subscriber):
     """Checks for Faction Outcome. Base class."""
 
-    def __init__(self, game: Game, parent: Faction, /):
-        super().__init__(game)
+    def __init__(
+        self, game: Game, parent: Faction, /, *, use_default_constraints: bool = True
+    ):
+        super().__init__(game, use_default_constraints=use_default_constraints)
         self._parent = parent
         parent.add_outcome_checker(self)
 
@@ -167,7 +176,7 @@ class Actor(GameObject):
             raise TypeError(f"Expected Ability or Trigger, got {obj!r}")
 
 
-class _ATBase(Subscriber):
+class ATBase(Subscriber):
     """Base object for abilities and triggers.
 
     Attributes
@@ -175,12 +184,21 @@ class _ATBase(Subscriber):
     game
     owner : Actor
     name : str
-        The Ability's name.
+        The name of this object.
     desc : str
         Description. Default is "".
     """
 
-    def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
+    def __init__(
+        self,
+        game: Game,
+        /,
+        owner: Actor,
+        name: str,
+        desc: str = "",
+        *,
+        use_default_constraints: bool = True,
+    ):
         if not isinstance(owner, Actor):
             raise TypeError(f"Expected Actor, got {owner!r}")
         if desc is None:
@@ -189,9 +207,8 @@ class _ATBase(Subscriber):
         self._owner = owner
         self._name = str(name)
         self._desc = str(desc)
-        super().__init__(game)
+        super().__init__(game, use_default_constraints=use_default_constraints)
         owner.add(self)
-        owner.add_ability(self)
 
     @property
     def owner(self) -> Actor:
@@ -205,13 +222,62 @@ class _ATBase(Subscriber):
     def desc(self) -> str:
         return self._desc
 
+    def add_default_constraints(self):
+        super().add_default_constraints()
+        # Default constraints for abilities and triggers:
+        ConstraintOwnerAlive(self.game, self)
+        ConstraintActorTargetsAlive(self.game, self)
 
-class Trigger(_ATBase):
+
+class ATConstraint(Constraint):
+    """Constraint for Actions and Triggers. Will raise if used elsewhere."""
+
+    def __init__(self, game, /, parent: ATBase):
+        if not isinstance(parent, ATBase):
+            raise TypeError(f"Constraint only available for ATBase, got {parent!r}")
+        super().__init__(game, parent)
+
+    @property
+    def parent(self) -> ATBase:
+        return self._parent
+
+    @property
+    def owner(self) -> Actor:
+        """The owner of this constraint's parent."""
+        return self.parent.owner
+
+
+# NOTE: These constraints are default, and pretty fundamental, which is why they're here
+
+
+class ConstraintOwnerAlive(ATConstraint):
+    """The ability's (trigger's) owner must be alive."""
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        if self.owner.status["dead"]:  # default is None, which is falsey
+            return self.Violation(f"{self.owner.name!r} (owner) is dead.")
+
+
+class ConstraintActorTargetsAlive(ATConstraint):
+    """Any targets for the action, if they are Actors, must be alive."""
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        ai = ActionInspector(action)
+        p2a: Dict[str, Actor] = ai.values_of_type(Actor)
+        bads = []
+        for p, a in p2a.items():
+            if a.status["dead"]:  # default is None, which is falsy
+                bads.append(f"{p!r} ({a.name!r})")
+        if len(bads) > 0:
+            return self.Violation("Targets are dead: " + ", ".join(bads))
+
+
+class Trigger(ATBase):
     """Basic Trigger object.
 
     Attributes
     ----------
-    game
+    game : Game
     owner : Actor
     name : str
         The Trigger's name.
@@ -221,7 +287,7 @@ class Trigger(_ATBase):
 
     @property
     def path(self) -> str:
-        return get_path(self.owner.name, "trigger", self.name)
+        return get_path(self.owner.name, TRIGGER, self.name)
 
 
 class EActivate(Event):
@@ -249,7 +315,7 @@ class EActivate(Event):
         return dict(self._kwargs)
 
 
-class Ability(_ATBase):
+class Ability(ATBase):
     """Basic Ability object.
 
     Attributes
@@ -264,14 +330,15 @@ class Ability(_ATBase):
 
     @property
     def path(self) -> str:
-        return get_path(self.owner.name, "ability", self.name)
+        return get_path(self.owner.name, ABILITY, self.name)
 
     @abstractmethod
     def activate(self, *args, **kwargs) -> Optional[List[Action]]:
-        """Activate this ability with some arguments."""
+        """Activate this ability with some arguments.
 
-        # TODO: Implement argument constraints!
-        # TODO: Make the signature be the same as the Action's
+        Make the signature be the same as the Action's.
+        If generated, it should match already.
+        """
 
     @handler
     def handle_activate(self, event: EActivate) -> Optional[List[Action]]:
@@ -331,7 +398,7 @@ class Ability(_ATBase):
             par_activate, return_annotation=Optional[List[Action]]
         )
 
-        sig_init = "TODO"
+        sig_init = "TODO"  # TODO: Actually create a proper init signature!
 
         # TODO: Set sig_init
         def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
@@ -342,7 +409,7 @@ class Ability(_ATBase):
             """Activate this ability with some arguments."""
 
             try:
-                return [self.TAction(self.game, *args, **kwargs)]
+                return [self.TAction(self.game, self, *args, **kwargs)]
             except Exception as e:
                 logger.exception("Error executing action:")
                 if False:  # Set for debugging errors :)

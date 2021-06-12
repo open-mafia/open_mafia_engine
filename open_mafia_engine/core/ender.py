@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+
 from open_mafia_engine.core.auxiliary import AuxObject
 from open_mafia_engine.core.enums import Outcome
 from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction, handler

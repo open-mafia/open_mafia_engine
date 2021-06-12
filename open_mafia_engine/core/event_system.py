@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import inspect
 import logging
+import warnings
 from abc import abstractmethod
 from collections import defaultdict
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     DefaultDict,
     Dict,
@@ -18,7 +20,6 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-import warnings
 
 from makefun import partial, wraps
 from sortedcontainers import SortedList
@@ -67,6 +68,8 @@ class Action(GameObject):
     Attributes
     ----------
     game : Game
+    source : GameObject
+        The object that generated this action.
     priority : float
     canceled : bool
 
@@ -83,9 +86,20 @@ class Action(GameObject):
         You may override these with your own when subclassing.
     """
 
-    def __init__(self, game: Game, /, *, priority: float = 0.0, canceled: bool = False):
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
         self._priority = float(priority)
         self._canceled = bool(canceled)
+        if not isinstance(source, GameObject):
+            raise TypeError(f"Expected GameObject, got {source!r}")
+        self._source = source
         super().__init__(game)
 
     # NOTE: You can override these classes, even inline.
@@ -102,6 +116,10 @@ class Action(GameObject):
         super().__init_subclass__()
         assert issubclass(cls.Pre, EPreAction)
         assert issubclass(cls.Post, EPostAction)
+
+    @property
+    def source(self) -> GameObject:
+        return self._source
 
     @property
     def priority(self) -> float:
@@ -265,6 +283,106 @@ class Action(GameObject):
         return GeneratedAction
 
 
+class CancelAction(Action):
+    """Action that cancels other actions."""
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        target: Action,
+        *,
+        priority: float = 50.0,
+        canceled: bool = False,
+    ):
+        self._target = target
+        super().__init__(game, source, priority=priority, canceled=canceled)
+
+    @property
+    def target(self) -> Action:
+        return self._target
+
+    @target.getter
+    def target(self, v: Action):
+        if not isinstance(v, Action):
+            raise TypeError(f"Can only cancel Actions, but got {v!r}")
+        self._target = v
+
+    def doit(self):
+        self.target.canceled = True
+
+
+class ConditionalCancelAction(CancelAction):
+    """Cancels the action, but checks `condition` just in case again.
+    
+    If `condition(action)`, actually does cancel the action.
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        target: Action,
+        condition: Callable[[Action], bool],
+        *,
+        priority: float = -100,
+        canceled: bool = False,
+    ):
+        self._condition = condition
+        super().__init__(game, source, target, priority=priority, canceled=canceled)
+
+    @property
+    def condition(self) -> Callable[[Action], bool]:
+        return self._condition
+
+    def doit(self):
+        if self.condition(self.target):
+            super().doit()
+
+
+class ActionInspector(object):
+    """Helper to inspect Action objects."""
+
+    def __init__(self, action: Action):
+        self._action = action
+
+    @property
+    def action(self) -> Action:
+        return self._action
+
+    @property
+    def ignored_args(self) -> List[str]:
+        """Arguments that are ignored"""
+        return ["self", "game", "priority", "canceled"]
+
+    @property
+    def type_hints(self) -> Dict[str, Type]:
+        """Type hints, without ignored arguments."""
+        raw = get_type_hints(self.action.__init__)
+        return {k: v for k, v in raw.items() if k not in self.ignored_args}
+
+    def params_of_type(self, T: Type) -> List[str]:
+        """Returns parameter names that have the given type."""
+
+        def chk(v):
+            try:
+                return issubclass(v, T)
+            except Exception:
+                return False
+
+        return [k for k, v in self.type_hints.items() if chk(v)]
+
+    def values_of_type(self, T: Type) -> Dict[str, Any]:
+        return {k: self.extract_value(k) for k in self.params_of_type(T)}
+
+    def extract_value(self, param: str) -> Any:
+        """Gets value for the parameter."""
+        # TODO: Make this smarter? :)
+        return getattr(self.action, param)
+
+
 class ActionQueue(GameObject):
     """Action queue.
 
@@ -383,21 +501,44 @@ class ActionQueue(GameObject):
 
 
 class Subscriber(GameObject):
-    """Base class for objects that must listen to events.
+    """Base class for objects that listen to events.
 
     Creating Event Handlers
     -----------------------
-    Subclass from this and use a `handler` or `handles` decorator:
+    Subclass from this and use a `handler` or `handles` decorator.
+    The following result in the same calls behavior:
 
         class MySub(Subscriber):
-            @handles(Event)
-            def handler_1(self, event: Event) ->
+            @handles(EPreAction)
+            def handler_1(self, event) -> Optional[List[Action]]:
+                return None
+
+            @handler
+            def handler_2(self, event: EPreAction):
+                return []
+
+    Adding Constraints
+    ------------------
+    `Constraint`s are added after the Subscriber is created.
     """
 
-    def __init__(self, game: Game, /):
+    def __init__(self, game: Game, /, *, use_default_constraints: bool = True):
+        self._use_default_constraints = bool(use_default_constraints)
         super().__init__(game)
+        self._constraints: List[Constraint] = []
         self._handler_funcs: List[_HandlerFunc] = []
         self._sub()
+        if self._use_default_constraints:
+            self.add_default_constraints()  # TODO: How to set as options?
+
+    @property
+    def constraints(self) -> List[Constraint]:
+        return list(self._constraints)
+
+    @property
+    def use_default_constraints(self) -> bool:
+        """Whether this object is using default constraints for this class."""
+        return self._use_default_constraints
 
     def _sub(self):
         """Subscribe to events in the current game. This should happen automatically."""
@@ -422,6 +563,20 @@ class Subscriber(GameObject):
     @property
     def handler_funcs(self) -> List[_HandlerFunc]:
         return list(self._handler_funcs)
+
+    def add_default_constraints(self):
+        """Adds default constraints for this type. Override for your own types."""
+
+        # Nothing here for default subscribers :)
+
+    def check_constraints(self, action: Action) -> List[Constraint.Violation]:
+        """Checks all constraints. All violations are returned."""
+        res = []
+        for con in self._constraints:
+            r = con.check(action)
+            if r is not None:
+                res.append(r)
+        return res
 
 
 _HandlerFunc = Callable[[Subscriber, Event], Optional[List[Action]]]
@@ -523,7 +678,30 @@ class EventHandler(object):
 
     def __init__(self, func: _HandlerFunc, *etypes: List[Event]):
         _assert_legal_handler(func)
-        self.func: _HandlerFunc = func
+
+        @wraps(func)
+        def wrapped(self: Subscriber, event: Event) -> Optional[List[Action]]:
+            # Wrap the function to check constraints.
+            raw = func(self, event)
+            if raw is None:
+                return None
+            # TODO: Maybe allow just returning Action or Optional[Action]?
+            # That would simplify many handler functions that return just 1 Action.
+            # But I'd have to rewrite _assert_legal_handler() ... :P
+            if not isinstance(raw, list):
+                raise TypeError(f"Expected List[Action], got {raw!r}")
+            res = []
+            for action in raw:
+                violations = self.check_constraints(action)
+                if len(violations) == 0:
+                    res.append(action)
+                else:
+                    msg = [f"Constraint Violations for {type(action).__qualname__}:"]
+                    msg += [f"  {v.msg}" for v in violations]
+                    logger.warning("\n".join(msg))
+            return res
+
+        self.func: _HandlerFunc = wrapped  # func
         self.etypes: List[Event] = list(etypes)
 
     def __set_name__(self, owner: Type[Subscriber], name: str):
@@ -532,9 +710,11 @@ class EventHandler(object):
 
         self.name = name
 
-    def __get__(self, obj, objtype=None) -> Callable:
+    def __get__(self, obj: Subscriber, objtype=None) -> Callable:
         # This returns the method that was wrapped
+
         return partial(self.func, obj)
+        # return partial(wrapped, obj)
 
 
 def handler(func: _HandlerFunc) -> EventHandler:
@@ -585,6 +765,67 @@ def handles(*etypes: List[Event]) -> Callable[[_HandlerFunc], EventHandler]:
     return _inner
 
 
+class Constraint(Subscriber):
+    """Base class for constraints.
+
+    Override `check` and return a `self.Violation("Description")` or `None`.
+
+    Note that each Constraint is itself a Subscriber, so it technically can have
+    its own constraints, but by default they're not used.
+    """
+
+    def __init__(self, game, /, parent: Subscriber):
+        self._parent = parent
+        super().__init__(game, use_default_constraints=False)
+        self._parent._constraints.append(self)  # FIXME: How do we remove constraints?
+
+    @property
+    def parent(self) -> Subscriber:
+        return self._parent
+
+    class Violation(object):
+        """Constraint was violated."""
+
+        def __init__(self, msg: str) -> None:
+            self._msg = str(msg)
+
+        @property
+        def msg(self) -> str:
+            return self._msg
+
+        def __repr__(self) -> str:
+            cn = type(self).__qualname__  # e.g. "Constraint.Violation"
+            return f"{cn}({self.msg!r})"
+
+    @abstractmethod
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        """Checks whether the `action` is allowed.
+
+        If allowed, return None.
+        If not allowed, return a `Constraint.Violation`
+        """
+
+    def hook_pre_action(self, action: Action) -> Optional[List[Action]]:
+        """Hook called when parent is trying to action & no violation for self."""
+
+    def hook_post_action(self, action: Action) -> Optional[List[Action]]:
+        """Hook called when parent successfully actioned."""
+
+    @handler
+    def handler_pre(self, event: EPreAction) -> Optional[List[Action]]:
+        if isinstance(event, EPreAction) and event.action.source == self.parent:
+            violation = self.check(event.action)
+            if violation is None:
+                return self.hook_pre_action(event.action)
+            # we have a violation - cancel!
+            return [CancelAction(self.game, self, target=event.action)]
+
+    @handler
+    def handler_post(self, event: EPostAction) -> Optional[List[Action]]:
+        if isinstance(event, EPostAction) and event.action.source == self.parent:
+            return self.hook_post_action(event.action)
+
+
 class EventEngine(GameObject):
     """Subscription and broadcasting engine."""
 
@@ -605,7 +846,6 @@ class EventEngine(GameObject):
             self._subscribers[etype].append(parent)
         return f
 
-    # TODO: Unsubscription
     def remove_subscriber(self, sub: Subscriber):
         """Removes all subscriptions from the subscriber.
 

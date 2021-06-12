@@ -69,13 +69,14 @@ class PhaseChangeAction(Action):
     def __init__(
         self,
         game: Game,
+        source: GameObject,
         /,
         new_phase: Optional[Phase] = None,
         *,
         priority: float = 0.0,
         canceled: bool = False,
     ):
-        super().__init__(game, priority=priority, canceled=canceled)
+        super().__init__(game, source, priority=priority, canceled=canceled)
         self.new_phase = new_phase
 
     def doit(self):
@@ -96,8 +97,8 @@ class AbstractPhaseSystem(Subscriber):
     It's possible to see all phases by using `game.phase_system.possible_phases`
     """
 
-    def __init__(self, game: Game, /):
-        super().__init__(game)
+    def __init__(self, game: Game, /, *, use_default_constraints: bool = True):
+        super().__init__(game, use_default_constraints=use_default_constraints)
         self._startup = Phase(game, name="startup", action_resolution="instant")
         self._shutdown = Phase(game, name="shutdown", action_resolution="instant")
 

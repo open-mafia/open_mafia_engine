@@ -1,6 +1,7 @@
 from typing import List
-from open_mafia_engine.core.all import *
+
 from open_mafia_engine.built_in.all import *
+from open_mafia_engine.core.all import *
 
 
 @game_builder("test")
@@ -21,7 +22,7 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
 
     # Aux objects
     GameEnder(game)  # ends the game when all factions get an Outcome
-    tally = Tally(game)  # voting tally; TODO lynch tally
+    tally = LynchTally(game)  # voting tally; TODO lynch tally
 
     n_town = n - 1
 
