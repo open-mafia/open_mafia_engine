@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Tuple, Union
+import logging
+from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 from open_mafia_engine.core.api import (
     Ability,
@@ -15,6 +16,9 @@ from open_mafia_engine.core.api import (
     get_actor_by_name,
     inject_converters,
 )
+
+NoneType = type(None)
+logger = logging.getLogger(__name__)
 
 # TODO: tiebreaking enum, hammers, allow unvotes, allow against all
 
@@ -39,7 +43,18 @@ class AbstractVoteTarget(GameObject):
 
 
 class VotingOptions(GameObject):
-    """Voting options."""
+    """Voting options.
+
+    Attributes
+    ----------
+    game : Game
+    allow_unvote : bool
+        Whether unvotes are allowed at all. Default is True.
+    allow_against_all : bool
+        Whether a "VoteAgainstAll" (e.g. "no lynch") is allowed. Default is True.
+
+    TODO: Hammers?
+    """
 
     def __init__(
         self,
@@ -68,17 +83,13 @@ class VotingResults(GameObject):
     def __init__(
         self,
         game: Game,
+        options: VotingOptions,
         /,
-        *,
-        allow_unvote: bool = True,
-        allow_against_all: bool = True,
     ):
         super().__init__(game)
         self._voters: List[Actor] = []
         self._targets: List[GameObject] = []
-        self._options = VotingOptions(
-            allow_unvote=allow_unvote, allow_against_all=allow_against_all
-        )
+        self._options = options
 
         def mk():
             return defaultdict(float)
@@ -106,6 +117,10 @@ class VotingResults(GameObject):
         """Gets the current vote leaders, if any."""
         vc = self.vote_counts
         max_cnt = vc[0][1]
+        # This short-circuits any votes :)
+        if max_cnt <= 0:
+            return []
+
         res = []
         for target, cnt in vc:
             if cnt < max_cnt:
@@ -262,11 +277,36 @@ class Vote(GameObject):
 
 
 class Tally(AuxObject):
-    """Voting tally."""
+    """Voting tally.
 
-    def __init__(self, game: Game, /):
+    TODO: Add voting options to this tally.
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        *,
+        allow_unvote: bool = True,
+        allow_against_all: bool = True,
+    ):
         super().__init__(game)
         self._vote_history: List[Vote] = []
+        self._options = VotingOptions(
+            game, allow_unvote=allow_unvote, allow_against_all=allow_against_all
+        )
+
+    @property
+    def options(self) -> VotingOptions:
+        return self._options
+
+    @property
+    def allow_unvote(self) -> bool:
+        return self.options.allow_unvote
+
+    @property
+    def allow_against_all(self) -> bool:
+        return self.options.allow_against_all
 
     @property
     def vote_history(self) -> List[Vote]:
@@ -275,10 +315,84 @@ class Tally(AuxObject):
     @property
     def results(self) -> VotingResults:
         """Applies vote history to get current results."""
-        res = VotingResults(self.game)
+        res = VotingResults(self.game, self.options)
         for v in self.vote_history:
             v.target.apply(res, v.source)
         return res
+
+    def add_vote(self, vote: Vote):
+        """Adds the vote to history."""
+        if not isinstance(vote, Vote):
+            raise TypeError(f"Can only add a Vote, got {vote!r}")
+        self._vote_history.append(vote)
+
+
+class VoteAction(Action):
+    """Votes for someone."""
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        source: Actor,
+        target: AbstractVoteTarget,
+        tally: Tally = None,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
+        super().__init__(game, priority=priority, canceled=canceled)
+        self.source = source
+        self.target = target
+        if tally is None:
+            tally = get_default_tally(game, tally)
+        self.tally = tally
+
+    def doit(self):
+        self.tally.add_vote(Vote(self.game, source=self.source, target=self.target))
+
+
+class VoteAbility(Ability):
+    """Voting ability."""
+
+    def __init__(
+        self, game: Game, /, owner: Actor, name: str, desc: str = "Voting ability."
+    ):
+        super().__init__(game, owner, name, desc=desc)
+
+    # @inject_converters
+    def activate(
+        self, target: AbstractVoteTarget, tally: Tally = None
+    ) -> Optional[List[VoteAction]]:
+        """Creates the action."""
+
+        # TODO: Constraints!
+
+        try:
+            return [
+                VoteAction(self.game, source=self.owner, target=target, tally=tally)
+            ]
+        except Exception:
+            logger.exception("Error executing action:")
+            if False:  # True, if debugging?
+                raise
+            return None
+
+
+@converter.register
+def get_default_tally(game: Game, obj: NoneType) -> Tally:
+    """Selects the default vote tally."""
+    tallies: List[Tally] = game.aux.filter_by_type(Tally)
+    if len(tallies) == 0:
+        raise TypeError(f"No tallies found!")
+    elif len(tallies) > 1:
+        raise TypeError(f"Multiple tallies found: {tallies!r}")
+    return tallies[0]
+
+
+@converter.register
+def get_vote_target_actor(game: Game, obj: Actor) -> AbstractVoteTarget:
+    return ActorTarget(game, actor=obj)
 
 
 @converter.register

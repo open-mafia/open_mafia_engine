@@ -230,7 +230,8 @@ class EActivate(Event):
     That is, this event is triggered by a player trying to activate their Ability.
     """
 
-    def __init__(self, game, ability: Ability, /, *args, **kwargs):
+    @inject_converters
+    def __init__(self, game: Game, ability: Ability, /, *args, **kwargs):
         self._ability = ability
         self._args = args
         self._kwargs = kwargs

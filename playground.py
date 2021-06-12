@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
 from open_mafia_engine.core.api import *
+from open_mafia_engine.built_in.all import *
 
 
 @game_builder("test")
@@ -30,6 +31,7 @@ def test_build(player_names: List[str]) -> Game:
     # Aux objects
 
     GameEnder(game)  # ends the game when all factions get an Outcome
+    Tally(game)  # voting tally
 
     return game
 
@@ -63,11 +65,22 @@ b_abil = AbFake2(game, owner="Bob", name="b_abil")
 alice = game.actors[0]
 bob = game.actors[1]
 
+a_v = VoteAbility(game, owner=alice, name="Vote")
+b_v = VoteAbility(game, owner=bob, name="Vote")
+
+tally: Tally = game.aux.filter_by_type(Tally)[0]
+
 # Testing events
 
 print("----- Test ability activation ----")
 # game.process_event(EActivate(game, a_abil), process_now=True)
-game.process_event(EActivate(game, "Alice/ability/a_abil"), process_now=True)
+# game.process_event(EActivate(game, "Alice/ability/a_abil"), process_now=True)
+game.process_event(EActivate(game, a_v, target=bob), process_now=True)
+assert tally.results.vote_leaders == [bob]
+game.process_event(
+    EActivate(game, "Alice/ability/Vote", target="unvote"), process_now=True
+)
+assert tally.results.vote_leaders == []
 
 
 class EFake(Event):

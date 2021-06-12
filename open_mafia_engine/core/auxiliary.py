@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Type
 
 from open_mafia_engine.core.event_system import (
     Action,
@@ -39,3 +39,11 @@ class AuxHelper(GameObject):
             self._children.append(obj)
 
     # TODO - remove
+
+    def filter_by_type(self, T: Type[AuxObject]) -> List[AuxObject]:
+        """Returns all `AuxObject`s with the given type."""
+        # TODO: Support Union?
+        def chk(x):
+            return isinstance(x, T)
+
+        return [x for x in self._children if chk(x)]

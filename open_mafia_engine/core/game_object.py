@@ -229,7 +229,9 @@ def inject_converters(func: Callable) -> Callable:
                     #     # TODO: Pre-check instead?
                     #     pass
 
-                if p.name in sb.kwargs:
+                if p.kind == inspect.Parameter.POSITIONAL_ONLY:
+                    nargs.append(val)
+                elif p.name in sb.kwargs:
                     nkw[p.name] = val
                 else:
                     nargs.append(val)
