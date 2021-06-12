@@ -1,6 +1,7 @@
 from typing import Optional
 
 from open_mafia_engine.core.all import (
+    _ATBase,
     Action,
     ATConstraint,
     AuxObject,
@@ -13,6 +14,7 @@ from open_mafia_engine.core.all import (
     PhaseChangeAction,
     handler,
 )
+from open_mafia_engine.core.state import Actor
 
 from .auxiliary import CounterPerPhaseAux
 
@@ -42,6 +44,9 @@ class LimitPerPhaseKeyConstraint(SubscribedConstraint):
     # TODO: How do we increment the counter?!
     # We need `Action.source`, don't we?...
     # Or we could subscribe to `EActivate` and check... not too cool, either.
+    # Plus it's incorrect for Triggers. Bah. I need to add `source`.
+
+    # We also need to make sure additional triggers get canceled. Hmm.
 
     # self.counter.increment()
 
@@ -51,3 +56,17 @@ class LimitPerPhaseKeyConstraint(SubscribedConstraint):
             return self.Violation(
                 f"Reached limit of {self.limit} (found {v}) for key {self.key!r}"
             )
+
+
+class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
+    """Allow only N uses per phase for this actor."""
+
+    def __init__(self, game: Game, /, parent: _ATBase, limit: int = 1):
+        key = f"LimitPerPhaseActorConstraint_{parent.owner.name}"
+        super().__init__(game, parent, key, limit=limit)
+
+    @property
+    def owner(self) -> Actor:
+        return self.parent.owner
+
+    # TODO: Same problem as with the base counter - how do we keep track of uses?
