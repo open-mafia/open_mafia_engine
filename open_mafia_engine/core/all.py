@@ -38,12 +38,12 @@ from .phase_cycle import (
     SimplePhaseCycle,
 )
 from .state import (
-    ATBase,
     Ability,
     Actor,
+    ATBase,
     ATConstraint,
-    ConstraintOwnerAlive,
     ConstraintActorTargetsAlive,
+    ConstraintOwnerAlive,
     EActivate,
     EStatusChange,
     Faction,

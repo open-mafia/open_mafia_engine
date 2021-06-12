@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import logging
 from abc import abstractmethod
 from collections import defaultdict
-import logging
 from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
 from open_mafia_engine.core.all import (
@@ -10,8 +10,8 @@ from open_mafia_engine.core.all import (
     Action,
     Actor,
     AuxObject,
-    EPreAction,
     EPostAction,
+    EPreAction,
     Game,
     GameObject,
     PhaseChangeAction,

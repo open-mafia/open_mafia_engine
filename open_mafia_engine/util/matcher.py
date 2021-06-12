@@ -1,6 +1,6 @@
+import warnings
 from collections.abc import MutableMapping
 from typing import Dict, Generic, TypeVar
-import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")

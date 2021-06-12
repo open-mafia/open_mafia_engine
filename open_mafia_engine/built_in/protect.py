@@ -3,12 +3,12 @@ from typing import List, Optional
 from open_mafia_engine.core.all import (
     Ability,
     Action,
-    GameObject,
     Actor,
     ATBase,
     CancelAction,
     EPreAction,
     Game,
+    GameObject,
     handler,
 )
 

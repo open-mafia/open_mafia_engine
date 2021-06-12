@@ -1,4 +1,5 @@
 from typing import List
+
 from open_mafia_engine.builders.for_testing import make_test_game
 from open_mafia_engine.core.event_system import (
     Action,

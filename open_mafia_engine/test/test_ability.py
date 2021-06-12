@@ -1,7 +1,7 @@
+from open_mafia_engine.builders.for_testing import make_test_game
 from open_mafia_engine.built_in.voting import Tally
 from open_mafia_engine.core.event_system import Action
 from open_mafia_engine.core.state import Ability, EActivate
-from open_mafia_engine.builders.for_testing import make_test_game
 
 
 def test_activation_by_event():

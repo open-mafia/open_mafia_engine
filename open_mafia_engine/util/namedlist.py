@@ -1,5 +1,6 @@
 from collections.abc import Mapping, Sequence
 from typing import List
+
 from open_mafia_engine.util.repr import ReprMixin
 
 

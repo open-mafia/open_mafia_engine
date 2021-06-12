@@ -1,6 +1,5 @@
 from typing import List
 
-
 PATH_SEP = "/"  # Separates paths in hierarchical structures
 # TODO: Consider other separators.
 

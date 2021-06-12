@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import inspect
 import logging
+import warnings
 from abc import abstractmethod
 from collections import defaultdict
 from enum import Enum
 from typing import (
-    Any,
     TYPE_CHECKING,
+    Any,
     Callable,
     DefaultDict,
     Dict,
@@ -19,7 +20,6 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-import warnings
 
 from makefun import partial, wraps
 from sortedcontainers import SortedList

@@ -1,10 +1,10 @@
 import warnings
+
 from open_mafia_engine.core.game import Game
 from open_mafia_engine.core.game_object import converter
 from open_mafia_engine.core.naming import ABILITY, PATH_SEP, TRIGGER, get_parts
 from open_mafia_engine.core.phase_cycle import Phase
 from open_mafia_engine.core.state import Ability, Actor, Faction, Trigger
-
 from open_mafia_engine.util.matcher import FuzzyMatcher
 
 

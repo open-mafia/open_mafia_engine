@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Mapping, TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Dict, List, Mapping, Type
 from uuid import uuid4
 
 from open_mafia_engine.core.event_system import (

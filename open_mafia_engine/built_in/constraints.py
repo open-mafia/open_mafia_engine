@@ -2,16 +2,16 @@ from typing import List, Optional
 from uuid import uuid4
 
 from open_mafia_engine.core.all import (
-    ATBase,
     Action,
+    ATBase,
     ATConstraint,
     AuxObject,
     Constraint,
     ConstraintActorTargetsAlive,
     ConstraintOwnerAlive,
     Game,
-    Subscriber,
     PhaseChangeAction,
+    Subscriber,
     handler,
 )
 from open_mafia_engine.core.event_system import EPostAction, EPreAction

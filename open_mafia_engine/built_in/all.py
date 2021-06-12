@@ -13,10 +13,10 @@ from .constraints import (
     LimitPerPhaseKeyConstraint,
 )
 from .kills import DeathCausingAction, KillAction, LynchAction
+from .lynch_tally import LynchTally
 from .protect import KillProtectAction, KillProtectorAux
 from .roleblock import RoleBlockAction, RoleBlockerAux
 from .triggers import UnkillableTrigger, UnlynchableTrigger
-from .lynch_tally import LynchTally
 from .voting import (
     AbstractVoteTarget,
     ActorTarget,

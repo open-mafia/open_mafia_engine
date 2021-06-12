@@ -3,15 +3,15 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from open_mafia_engine.core.all import (
-    Action,
-    GameObject,
     Ability,
+    Action,
     Actor,
     ATBase,
     AuxObject,
     CancelAction,
     EPreAction,
     Game,
+    GameObject,
     PhaseChangeAction,
     RemoveAuxAction,
     handler,
