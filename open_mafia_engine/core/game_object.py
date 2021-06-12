@@ -40,7 +40,7 @@ class _BAD_HINT(object):
 
 
 def _get_ns() -> dict:
-    from open_mafia_engine.core.api import Game
+    from open_mafia_engine.core.all import Game
 
     res = locals()
     res.update(__concrete_types__)
