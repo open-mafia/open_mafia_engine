@@ -4,7 +4,7 @@ from open_mafia_engine.built_in.all import *
 
 
 @game_builder("test")
-def test_builder(player_names: List[str], n_mafia: int = 1) -> Game:
+def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
     """Game builder for testing purposes.
 
     Always assigns mafia, then non-mafia, in player name order.
