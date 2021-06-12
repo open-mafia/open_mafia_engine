@@ -27,12 +27,17 @@ mkdocs = { version = "^1.1.2", optional = true }
 beautifulsoup4 = { version = "^4.9.3", optional = true }
 requests = { version = "^2.25.1", optional = true }
 "ruamel.yaml" = { version = "^0.17.4", optional = true }
+flake8 = { version = "^3.9.2", optional = true }
+mypy = { version = "^0.800", optional = true }
+pytest = { version = "^6.2.4", optional = true }
 makefun = "^1.11.3"
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
 docs = ["mkdocs"]
 ruamel = ["ruamel.yaml"]
+dev = ["flake8", "mypy", "pytest"]
+test = ["pytest"]
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
