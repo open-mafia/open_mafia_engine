@@ -356,21 +356,27 @@ class VoteAbility(Ability):
     """Voting ability."""
 
     def __init__(
-        self, game: Game, /, owner: Actor, name: str, desc: str = "Voting ability."
+        self,
+        game: Game,
+        /,
+        owner: Actor,
+        name: str,
+        tally: Tally = None,
+        desc: str = "Voting ability.",
     ):
         super().__init__(game, owner, name, desc=desc)
+        self.tally = tally  # Is this found by the Injector?...
 
-    # @inject_converters
-    def activate(
-        self, target: AbstractVoteTarget, tally: Tally = None
-    ) -> Optional[List[VoteAction]]:
+    def activate(self, target: AbstractVoteTarget) -> Optional[List[VoteAction]]:
         """Creates the action."""
 
         # TODO: Constraints!
 
         try:
             return [
-                VoteAction(self.game, source=self.owner, target=target, tally=tally)
+                VoteAction(
+                    self.game, source=self.owner, target=target, tally=self.tally
+                )
             ]
         except Exception:
             logger.exception("Error executing action:")

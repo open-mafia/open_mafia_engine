@@ -2,39 +2,7 @@ from typing import List, Optional, Union
 
 from open_mafia_engine.core.api import *
 from open_mafia_engine.built_in.all import *
-
-
-@game_builder("test")
-def test_build(player_names: List[str]) -> Game:
-    """Game builder for testing purposes."""
-
-    N = len(player_names)
-    assert N > 1
-
-    game = Game()
-    mafia = Faction(game, "Mafia")
-    town = Faction(game, "Town")
-
-    N_mafia = 1
-    N_town = N - 1
-
-    for i in range(N_mafia):
-        act = Actor(game, player_names[i])
-        mafia.add_actor(act)
-        # TODO: Abilities
-
-    for i in range(N_town):
-        act = Actor(game, player_names[N_mafia + i])
-        town.add_actor(act)
-        # TODO: Abilities
-
-    # Aux objects
-
-    GameEnder(game)  # ends the game when all factions get an Outcome
-    Tally(game)  # voting tally
-
-    return game
-
+from open_mafia_engine.builders.all import *
 
 # Testing game state
 
@@ -42,6 +10,26 @@ builder = GameBuilder.load("test")
 game = builder.build(["Alice", "Bob"])
 
 # Do fake stuff
+
+alice = game.actors[0]
+bob = game.actors[1]
+
+a_v = alice.abilities[0]  # VoteAbility(game, owner=alice, name="Vote")
+b_v = bob.abilities[0]  # VoteAbility(game, owner=bob, name="Vote")
+
+tally: Tally = game.aux.filter_by_type(Tally)[0]
+
+# Testing events
+
+print("----- Test ability activation ----")
+# game.process_event(EActivate(game, a_abil), process_now=True)
+# game.process_event(EActivate(game, "Alice/ability/a_abil"), process_now=True)
+game.process_event(EActivate(game, a_v, target=bob), process_now=True)
+assert tally.results.vote_leaders == [bob]
+game.process_event(
+    EActivate(game, "Alice/ability/Vote", target="unvote"), process_now=True
+)
+assert tally.results.vote_leaders == []
 
 
 def fake_action(self: Action):
@@ -61,26 +49,6 @@ def AbFake2(self: Action):
 
 a_abil = AbFake(game, owner="Alice", name="a_abil")
 b_abil = AbFake2(game, owner="Bob", name="b_abil")
-
-alice = game.actors[0]
-bob = game.actors[1]
-
-a_v = VoteAbility(game, owner=alice, name="Vote")
-b_v = VoteAbility(game, owner=bob, name="Vote")
-
-tally: Tally = game.aux.filter_by_type(Tally)[0]
-
-# Testing events
-
-print("----- Test ability activation ----")
-# game.process_event(EActivate(game, a_abil), process_now=True)
-# game.process_event(EActivate(game, "Alice/ability/a_abil"), process_now=True)
-game.process_event(EActivate(game, a_v, target=bob), process_now=True)
-assert tally.results.vote_leaders == [bob]
-game.process_event(
-    EActivate(game, "Alice/ability/Vote", target="unvote"), process_now=True
-)
-assert tally.results.vote_leaders == []
 
 
 class EFake(Event):
