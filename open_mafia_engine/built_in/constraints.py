@@ -1,4 +1,5 @@
 from typing import List, Optional
+from uuid import uuid4
 
 from open_mafia_engine.core.all import (
     _ATBase,
@@ -20,13 +21,43 @@ from .auxiliary import CounterPerPhaseAux
 
 
 class LimitPerPhaseKeyConstraint(Constraint):
-    """Allow only N uses per phase, given a key."""
+    """Allow only N uses per phase, given a key.
 
-    def __init__(self, game: Game, /, parent: Subscriber, key: str, limit: int = 1):
-        self._key = str(key)
+    Attributes
+    ----------
+    game : Game
+    parent : Subscriber
+    key : str
+        They key to use for the aux object.
+    limit : int
+        The maximum number of actions per phase. Default is 1.
+    only_successful : bool
+        Whether to count only successful tries towards the limit.
+        Default is False (i.e. even attempts are counted).
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        parent: Subscriber,
+        key: str = None,
+        limit: int = 1,
+        *,
+        only_successful: bool = False,
+    ):
+        if key is None:
+            key = self.generate_key(parent)
+        self._key = key
         self._limit = int(limit)
+        self._only_successful = bool(only_successful)
         super().__init__(game, parent)
         CounterPerPhaseAux.get_or_create(game, key=self._key)
+
+    @classmethod
+    def generate_key(cls, parent: Subscriber) -> str:
+        cn = cls.__qualname__
+        return f"{cn}_{uuid4()}".replace("-", "")
 
     @property
     def key(self) -> str:
@@ -37,9 +68,21 @@ class LimitPerPhaseKeyConstraint(Constraint):
         return self._limit
 
     @property
+    def only_successful(self) -> bool:
+        return self._only_successful
+
+    @property
     def counter(self) -> CounterPerPhaseAux:
         cppa = CounterPerPhaseAux.get_or_create(self.game, key=self._key)
         return cppa
+
+    def hook_pre_action(self, action: Action) -> Optional[List[Action]]:
+        if not self.only_successful:
+            self.counter.increment()
+
+    def hook_post_action(self, action: Action) -> Optional[List[Action]]:
+        if self.only_successful:
+            self.counter.increment()
 
     # TODO: How do we increment the counter?!
     # We need `Action.source`, don't we?...
@@ -59,11 +102,37 @@ class LimitPerPhaseKeyConstraint(Constraint):
 
 
 class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
-    """Allow only N uses per phase for this actor."""
+    """Allow only N uses per phase for this actor.
 
-    def __init__(self, game: Game, /, parent: _ATBase, limit: int = 1):
-        key = f"LimitPerPhaseActorConstraint_{parent.owner.name}"
-        super().__init__(game, parent, key, limit=limit)
+    Attributes
+    ----------
+    game : Game
+    parent : _ATBase
+    limit : int
+        The maximum number of actions per phase. Default is 1.
+    only_successful : bool
+        Whether to count only successful tries towards the limit.
+        Default is False (i.e. even attempts are counted).
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        parent: _ATBase,
+        limit: int = 1,
+        *,
+        only_successful: bool = False,
+    ):
+        key = self.generate_key(parent)
+        super().__init__(
+            game, parent, key, limit=limit, only_successful=only_successful
+        )
+
+    @classmethod
+    def generate_key(cls, parent: _ATBase) -> str:
+        cn = cls.__qualname__
+        return f"{cn}_{parent.owner.name}"
 
     @property
     def owner(self) -> Actor:
