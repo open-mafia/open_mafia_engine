@@ -313,6 +313,35 @@ class CancelAction(Action):
         self.target.canceled = True
 
 
+class ConditionalCancelAction(CancelAction):
+    """Cancels the action, but checks `condition` just in case again.
+    
+    If `condition(action)`, actually does cancel the action.
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        target: Action,
+        condition: Callable[[Action], bool],
+        *,
+        priority: float = -100,
+        canceled: bool = False,
+    ):
+        self._condition = condition
+        super().__init__(game, source, target, priority=priority, canceled=canceled)
+
+    @property
+    def condition(self) -> Callable[[Action], bool]:
+        return self._condition
+
+    def doit(self):
+        if self.condition(self.target):
+            super().doit()
+
+
 class ActionInspector(object):
     """Helper to inspect Action objects."""
 

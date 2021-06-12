@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from open_mafia_engine.core.all import (
+    Ability,
     Actor,
     ATBase,
     AuxObject,
@@ -30,6 +31,17 @@ class RoleBlockerAux(TempPhaseAux):
     """Aux object that blocks actions made by the target.
 
     It removes itself after the end of the phase.
+
+    Attributes
+    ----------
+    game : Game
+    target : Actor
+        The target to block.
+    key : None or str
+        Safely ignore this (?).
+    only_abilities : bool
+        If True, only blocks Ability activations, and lets Triggers through.
+        Default is True.
     """
 
     def __init__(
@@ -39,21 +51,32 @@ class RoleBlockerAux(TempPhaseAux):
         target: Actor,
         key: str = None,
         *,
+        only_abilities: bool = True,
         use_default_constraints: bool = True,
     ):
+        self._only_abilities = bool(only_abilities)
         self._target = target
-        super().__init__(game, key=key, use_default_constraints=use_default_constraints)
+        super().__init__(
+            game, key=None, use_default_constraints=use_default_constraints
+        )
 
     @property
     def target(self) -> Actor:
         return self._target
 
+    @property
+    def only_abilities(self) -> bool:
+        return self._only_abilities
+
     @handler
     def handle_to_cancel(self, event: EPreAction) -> Optional[List[CancelAction]]:
-        """Cancels the action if"""
+        """Cancels the action if it came from the target."""
         if isinstance(event, EPreAction):
             src = event.action.source
             if isinstance(src, ATBase):
+                if self.only_abilities and not isinstance(src, Ability):
+                    # Skip
+                    return
                 if src.owner == self.target:
                     return [CancelAction(self.game, self, target=event.action)]
 

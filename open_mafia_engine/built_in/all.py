@@ -14,6 +14,7 @@ from .constraints import (
     ConstraintOwnerAlive,
     LimitPerPhaseKeyConstraint,
 )
+from .triggers import UnkillableTrigger
 from .voting import (
     AbstractVoteTarget,
     ActorTarget,

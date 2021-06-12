@@ -325,6 +325,9 @@ class Tally(AuxObject):
         self._vote_history.append(vote)
 
 
+# TODO: LynchTally
+
+
 class VoteAction(Action):
     """Votes for someone."""
 

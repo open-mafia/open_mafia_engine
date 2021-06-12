@@ -65,4 +65,4 @@ class RoleBlockAction(Action):
         return self._target
 
     def doit(self):
-        RoleBlockerAux(self.game, target=self.target)
+        RoleBlockerAux(self.game, target=self.target, only_abilities=True)

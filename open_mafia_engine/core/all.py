@@ -1,6 +1,6 @@
 # flake8: noqa
 
-from .auxiliary import AuxObject, RemoveAuxAction
+from .auxiliary import AuxHelper, AuxObject, RemoveAuxAction
 from .builder import GameBuilder, game_builder
 from .converters import (
     get_ability_by_path,
@@ -15,6 +15,7 @@ from .event_system import (
     ActionInspector,
     ActionQueue,
     CancelAction,
+    ConditionalCancelAction,
     Constraint,
     EPostAction,
     EPreAction,
