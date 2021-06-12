@@ -42,7 +42,7 @@ def test_events_and_subscribers():
         @handles(EFake)
         def h1(self, event) -> List[X1]:
             log.append("C.h1")
-            return [X1(self.game)]
+            return [X1(self.game, self)]
 
         @handler
         def h2(self, event: X1.Pre) -> List[Action]:
@@ -60,7 +60,7 @@ def test_events_and_subscribers():
 
         # @handles(Event)
         # def z1(self, event) -> Action:
-        #     return Action(self.game)
+        #     return Action(self.game, self)
 
         # @handles(Event)
         # def z2(self, event) -> Optional[Action]:

@@ -413,7 +413,7 @@ class Ability(_ATBase):
             """Activate this ability with some arguments."""
 
             try:
-                return [self.TAction(self.game, *args, **kwargs)]
+                return [self.TAction(self.game, self, *args, **kwargs)]
             except Exception as e:
                 logger.exception("Error executing action:")
                 if False:  # Set for debugging errors :)

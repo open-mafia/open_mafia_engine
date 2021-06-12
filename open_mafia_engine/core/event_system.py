@@ -68,6 +68,8 @@ class Action(GameObject):
     Attributes
     ----------
     game : Game
+    source : GameObject
+        The object that generated this action.
     priority : float
     canceled : bool
 
@@ -84,9 +86,20 @@ class Action(GameObject):
         You may override these with your own when subclassing.
     """
 
-    def __init__(self, game: Game, /, *, priority: float = 0.0, canceled: bool = False):
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        *,
+        priority: float = 0.0,
+        canceled: bool = False,
+    ):
         self._priority = float(priority)
         self._canceled = bool(canceled)
+        if not isinstance(source, GameObject):
+            raise TypeError(f"Expected GameObject, got {source!r}")
+        self._source = source
         super().__init__(game)
 
     # NOTE: You can override these classes, even inline.
@@ -103,6 +116,10 @@ class Action(GameObject):
         super().__init_subclass__()
         assert issubclass(cls.Pre, EPreAction)
         assert issubclass(cls.Post, EPostAction)
+
+    @property
+    def source(self) -> GameObject:
+        return self._source
 
     @property
     def priority(self) -> float:

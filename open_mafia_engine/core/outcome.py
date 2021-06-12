@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from open_mafia_engine.core.enums import Outcome
 from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction
+from open_mafia_engine.core.game_object import GameObject
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
@@ -35,6 +36,7 @@ class OutcomeAction(Action):
     def __init__(
         self,
         game: Game,
+        source: GameObject,
         /,
         faction: Faction,
         outcome: str,
@@ -42,7 +44,7 @@ class OutcomeAction(Action):
         priority: float = 100.0,
         canceled: bool = False,
     ):
-        super().__init__(game, priority=priority, canceled=canceled)
+        super().__init__(game, source, priority=priority, canceled=canceled)
         self._faction = faction
         self._outcome = Outcome(outcome)
 
