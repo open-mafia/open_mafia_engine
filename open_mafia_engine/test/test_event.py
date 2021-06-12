@@ -7,6 +7,7 @@ from open_mafia_engine.core.event_system import (
     handler,
     handles,
 )
+from open_mafia_engine.core.state import EStatusChange
 
 
 def test_events_and_subscribers():
@@ -86,3 +87,23 @@ def test_events_and_subscribers():
         "A.f",
     ]
     assert log == assumed_log
+
+
+def test_status_event():
+    """Tests status change events."""
+
+    actor_names = ["Alpha", "Bravo"]
+    game = make_test_game(actor_names)
+
+    log = []
+
+    class Chk(Subscriber):
+        @handler
+        def f(self, event: EStatusChange):
+            log.append(event.new_val)
+
+    Chk(game)
+
+    game.actors[0].status["key1"] = 2
+
+    assert log == [2]
