@@ -283,6 +283,36 @@ class Action(GameObject):
         return GeneratedAction
 
 
+class CancelAction(Action):
+    """Action that cancels other actions."""
+
+    def __init__(
+        self,
+        game: Game,
+        source: GameObject,
+        /,
+        target: Action,
+        *,
+        priority: float = 50.0,
+        canceled: bool = False,
+    ):
+        self._target = target
+        super().__init__(game, source, priority=priority, canceled=canceled)
+
+    @property
+    def target(self) -> Action:
+        return self._target
+
+    @target.getter
+    def target(self, v: Action):
+        if not isinstance(v, Action):
+            raise TypeError(f"Can only cancel Actions, but got {v!r}")
+        self._target = v
+
+    def doit(self):
+        self.target.canceled = True
+
+
 class ActionInspector(object):
     """Helper to inspect Action objects."""
 
@@ -439,44 +469,6 @@ class ActionQueue(GameObject):
     def process_all(self):
         while len(self) > 0:
             self.process_next_batch()
-
-
-class Constraint(GameObject):
-    """Base class for constraints.
-
-    Override `check` and return a `self.Violation("Description")` or `None`
-    """
-
-    class Violation(object):
-        """Constraint was violated."""
-
-        def __init__(self, msg: str) -> None:
-            self._msg = str(msg)
-
-        @property
-        def msg(self) -> str:
-            return self._msg
-
-        def __repr__(self) -> str:
-            cn = type(self).__qualname__  # e.g. "Constraint.Violation"
-            return f"{cn}({self.msg!r})"
-
-    def __init__(self, game, /, parent: Subscriber):
-        super().__init__(game)
-        self._parent = parent
-        self._parent._constraints.append(self)  # FIXME: How do we remove constraints?
-
-    @property
-    def parent(self) -> Subscriber:
-        return self._parent
-
-    @abstractmethod
-    def check(self, action: Action) -> Optional[Constraint.Violation]:
-        """Checks whether the `action` is allowed.
-
-        If allowed, return None.
-        If not allowed, return a `Constraint.Violation`
-        """
 
 
 class Subscriber(GameObject):
@@ -744,12 +736,65 @@ def handles(*etypes: List[Event]) -> Callable[[_HandlerFunc], EventHandler]:
     return _inner
 
 
-class SubscribedConstraint(Constraint, Subscriber):
-    """Constraint that is, itself, a Subscriber."""
+class Constraint(Subscriber):
+    """Base class for constraints.
 
-    def __init__(self, game: Game, /, parent: Subscriber):
-        super(Constraint, self).__init__(game, parent)
-        Subscriber.__init__(self, game, use_default_constraints=False)
+    Override `check` and return a `self.Violation("Description")` or `None`.
+
+    Note that each Constraint is itself a Subscriber, so it technically can have
+    its own constraints, but by default they're not used.
+    """
+
+    def __init__(self, game, /, parent: Subscriber):
+        self._parent = parent
+        super().__init__(game, use_default_constraints=False)
+        self._parent._constraints.append(self)  # FIXME: How do we remove constraints?
+
+    @property
+    def parent(self) -> Subscriber:
+        return self._parent
+
+    class Violation(object):
+        """Constraint was violated."""
+
+        def __init__(self, msg: str) -> None:
+            self._msg = str(msg)
+
+        @property
+        def msg(self) -> str:
+            return self._msg
+
+        def __repr__(self) -> str:
+            cn = type(self).__qualname__  # e.g. "Constraint.Violation"
+            return f"{cn}({self.msg!r})"
+
+    @abstractmethod
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        """Checks whether the `action` is allowed.
+
+        If allowed, return None.
+        If not allowed, return a `Constraint.Violation`
+        """
+
+    def hook_pre_action(self, action: Action) -> Optional[List[Action]]:
+        """Hook called when parent is trying to action & no violation for self."""
+
+    def hook_post_action(self, action: Action) -> Optional[List[Action]]:
+        """Hook called when parent successfully actioned."""
+
+    @handler
+    def handler_pre(self, event: EPreAction) -> Optional[List[Action]]:
+        if isinstance(event, EPreAction) and event.action.source == self.parent:
+            violation = self.check(event.action)
+            if violation is None:
+                return self.hook_pre_action(event.action)
+            # we have a violation - cancel!
+            return [CancelAction(self.game, self, target=event.action)]
+
+    @handler
+    def handler_post(self, event: EPostAction) -> Optional[List[Action]]:
+        if isinstance(event, EPostAction) and event.action.source == self.parent:
+            return self.hook_post_action(event.action)
 
 
 class EventEngine(GameObject):

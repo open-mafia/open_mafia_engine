@@ -9,7 +9,6 @@ from open_mafia_engine.core.all import (
     ConstraintActorTargetsAlive,
     ConstraintOwnerAlive,
     Game,
-    SubscribedConstraint,
     Subscriber,
     PhaseChangeAction,
     handler,

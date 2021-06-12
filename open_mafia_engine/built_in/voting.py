@@ -373,7 +373,9 @@ class VoteAbility(Ability):
 
         try:
             return [
-                VoteAction(self.game, self, voter=self.owner, target=target, tally=self.tally)
+                VoteAction(
+                    self.game, self, voter=self.owner, target=target, tally=self.tally
+                )
             ]
         except Exception:
             logger.exception("Error executing action:")

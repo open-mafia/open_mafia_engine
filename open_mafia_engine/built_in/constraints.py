@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from open_mafia_engine.core.all import (
     _ATBase,
@@ -9,17 +9,17 @@ from open_mafia_engine.core.all import (
     ConstraintActorTargetsAlive,
     ConstraintOwnerAlive,
     Game,
-    SubscribedConstraint,
     Subscriber,
     PhaseChangeAction,
     handler,
 )
+from open_mafia_engine.core.event_system import EPostAction, EPreAction
 from open_mafia_engine.core.state import Actor
 
 from .auxiliary import CounterPerPhaseAux
 
 
-class LimitPerPhaseKeyConstraint(SubscribedConstraint):
+class LimitPerPhaseKeyConstraint(Constraint):
     """Allow only N uses per phase, given a key."""
 
     def __init__(self, game: Game, /, parent: Subscriber, key: str, limit: int = 1):

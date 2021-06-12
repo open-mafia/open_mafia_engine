@@ -402,7 +402,7 @@ class Ability(_ATBase):
             par_activate, return_annotation=Optional[List[Action]]
         )
 
-        sig_init = "TODO"
+        sig_init = "TODO"  # TODO: Actually create a proper init signature!
 
         # TODO: Set sig_init
         def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
