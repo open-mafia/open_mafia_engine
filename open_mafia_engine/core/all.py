@@ -37,7 +37,7 @@ from .phase_cycle import (
     SimplePhaseCycle,
 )
 from .state import (
-    _ATBase,
+    ATBase,
     Ability,
     Actor,
     ATConstraint,

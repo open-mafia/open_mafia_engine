@@ -2,7 +2,7 @@ from typing import List, Optional
 from uuid import uuid4
 
 from open_mafia_engine.core.all import (
-    _ATBase,
+    ATBase,
     Action,
     ATConstraint,
     AuxObject,
@@ -107,7 +107,7 @@ class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
     Attributes
     ----------
     game : Game
-    parent : _ATBase
+    parent : ATBase
     limit : int
         The maximum number of actions per phase. Default is 1.
     only_successful : bool
@@ -119,7 +119,7 @@ class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
         self,
         game: Game,
         /,
-        parent: _ATBase,
+        parent: ATBase,
         limit: int = 1,
         *,
         only_successful: bool = False,
@@ -130,7 +130,7 @@ class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
         )
 
     @classmethod
-    def generate_key(cls, parent: _ATBase) -> str:
+    def generate_key(cls, parent: ATBase) -> str:
         cn = cls.__qualname__
         return f"{cn}_{parent.owner.name}"
 

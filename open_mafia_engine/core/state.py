@@ -176,7 +176,7 @@ class Actor(GameObject):
             raise TypeError(f"Expected Ability or Trigger, got {obj!r}")
 
 
-class _ATBase(Subscriber):
+class ATBase(Subscriber):
     """Base object for abilities and triggers.
 
     Attributes
@@ -232,13 +232,13 @@ class _ATBase(Subscriber):
 class ATConstraint(Constraint):
     """Constraint for Actions and Triggers. Will raise if used elsewhere."""
 
-    def __init__(self, game, /, parent: _ATBase):
-        if not isinstance(parent, _ATBase):
-            raise TypeError(f"Constraint only available for _ATBase, got {parent!r}")
+    def __init__(self, game, /, parent: ATBase):
+        if not isinstance(parent, ATBase):
+            raise TypeError(f"Constraint only available for ATBase, got {parent!r}")
         super().__init__(game, parent)
 
     @property
-    def parent(self) -> _ATBase:
+    def parent(self) -> ATBase:
         return self._parent
 
     @property
@@ -276,7 +276,7 @@ class ConstraintActorTargetsAlive(ATConstraint):
     # TODO: Subscribe to EPreAction and check its source! Should automatically happen...
 
 
-class Trigger(_ATBase):
+class Trigger(ATBase):
     """Basic Trigger object.
 
     Attributes
@@ -319,7 +319,7 @@ class EActivate(Event):
         return dict(self._kwargs)
 
 
-class Ability(_ATBase):
+class Ability(ATBase):
     """Basic Ability object.
 
     Attributes
