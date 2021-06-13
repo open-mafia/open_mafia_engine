@@ -1,5 +1,7 @@
 # flake8: noqa
 
+from open_mafia_engine.core.enums import ActionResolutionType, Outcome
+
 from .auxiliary import AuxHelper, AuxObject, RemoveAuxAction
 from .builder import GameBuilder, game_builder
 from .converters import (
@@ -29,10 +31,12 @@ from .event_system import (
 )
 from .game import Game
 from .game_object import GameObject, converter, inject_converters
-from .naming import ABILITY, TRIGGER, PATH_SEP, get_parts, get_path
+from .naming import ABILITY, PATH_SEP, TRIGGER, get_parts, get_path
+from .outcome import EOutcomeAchieved, OutcomeAction
 from .phase_cycle import (
     AbstractPhaseSystem,
     ActionResolutionType,
+    ETryPhaseChange,
     Phase,
     PhaseChangeAction,
     SimplePhaseCycle,
@@ -47,6 +51,7 @@ from .state import (
     EActivate,
     EStatusChange,
     Faction,
+    OutcomeChecker,
     Status,
     Trigger,
 )
