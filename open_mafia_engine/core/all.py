@@ -29,7 +29,7 @@ from .event_system import (
 )
 from .game import Game
 from .game_object import GameObject, converter, inject_converters
-from .naming import get_parts, get_path
+from .naming import ABILITY, TRIGGER, PATH_SEP, get_parts, get_path
 from .phase_cycle import (
     AbstractPhaseSystem,
     ActionResolutionType,
