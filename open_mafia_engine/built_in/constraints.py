@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 from open_mafia_engine.core.all import (
     Action,
+    ActionInspector,
     ATBase,
     ATConstraint,
     AuxObject,
@@ -148,3 +149,32 @@ class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
     @property
     def owner(self) -> Actor:
         return self.parent.owner
+
+
+class ConstraintNoSelfTarget(ATConstraint):
+    """Any targets for the action, if they are Actors, must not be the owner."""
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        ai = ActionInspector(action)
+        p2a: Dict[str, Actor] = ai.values_of_type(Actor)
+        bads = []
+        for p, a in p2a.items():
+            if a == self.owner:
+                bads.append(f"{p!r}")
+        if len(bads) > 0:
+            return self.Violation("Self-targeting not allowed: " + ", ".join(bads))
+
+
+class ConstraintNoSelfFactionTarget(ATConstraint):
+    """Any targets for the action, if they are Actors, must be from other factions."""
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        ai = ActionInspector(action)
+        p2a: Dict[str, Actor] = ai.values_of_type(Actor)
+        bads = []
+        for p, a in p2a.items():
+            if any(f in self.owner.factions for f in a.factions):
+                bads.append(f"{p!r} ({a.name!r})")
+        s = "" if len(self.owner.factions) == 1 else "s"
+        if len(bads) > 0:
+            return self.Violation(f"Targets in own faction{s}: " + ", ".join(bads))

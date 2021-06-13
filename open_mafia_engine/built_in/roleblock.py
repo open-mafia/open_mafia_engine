@@ -91,3 +91,12 @@ class RoleBlockAction(Action):
 
     def doit(self):
         RoleBlockerAux(self.game, target=self.target, only_abilities=True)
+
+
+RoleBlockAbility = Ability.generate(
+    RoleBlockAction,
+    params=["target"],
+    name="RoleBlockAbility",
+    doc="Ability to block others.",
+    desc="Roleblocks the target.",
+)

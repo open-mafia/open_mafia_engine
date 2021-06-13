@@ -34,8 +34,16 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
         PhaseConstraint(game, vote, phase="day")
         # Mafia kill
         mk = KillAbility(game, act, name="Mafia Kill")
+        LimitPerPhaseActorConstraint(game, mk, limit=1)
         LimitPerPhaseKeyConstraint(game, mk, key="mafia_kill_limit")
         PhaseConstraint(game, mk, phase="night")
+        ConstraintNoSelfFactionTarget(game, mk)
+        if i == 2:
+            # Second mafioso can roleblock
+            block = RoleBlockAbility(game, act, name="Roleblock")
+            PhaseConstraint(game, block, phase="night")
+            LimitPerPhaseActorConstraint(game, block, limit=1)
+            ConstraintNoSelfFactionTarget(game, block)
 
     for i in range(n_town):
         act = Actor(game, player_names[n_mafia + i])
@@ -43,6 +51,20 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
         # Voting
         vote = VoteAbility(game, act, name="Vote", tally=tally)
         PhaseConstraint(game, vote, phase="day")
+        if i == 2:
+            # Second townie is a protector/doctor
+            prot = KillProtectAbility(game, act, name="Protect")
+            PhaseConstraint(game, prot, phase="night")
+            LimitPerPhaseActorConstraint(game, prot, limit=1)
+            ConstraintNoSelfTarget(game, prot)
+        elif i == 3:
+            # Third townie is a detective
+            # TODO
+            # insp = InspectAbility(game, act, name="Alignment Inspect")
+            # LimitPerPhaseActorConstraint(game, insp, limit=1)
+            # PhaseConstraint(game, insp, phase="night")
+            # ConstraintNoSelfTarget(game, insp)
+            pass
         # TODO: Other abilities
 
     return game
