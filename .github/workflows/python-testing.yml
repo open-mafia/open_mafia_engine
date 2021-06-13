@@ -5,9 +5,9 @@ name: Test Python package "open_mafia_engine"
 
 on:
   push:
-    branches: [master, yet-another-rewrite/maybe-simpler]
+    branches: [master]
   pull_request:
-    branches: [master, yet-another-rewrite/maybe-simpler]
+    branches: [master]
 
 jobs:
   build:
