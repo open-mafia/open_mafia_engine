@@ -51,13 +51,13 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
         # Voting
         vote = VoteAbility(game, act, name="Vote", tally=tally)
         PhaseConstraint(game, vote, phase="day")
-        if i == 2:
+        if i == 1:
             # Second townie is a protector/doctor
             prot = KillProtectAbility(game, act, name="Protect")
             PhaseConstraint(game, prot, phase="night")
             LimitPerPhaseActorConstraint(game, prot, limit=1)
             ConstraintNoSelfTarget(game, prot)
-        elif i == 3:
+        elif i == 2:
             # Third townie is a detective
             # TODO
             # insp = InspectAbility(game, act, name="Alignment Inspect")
