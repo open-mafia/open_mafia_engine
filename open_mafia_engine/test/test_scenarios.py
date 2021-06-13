@@ -8,9 +8,9 @@ from open_mafia_engine.builders.all import *
 def test_example_1():
     """"""
     builder = GameBuilder.load("test")
-    game = builder.build(["Alice", "Bob", "Charlie", "Dave"], n_mafia=1)
+    game = builder.build(["Alice", "Bob", "Charlie", "Dave", "Emily"], n_mafia=1)
 
-    alice, bob, charlie, dave = game.actors
+    alice, bob, charlie, dave, emily = game.actors[:5]
     tally: Tally = game.aux.filter_by_type(Tally)[0]
 
     # Alice: Vote, Mafia Kill
@@ -37,11 +37,16 @@ def test_example_1():
     game.process_event(EActivate(game, "Charlie/ability/Protect", target=bob))
     # Dave inspects Alice
     game.process_event(EActivate(game, "Dave/ability/Faction Inspect", target=alice))
+    # ... but is redirected by Emily to Charlie, and so inspects as Town!
+    game.process_event(
+        EActivate(game, "Emily/ability/Redirect", target=dave, new_target=charlie)
+    )
 
     game.change_phase()  # process the night phase - nobody died
     assert not bob.status["dead"]
     dave_n1_results = dave.status[res_key]
     assert isinstance(dave_n1_results, list)
     assert len(dave_n1_results) == 1
+    assert "town" in dave_n1_results[0].lower()
 
     # DAY 2

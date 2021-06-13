@@ -64,6 +64,11 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
             PhaseConstraint(game, insp, phase="night")
             ConstraintNoSelfTarget(game, insp)
             pass
+        elif i == 3:
+            # Fourth townie is a redirector
+            redir = CreateRedirectAbility(game, act, name="Redirect")
+            LimitPerPhaseActorConstraint(game, redir, limit=1)
+            PhaseConstraint(game, redir, phase="night")
         # TODO: Other abilities
 
     return game
