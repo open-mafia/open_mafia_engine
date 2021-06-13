@@ -5,7 +5,7 @@ from open_mafia_engine.core.all import (
     Action,
     Actor,
     ATBase,
-    CancelAction,
+    ConditionalCancelAction,
     EPreAction,
     Game,
     GameObject,
@@ -38,17 +38,24 @@ class KillProtectorAux(TempPhaseAux):
         return self._target
 
     @handler
-    def handle_to_save(self, event: EPreAction) -> Optional[List[CancelAction]]:
+    def handle_to_save(
+        self, event: EPreAction
+    ) -> Optional[List[ConditionalCancelAction]]:
         """Cancels the action if it came from the target."""
 
         if isinstance(event, EPreAction) and isinstance(event.action, KillAction):
-            src = event.action.source
-            if isinstance(src, ATBase):
-                if self.only_abilities and not isinstance(src, Ability):
-                    # Skip
-                    return
-                if src.owner == self.target:
-                    return [CancelAction(self.game, self, target=event.action)]
+            # NOTE: This will protect only our target from kills, even if this
+            # kill is redirected somewhere.
+
+            def cond(action: KillAction) -> bool:
+                """Cancel only if the final target is self."""
+                return action.target == self.target
+
+            return [
+                ConditionalCancelAction(
+                    self.game, self, target=event.action, condition=cond
+                )
+            ]
 
 
 class KillProtectAction(Action):
@@ -61,7 +68,7 @@ class KillProtectAction(Action):
         /,
         target: Actor,
         *,
-        priority: float = 90,
+        priority: float = 80,
         canceled: bool = False,
     ):
         self._target = target
@@ -73,3 +80,12 @@ class KillProtectAction(Action):
 
     def doit(self):
         KillProtectorAux(self.game, target=self.target)
+
+
+KillProtectAbility = Ability.generate(
+    KillProtectAction,
+    params=["target"],
+    name="KillProtectAbility",
+    doc="Ability to protect from kills",
+    desc="Protects the target from kills.",
+)

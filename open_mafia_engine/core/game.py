@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 from open_mafia_engine.core.auxiliary import AuxHelper, AuxObject
+from open_mafia_engine.core.enums import ActionResolutionType
 from open_mafia_engine.core.event_system import Action, ActionQueue, Event, EventEngine
 from open_mafia_engine.core.game_object import GameObject
 from open_mafia_engine.core.phase_cycle import (
     AbstractPhaseSystem,
+    ETryPhaseChange,
     Phase,
+    PhaseChangeAction,
     SimplePhaseCycle,
 )
 from open_mafia_engine.core.state import Actor, Faction
@@ -115,6 +118,16 @@ class Game(object):
         for resp in responses:
             self.action_queue.enqueue(resp)
 
-        process_now = process_now or False
+        process_now = (
+            process_now
+            or self.current_phase.action_resolution == ActionResolutionType.instant
+            or isinstance(event, ETryPhaseChange)
+        )
         if process_now:
             self.action_queue.process_all()
+
+    def change_phase(self, new_phase: Optional[Phase] = None):
+        """Changes the phase to the given one (or bumps it). This causes events."""
+        # NOTE: You can pass strings here, because ETryPhaseChange.__init__ converts
+        self.process_event(ETryPhaseChange(self, new_phase=new_phase))
+        # `process_now=True` is implicit :)

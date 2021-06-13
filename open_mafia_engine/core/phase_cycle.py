@@ -8,9 +8,11 @@ from open_mafia_engine.core.event_system import (
     Action,
     EPostAction,
     EPreAction,
+    Event,
     Subscriber,
+    handler,
 )
-from open_mafia_engine.core.game_object import GameObject
+from open_mafia_engine.core.game_object import GameObject, converter
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
@@ -57,6 +59,20 @@ class Phase(GameObject):
         return (o.name == self.name) and (o.action_resolution == self.action_resolution)
 
 
+class ETryPhaseChange(Event):
+    """Try to change the phase."""
+
+    def __init__(self, game, /, new_phase: Optional[Phase] = None):
+        if not (new_phase is None or isinstance(new_phase, Phase)):
+            new_phase = converter.convert(game, Phase, new_phase)
+        self._new_phase = new_phase
+        super().__init__(game)
+
+    @property
+    def new_phase(self) -> Optional[Phase]:
+        return self._new_phase
+
+
 class PhaseChangeAction(Action):
     """Action to change the phase.
 
@@ -82,7 +98,8 @@ class PhaseChangeAction(Action):
     def doit(self):
         if self.new_phase is None:
             self.game.phase_system.bump_phase()
-        self.game.phase_system.current_phase = self.new_phase
+        else:
+            self.game.phase_system.current_phase = self.new_phase
 
     class Pre(EPreAction):
         """Phase is about to change."""
@@ -152,6 +169,15 @@ class AbstractPhaseSystem(Subscriber):
             return cls(game, *args, **kwargs)
 
         return func_gen
+
+    @handler
+    def system_phase_change(
+        self, event: ETryPhaseChange
+    ) -> Optional[List[PhaseChangeAction]]:
+        """Some external system asked for a phase change."""
+        if not isinstance(event, ETryPhaseChange):
+            return
+        return [PhaseChangeAction(self.game, self, event.new_phase)]
 
 
 class SimplePhaseCycle(AbstractPhaseSystem):

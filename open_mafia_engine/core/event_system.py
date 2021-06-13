@@ -303,7 +303,7 @@ class CancelAction(Action):
     def target(self) -> Action:
         return self._target
 
-    @target.getter
+    @target.setter
     def target(self, v: Action):
         if not isinstance(v, Action):
             raise TypeError(f"Can only cancel Actions, but got {v!r}")
@@ -315,7 +315,7 @@ class CancelAction(Action):
 
 class ConditionalCancelAction(CancelAction):
     """Cancels the action, but checks `condition` just in case again.
-    
+
     If `condition(action)`, actually does cancel the action.
     """
 

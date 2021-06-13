@@ -15,7 +15,8 @@ from .constraints import (
 )
 from .kills import DeathCausingAction, KillAbility, KillAction, LynchAction
 from .lynch_tally import LynchTally
-from .protect import KillProtectAction, KillProtectorAux
+from .phases import PhaseChangeAbility
+from .protect import KillProtectAbility, KillProtectAction, KillProtectorAux
 from .roleblock import RoleBlockAction, RoleBlockerAux
 from .triggers import UnkillableTrigger, UnlynchableTrigger
 from .voting import (
