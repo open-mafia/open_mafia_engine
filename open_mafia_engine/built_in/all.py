@@ -24,6 +24,7 @@ from .information import (
 )
 from .kills import DeathCausingAction, KillAbility, KillAction, LynchAction
 from .lynch_tally import LynchTally
+from .outcome import OCLastFactionStanding
 from .phases import PhaseChangeAbility
 from .protect import KillProtectAbility, KillProtectAction, KillProtectorAux
 from .redirect import (
