@@ -18,9 +18,9 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
 
     game = Game()
     mafia = Faction(game, "Mafia")
-    # OCLastFactionStanding(game, mafia)
+    OCLastFactionStanding(game, mafia)
     town = Faction(game, "Town")
-    # OCLastFactionStanding(game, town)
+    OCLastFactionStanding(game, town)
 
     # Aux objects
     GameEnder(game)  # ends the game when all factions get an Outcome
