@@ -15,7 +15,7 @@ class MafiaAmbiguousTypeName(MafiaError):
         self.existing_type = existing_type
         self.new_type = new_type
         self.type_name = type_name = existing_type.__qualname__
-
+        
         super().__init__(
             f"""Type {type_name!r} conficts with existing type.
             Existing type defined in: {inspect.getmodule(existing_type)}

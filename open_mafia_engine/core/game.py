@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from pathlib import Path
+from typing import Callable, IO, List, Optional, Union
+
+import cloudpickle
 
 from open_mafia_engine.core.auxiliary import AuxHelper, AuxObject
 from open_mafia_engine.core.enums import ActionResolutionType
@@ -129,3 +132,28 @@ class Game(object):
         # NOTE: You can pass strings here, because ETryPhaseChange.__init__ converts
         self.process_event(ETryPhaseChange(self, new_phase=new_phase))
         # `process_now=True` is implicit :)
+
+    def save(self, file: Union[Path, str, IO[bytes]]):
+        """Cloudpickle-based saving"""
+        if isinstance(file, Path):
+            with file.open(mode="wb") as f:
+                self.save(f)
+        elif isinstance(file, str):
+            return self.save(Path(file))
+        else:
+            cloudpickle.dump(self, file)
+
+    @classmethod
+    def load(cls, file: Union[Path, str, IO[bytes]]) -> Game:
+        """Cloudpickle-based loading"""
+
+        if isinstance(file, Path):
+            with file.open(mode="rb") as f:
+                return cls.load(f)
+        elif isinstance(file, str):
+            return cls.load(Path(file))
+        else:
+            res = cloudpickle.load(file)
+            if not isinstance(res, cls):
+                raise TypeError(f"Wrong object was pickled: {file!r}")
+            return res

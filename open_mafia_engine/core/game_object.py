@@ -67,7 +67,11 @@ class GameObjectMeta(ABCMeta):
         cn = class_name(cls)
         existing = __abstract_types__.get(cn, __concrete_types__.get(cn))
         if existing is not None:
-            raise MafiaAmbiguousTypeName(cls, existing)
+            logger.info(str(MafiaAmbiguousTypeName(cls, existing)))
+            # raise MafiaAmbiguousTypeName(cls, existing)
+            # NOTE: This + generated abilities + pickling = nightmare...
+            # I guess we can assume generated abilities are the same? :)
+            return existing  # just return the existing class!
         if inspect.isabstract(cls):
             __abstract_types__[cn] = cls
         else:
