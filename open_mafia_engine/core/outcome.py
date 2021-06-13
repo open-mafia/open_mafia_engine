@@ -49,9 +49,9 @@ class OutcomeAction(Action):
         self._outcome = Outcome(outcome)
 
     def doit(self):
-        """TODO: Something special for outcome?
-
-        For example, setting "outcome" status for each Actor in Faction?"""
+        """Sets the "outcome" status for each Actor in Faction?"""
+        for actor in self.faction.actors:
+            actor.status["outcome"] = self.outcome
 
     class Pre(EPreAction):
         """A Faction is about to achieve an Outcome."""

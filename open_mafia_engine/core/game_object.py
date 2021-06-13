@@ -192,7 +192,8 @@ def inject_converters(func: Callable) -> Callable:
         sig = inspect.signature(func)
         sb = sig.bind(*args, **kwargs)
         sb.apply_defaults()  # we want to convert the default,s too!
-        # TODO: Not require type hints maybe?
+        # Get type hints
+        # FIXME: Unsure whether this will work for external subclasses.
         type_hints = get_type_hints(func, localns=_get_ns())
 
         game_param = sig.parameters.get("game")

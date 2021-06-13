@@ -106,8 +106,6 @@ class Game(object):
                 self._factions.append(obj)
         elif isinstance(obj, AuxObject):
             self._aux.add(obj)
-        # TODO: Add more types, if required.
-
         # NOTE: We ignore all other objects, but don't throw.
 
     # TODO: remove()?

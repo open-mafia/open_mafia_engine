@@ -104,15 +104,6 @@ class LimitPerPhaseKeyConstraint(Constraint):
         if self.only_successful:
             self.counter.increment()
 
-    # TODO: How do we increment the counter?!
-    # We need `Action.source`, don't we?...
-    # Or we could subscribe to `EActivate` and check... not too cool, either.
-    # Plus it's incorrect for Triggers. Bah. I need to add `source`.
-
-    # We also need to make sure additional triggers get canceled. Hmm.
-
-    # self.counter.increment()
-
     def check(self, action: Action) -> Optional[Constraint.Violation]:
         v = self.counter.value
         if v >= self.limit:
@@ -157,5 +148,3 @@ class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
     @property
     def owner(self) -> Actor:
         return self.parent.owner
-
-    # TODO: Same problem as with the base counter - how do we keep track of uses?

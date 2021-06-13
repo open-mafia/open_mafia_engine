@@ -5,7 +5,6 @@ import logging
 import warnings
 from abc import abstractmethod
 from collections import defaultdict
-from enum import Enum
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -128,7 +127,7 @@ class Action(GameObject):
     @priority.setter
     def priority(self, v: float):
         v = float(v)
-        # TODO - Event?
+        # You can add an event handler here
         self._priority = v
 
     @property
@@ -138,7 +137,7 @@ class Action(GameObject):
     @canceled.setter
     def canceled(self, v: bool):
         v = bool(v)
-        # TODO - Event?
+        # You can add an event handler here
         self._canceled = v
 
     def pre(self) -> EPreAction:
@@ -166,8 +165,11 @@ class Action(GameObject):
         """
 
         if name is None:
+            # NOTE: We can add random bits at the end to avoid conflicts
+            # But this might mess up serialization?
+            # from uuid import uuid4
+            # rand_ = str(uuid4()).replace("-", "")[-8:]
             name = f"{cls.__name__}_{func.__name__}"
-            # TODO - add random bits to avoid conflict?
 
         if doc is None:
             doc = "(GENERATED ACTION) " + (func.__doc__ or "")
@@ -481,7 +483,7 @@ class ActionQueue(GameObject):
         # Run the actions themselves
         for action in next_batch:
             if not action.canceled:
-                action.doit()  # TODO
+                action.doit()
                 self.add_history([action])
 
         # Get and run all post-action responses
@@ -529,7 +531,7 @@ class Subscriber(GameObject):
         self._handler_funcs: List[_HandlerFunc] = []
         self._sub()
         if self._use_default_constraints:
-            self.add_default_constraints()  # TODO: How to set as options?
+            self.add_default_constraints()
 
     @property
     def constraints(self) -> List[Constraint]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, Mapping, Type
+from typing import TYPE_CHECKING, Dict, List, Mapping, Type, Union, get_args, get_origin
 from uuid import uuid4
 
 from open_mafia_engine.core.event_system import (
@@ -14,6 +14,8 @@ from open_mafia_engine.core.game_object import GameObject
 
 if TYPE_CHECKING:
     from open_mafia_engine.core.game import Game
+
+NoneType = type(None)
 
 
 class AuxObject(Subscriber):
@@ -127,10 +129,21 @@ class AuxHelper(GameObject, Mapping):
             return
 
     def filter_by_type(self, T: Type[AuxObject]) -> List[AuxObject]:
-        """Returns all `AuxObject`s with the given type."""
-        # TODO: Support Union?
+        """Returns all `AuxObject`s with the given type.
+
+        You can pass in Union types as well.
+        """
+
+        if get_origin(T) == Union:
+            T_raw = get_args(T)
+            T = tuple(x for x in T_raw if x is not None)
+            # T is a tuple of types
+
         def chk(x):
-            return isinstance(x, T)
+            try:
+                return isinstance(x, T)
+            except Exception:
+                return False
 
         return [x for x in self._key_map.values() if chk(x)]
 

@@ -13,7 +13,8 @@ class EGameEnded(EPostAction):
 class EndTheGame(Action):
     """Action that ends the game.
 
-    TODO: Maybe inherit from PhaseChangeAction?
+    Maybe this should inherit from PhaseChangeAction?
+    I'm skeptical. Ending the game is significantly different.
     """
 
     def __init__(self, game, /, *, priority: float = 999, canceled: bool = False):

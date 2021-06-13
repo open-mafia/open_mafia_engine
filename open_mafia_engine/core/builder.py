@@ -7,7 +7,7 @@ from open_mafia_engine.errors import MafiaBadBuilder
 from open_mafia_engine.util.matcher import FuzzyMatcher
 from open_mafia_engine.util.repr import ReprMixin
 
-_GameBuilderFunc = Callable[..., Game]  # TODO - improve
+_GameBuilderFunc = Callable[..., Game]  # This signature is not quite enough.
 
 __builders__: Dict[str, _GameBuilderFunc] = {}
 

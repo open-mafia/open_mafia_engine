@@ -22,7 +22,7 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
 
     # Aux objects
     GameEnder(game)  # ends the game when all factions get an Outcome
-    tally = LynchTally(game)  # voting tally; TODO lynch tally
+    tally = LynchTally(game)  # lynch tally
 
     n_town = n - 1
 

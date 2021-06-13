@@ -83,10 +83,7 @@ def get_trigger_by_path(game: Game, obj: str) -> Trigger:
 
 @converter.register
 def get_phase_by_name(game: Game, obj: str) -> Phase:
-    """Gets the phase by name from the cycle. Can raise KeyError.
-
-    TODO: Strict fuzzy matching.
-    """
+    """Gets the phase by name from the cycle. Can raise KeyError."""
     try:
         return game.phase_system[obj]
     except KeyError:
