@@ -1,155 +1,180 @@
-"""Built-in ability constraints."""
+from typing import Dict, List, Optional
+from uuid import uuid4
 
-from typing import Any, Dict, List, Optional
-import warnings
-
-from open_mafia_engine.core import (
-    Ability,
-    ActivatedAbility,
-    Actor,
-    CancelAction,
+from open_mafia_engine.core.all import (
+    Action,
+    ActionInspector,
+    ATBase,
+    ATConstraint,
+    AuxObject,
     Constraint,
-    EPreAction,
-    Event,
+    ConstraintActorTargetsAlive,
+    ConstraintOwnerAlive,
     Game,
+    Phase,
+    PhaseChangeAction,
+    Subscriber,
+    handler,
 )
+from open_mafia_engine.core.event_system import EPostAction, EPreAction
+from open_mafia_engine.core.state import Actor
 
-from .aux_obj import IntPerPhaseKeyAux
+from .auxiliary import CounterPerPhaseAux
 
 
 class PhaseConstraint(Constraint):
-    """Ability can only be used during specific phases."""
+    """Allow only using in a particular phase."""
 
-    def __init__(self, parent: Ability, phase_names: List[str]):
-        super().__init__(parent)
-        self._phase_names = phase_names
+    def __init__(self, game, /, parent: Subscriber, phase: Phase):
+        self._phase = phase
+        super().__init__(game, parent)
 
     @property
-    def phase_names(self) -> List[str]:
-        return self._phase_names
+    def phase(self) -> Phase:
+        return self._phase
 
-    def is_ok(self, game: Game, *args, **kwargs) -> bool:
-        return game.phases.current.name in self.phase_names
-
-
-class DayConstraint(PhaseConstraint):
-    """Ability can only be used during the 'day' phase."""
-
-    def __init__(self, parent: Ability):
-        super().__init__(parent, phase_names=["day"])
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        cp = self.game.current_phase
+        if cp != self.phase:
+            return self.Violation(
+                f"Wrong phase: currently {cp.name!r}, need {self.phase.name!r}."
+            )
 
 
-class NightConstraint(PhaseConstraint):
-    """Ability can only be used during the 'night' phase."""
+class LimitPerPhaseKeyConstraint(Constraint):
+    """Allow only N uses per phase, given a key.
 
-    def __init__(self, parent: Ability):
-        super().__init__(parent, phase_names=["night"])
-
-
-class ActorAliveConstraint(Constraint):
-    """Ability can only be used while alive."""
-
-    def __init__(self, parent: Ability):
-        super().__init__(parent)
-
-    def is_ok(self, game: Game, *args, **kwargs) -> bool:
-        return not self.parent.owner.status["dead"]
-
-
-class TargetAliveConstraint(Constraint):
-    """The target must be an Actor and alive when using the ability.
-
-    Parameters
+    Attributes
     ----------
-    target_key : str = "target"
-        The name of the argument for the constrained Action/Ability.
-        The arg type should be Actor.
-        Default is "target".
-
-    NOTE: This currently doesn't check during the Action, only before Ability is used.
+    game : Game
+    parent : Subscriber
+    key : str
+        They key to use for the aux object.
+    limit : int
+        The maximum number of actions per phase. Default is 1.
+    only_successful : bool
+        Whether to count only successful tries towards the limit.
+        Default is False (i.e. even attempts are counted).
     """
 
-    def __init__(self, parent: ActivatedAbility, target_key: str = "target"):
-        if not isinstance(parent, ActivatedAbility):
-            raise TypeError("Does not make sense for a non-activated ability.")
+    def __init__(
+        self,
+        game: Game,
+        /,
+        parent: Subscriber,
+        key: str = None,
+        limit: int = 1,
+        *,
+        only_successful: bool = False,
+    ):
+        if key is None:
+            key = self.generate_key(parent)
+        self._key = key
+        self._limit = int(limit)
+        self._only_successful = bool(only_successful)
+        super().__init__(game, parent)
+        CounterPerPhaseAux.get_or_create(game, key=self._key)
 
-        super().__init__(parent)
-        self._target_key = str(target_key)
+    @classmethod
+    def generate_key(cls, parent: Subscriber) -> str:
+        cn = cls.__qualname__
+        return f"{cn}_{uuid4()}".replace("-", "")
 
     @property
-    def parent(self) -> ActivatedAbility:
-        return self._parent
-
-    @parent.setter
-    def parent(self, new_parent: ActivatedAbility):
-        """Changing parent."""
-        if not isinstance(new_parent, ActivatedAbility):
-            raise TypeError("Does not make sense for a non-activated ability.")
-
-        self._parent._constraints.remove(self)
-        self._parent = new_parent
-        self._parent._constraints.append(self)
+    def key(self) -> str:
+        return self._key
 
     @property
-    def target_key(self) -> str:
-        return self._target_key
+    def limit(self) -> int:
+        return self._limit
 
-    def is_ok(self, game: Game, *args, **kwargs) -> bool:
-        params = self.parent.fill_params(*args, **kwargs)
-        if self.target_key not in params:
-            raise ValueError(
-                f"Improperly set `target_key`: {self.target_key!r} vs {list(params)}"
+    @property
+    def only_successful(self) -> bool:
+        return self._only_successful
+
+    @property
+    def counter(self) -> CounterPerPhaseAux:
+        cppa = CounterPerPhaseAux.get_or_create(self.game, key=self._key)
+        return cppa
+
+    def hook_pre_action(self, action: Action) -> Optional[List[Action]]:
+        if not self.only_successful:
+            self.counter.increment()
+
+    def hook_post_action(self, action: Action) -> Optional[List[Action]]:
+        if self.only_successful:
+            self.counter.increment()
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        v = self.counter.value
+        if v >= self.limit:
+            return self.Violation(
+                f"Reached limit of {self.limit} (found {v}) for key {self.key!r}"
             )
-        target = params[self.target_key]
-        if isinstance(target, Actor):
-            return not target.status["dead"]
-        # raise TypeError(f"Target ({self.target_key}) must be Actor, got {target!r}")
-        # warnings.warn(f"Target ({self.target_key}) should be Actor, got {target!r}")
-        return True
 
 
-class KeywordActionLimitPerPhaseConstraint(Constraint):
-    """Limited actions per phase, for all abilities that share this keyword."""
+class LimitPerPhaseActorConstraint(LimitPerPhaseKeyConstraint, ATConstraint):
+    """Allow only N uses per phase for this actor.
 
-    def __init__(self, parent: Ability, keyword: str, n_actions: int = 1):
-        super().__init__(parent)
-        self.keyword = str(keyword)
-        self.n_actions = int(n_actions)
-        self._helper  # run get-or-create
+    Attributes
+    ----------
+    game : Game
+    parent : ATBase
+    limit : int
+        The maximum number of actions per phase. Default is 1.
+    only_successful : bool
+        Whether to count only successful tries towards the limit.
+        Default is False (i.e. even attempts are counted).
+    """
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        parent: ATBase,
+        limit: int = 1,
+        *,
+        only_successful: bool = False,
+    ):
+        key = self.generate_key(parent)
+        super().__init__(
+            game, parent, key, limit=limit, only_successful=only_successful
+        )
+
+    @classmethod
+    def generate_key(cls, parent: ATBase) -> str:
+        cn = cls.__qualname__
+        return f"{cn}_{parent.owner.name}"
 
     @property
-    def _helper(self) -> IntPerPhaseKeyAux:
-        return IntPerPhaseKeyAux.get_or_create(self.game, key=self.keyword)
-
-    def is_ok(self, game: Game, *args, **kwargs) -> bool:
-        """Preemptive check, to avoid making too many actions and canellations."""
-        # TODO: Check if this is correct!
-        return self._helper.value < self.n_actions
-
-    # Make sure to increment the counter when we even try to use the action
-
-    def __subscribe__(self, game: Game) -> None:
-        game.add_sub(self, EPreAction)
-
-    def __unsubscribe__(self, game: Game) -> None:
-        game.remove_sub(self, EPreAction)
-
-    def respond_to_event(self, event: Event, game: Game) -> Optional[CancelAction]:
-        if isinstance(event, EPreAction):
-            action = event.action
-            if action.source is self.parent:
-                if self._helper.value >= self.n_actions:
-                    return CancelAction(source=self, target=action)
-                self._helper.value += 1
-        return None
+    def owner(self) -> Actor:
+        return self.parent.owner
 
 
-class ActorActionLimitPerPhaseConstraint(KeywordActionLimitPerPhaseConstraint):
-    """Limited actions per phase, for AALPPC abilities of this particular actor."""
+class ConstraintNoSelfTarget(ATConstraint):
+    """Any targets for the action, if they are Actors, must not be the owner."""
 
-    def __init__(self, parent: Ability, n_actions: int = 1):
-        super().__init__(
-            parent,
-            keyword=f"actor_action_limit_per_phase:{parent.owner.name}",
-            n_actions=n_actions,
-        )
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        ai = ActionInspector(action)
+        p2a: Dict[str, Actor] = ai.values_of_type(Actor)
+        bads = []
+        for p, a in p2a.items():
+            if a == self.owner:
+                bads.append(f"{p!r}")
+        if len(bads) > 0:
+            return self.Violation("Self-targeting not allowed: " + ", ".join(bads))
+
+
+class ConstraintNoSelfFactionTarget(ATConstraint):
+    """Any targets for the action, if they are Actors, must be from other factions."""
+
+    def check(self, action: Action) -> Optional[Constraint.Violation]:
+        ai = ActionInspector(action)
+        p2a: Dict[str, Actor] = ai.values_of_type(Actor)
+        bads = []
+        for p, a in p2a.items():
+            if any(f in self.owner.factions for f in a.factions):
+                bads.append(f"{p!r} ({a.name!r})")
+        s = "" if len(self.owner.factions) == 1 else "s"
+        if len(bads) > 0:
+            return self.Violation(f"Targets in own faction{s}: " + ", ".join(bads))

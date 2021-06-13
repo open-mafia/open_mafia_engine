@@ -1,57 +1,38 @@
-from open_mafia_engine.core import *
+from typing import List, Optional, Union
+
+from open_mafia_engine.core.all import *
 from open_mafia_engine.built_in.all import *
-from open_mafia_engine.prefab import Prefab
+from open_mafia_engine.builders.all import *
 
-pf = Prefab.load("vanilla.yml")
-# Other ways:
-# yp = Path(__file__).parent / "vanilla.yml"
-# pf = Prefab.parse_file(yp, content_type="application/yaml")
-# pf = Prefab(**load_yaml(yp))
-print("Loaded prefab:", pf.name)
-game = pf.create_game(list("ABCDE"))
-town, mafia = game.alignments
+# Testing game state
 
-t1, t2, t3 = town.actors[0:3]
-m1 = mafia.actors[0]
+builder = GameBuilder.load("test")
+game = builder.build(["Alice", "Bob", "Charlie"])
+tally: Tally = game.aux.filter_by_type(Tally)[0]
 
-# Run stuff
 
-# Start first day
-game.process_event(ETryPhaseChange())
+# Do fake stuff
 
-# Do some voting (note the order - priority doesn't matter because it's instant)
-game.process_event(EActivateAbility(t1.abilities["Vote"], target=m1))
-game.process_event(EActivateAbility(m1.abilities["Vote"], target=t1, priority=2.0))
-game.process_event(EActivateAbility(t2.abilities["Vote"], target=t1))
-game.process_event(EActivateAbility(t1.abilities["Vote"], target=None))  # or UnvoteAll
-game.process_event(EActivateAbility(t1.abilities["Vote"], target=VoteAgainstAll))
+alice, bob, charlie = game.actors
+# Alice: Vote, Mafia Kill
+# Bob: Vote
+# Charlie: Vote, Protect
 
-# Start first night
-game.process_event(ETryPhaseChange())
+game.change_phase()  # start the day
+game.process_event(EActivate(game, "Alice/ability/Vote", target="Bob"))
+game.process_event(EActivate(game, "Bob/ability/Vote", target="Alice"))
 
-# Voting will fail
-game.process_event(EActivateAbility(m1.abilities["Vote"], target=t2))
-# But the kill will succeed
-game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t2))
-# The second kill won't succeed, due to the limit
-game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t3))
-# Neither will the rhid time!
-game.process_event(EActivateAbility(m1.abilities["Mafia Kill"], target=t3))
 
-# start second day
-game.process_event(ETryPhaseChange())
+game.change_phase()  # start the night
+assert not any(x.status["dead"] for x in game.actors)
 
-# Dead tries to vote (this should fail)
-game.process_event(EActivateAbility(t1.abilities["Vote"], target=m1))
+# Mafia Alice tries to kill Bob
+game.process_event(EActivate(game, "Alice/ability/Mafia Kill", target=bob))
+# ... but Charlie protected bob, with higher priority
+game.process_event(EActivate(game, "Charlie/ability/Protect", target=bob))
 
-# Alive actor tries to vote dead actor (this should fail)
-game.process_event(EActivateAbility(t3.abilities["Vote"], target=t1))
+game.change_phase()  # process the night phase - nobody will die!
 
-# This should succeed
-game.process_event(EActivateAbility(t3.abilities["Vote"], target=m1))
+assert not bob.status["dead"]
 
-# End second day - this should vote off m1, who is the only mafioso
-game.process_event(ETryPhaseChange())
-
-print(game.action_queue)
-print("Done.")
+game
