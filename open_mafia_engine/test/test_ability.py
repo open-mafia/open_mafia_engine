@@ -49,6 +49,27 @@ def test_phase_constraint():
     assert tally.results.vote_leaders == [bob]
 
 
+def test_alive_constraint():
+    """Tests alive constraint."""
+
+    game = make_test_game(["Alice", "Bob"])
+    alice = game.actors[0]
+    bob = game.actors[1]
+
+    a_v = alice.abilities[0]  # VoteAbility(game, owner=alice, name="Vote")
+    b_v = bob.abilities[0]  # VoteAbility(game, owner=bob, name="Vote")
+
+    tally: Tally = game.aux.filter_by_type(Tally)[0]
+
+    game.phase_system.bump_phase()  # start the day
+
+    # Test whether alive constraint works :)
+    alice.status["dead"] = True
+    e = EActivate(game, a_v, target=bob)  # should fail to activate - alice is dead
+    game.process_event(e, process_now=True)
+    assert tally.results.vote_counts == []
+
+
 def test_gen_action_ability():
     """Tests action and ability generation."""
 

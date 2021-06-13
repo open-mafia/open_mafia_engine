@@ -19,8 +19,6 @@ b_v = bob.abilities[0]  # VoteAbility(game, owner=bob, name="Vote")
 
 tally: Tally = game.aux.filter_by_type(Tally)[0]
 
-# Test whether alive constraint works :)
-alice.status["dead"] = True
-e = EActivate(game, a_v, target=bob)  # should fail to activate - alice is dead
-game.process_event(e, process_now=True)
-assert tally.results.vote_counts == []
+game.phase_system.bump_phase()  # start the day
+
+game.phase_system.bump_phase()  # start the night
