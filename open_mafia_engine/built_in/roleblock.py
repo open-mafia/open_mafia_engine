@@ -82,12 +82,8 @@ class RoleBlockAction(Action):
         priority: float = 90,
         canceled: bool = False,
     ):
-        self._target = target
+        self.target = target
         super().__init__(game, source, priority=priority, canceled=canceled)
-
-    @property
-    def target(self) -> Actor:
-        return self._target
 
     def doit(self):
         RoleBlockerAux(self.game, target=self.target, only_abilities=True)

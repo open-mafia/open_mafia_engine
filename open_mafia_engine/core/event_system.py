@@ -357,13 +357,18 @@ class ActionInspector(object):
     @property
     def ignored_args(self) -> List[str]:
         """Arguments that are ignored"""
-        return ["self", "game", "priority", "canceled"]
+        return ["self", "game", "priority", "canceled", "return"]
 
     @property
     def type_hints(self) -> Dict[str, Type]:
         """Type hints, without ignored arguments."""
         raw = get_type_hints(self.action.__init__)
         return {k: v for k, v in raw.items() if k not in self.ignored_args}
+
+    @property
+    def param_names(self) -> List[str]:
+        """Parameter names."""
+        return list(self.type_hints.keys())
 
     def params_of_type(self, T: Type) -> List[str]:
         """Returns parameter names that have the given type."""
@@ -383,6 +388,13 @@ class ActionInspector(object):
         """Gets value for the parameter."""
         # TODO: Make this smarter? :)
         return getattr(self.action, param)
+
+    def set_value(self, param: str, obj: Any):
+        """Sets value for the parameter."""
+        # TODO: Make this smarter? :)
+        if not hasattr(self.action, param):
+            warnings.warn(f"Action has no parameter {param!r}, setting anyways.")
+        return setattr(self.action, param, obj)
 
 
 class ActionQueue(GameObject):
