@@ -26,6 +26,13 @@ from .kills import DeathCausingAction, KillAbility, KillAction, LynchAction
 from .lynch_tally import LynchTally
 from .phases import PhaseChangeAbility
 from .protect import KillProtectAbility, KillProtectAction, KillProtectorAux
+from .redirect import (
+    ActorRedirectAction,
+    ActorRedirectorAux,
+    BaseRedirectAction,
+    CreateRedirectAbility,
+    CreateRedirectAction,
+)
 from .roleblock import RoleBlockAbility, RoleBlockAction, RoleBlockerAux
 from .triggers import UnkillableTrigger, UnlynchableTrigger
 from .voting import (
