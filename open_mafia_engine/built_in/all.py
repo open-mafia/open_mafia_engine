@@ -12,9 +12,15 @@ from .constraints import (
     ConstraintNoSelfFactionTarget,
     ConstraintNoSelfTarget,
     ConstraintOwnerAlive,
-    LimitPerPhaseKeyConstraint,
     LimitPerPhaseActorConstraint,
+    LimitPerPhaseKeyConstraint,
     PhaseConstraint,
+)
+from .information import (
+    BaseInformationAction,
+    BaseInspectAction,
+    FactionInspectAbility,
+    FactionInspectAction,
 )
 from .kills import DeathCausingAction, KillAbility, KillAction, LynchAction
 from .lynch_tally import LynchTally

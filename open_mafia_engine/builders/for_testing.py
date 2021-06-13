@@ -59,11 +59,10 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
             ConstraintNoSelfTarget(game, prot)
         elif i == 2:
             # Third townie is a detective
-            # TODO
-            # insp = InspectAbility(game, act, name="Alignment Inspect")
-            # LimitPerPhaseActorConstraint(game, insp, limit=1)
-            # PhaseConstraint(game, insp, phase="night")
-            # ConstraintNoSelfTarget(game, insp)
+            insp = FactionInspectAbility(game, act, name="Faction Inspect")
+            LimitPerPhaseActorConstraint(game, insp, limit=1)
+            PhaseConstraint(game, insp, phase="night")
+            ConstraintNoSelfTarget(game, insp)
             pass
         # TODO: Other abilities
 
