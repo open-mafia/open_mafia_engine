@@ -5,8 +5,9 @@ from open_mafia_engine.built_in.all import *
 from open_mafia_engine.builders.all import *
 
 
-def test_example_1():
-    """"""
+def test_scenario_1():
+    """Tests a scenario where lots of night roles are at play."""
+
     builder = GameBuilder.load("test")
     game = builder.build(["Alice", "Bob", "Charlie", "Dave", "Emily"], n_mafia=1)
 
@@ -42,8 +43,13 @@ def test_example_1():
         EActivate(game, "Emily/ability/Redirect", target=dave, new_target=charlie)
     )
 
-    game.change_phase()  # process the night phase - nobody died
+    game.change_phase()  # process the night phase
+
+    # nobody died
     assert not bob.status["dead"]
+    assert not any(x.status["dead"] for x in game.actors)
+
+    # Dave got 1 result, but they got redirected! They think Alice is Town.
     dave_n1_results = dave.status[res_key]
     assert isinstance(dave_n1_results, list)
     assert len(dave_n1_results) == 1
