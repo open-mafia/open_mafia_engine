@@ -37,6 +37,8 @@ from .phase_cycle import (
     AbstractPhaseSystem,
     ActionResolutionType,
     ETryPhaseChange,
+    EPrePhaseChange,
+    EPostPhaseChange,
     Phase,
     PhaseChangeAction,
     SimplePhaseCycle,

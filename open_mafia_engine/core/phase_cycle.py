@@ -73,6 +73,38 @@ class ETryPhaseChange(Event):
         return self._new_phase
 
 
+class EPrePhaseChange(EPreAction):
+    """Phase is about to change."""
+
+    @property
+    def action(self) -> PhaseChangeAction:
+        return self._action
+
+    @property
+    def new_phase(self) -> Optional[Phase]:
+        return self.action.new_phase
+
+    @property
+    def old_phase(self) -> Phase:
+        return self.action.old_phase
+
+
+class EPostPhaseChange(EPostAction):
+    """Phase has changed."""
+
+    @property
+    def action(self) -> PhaseChangeAction:
+        return self._action
+
+    @property
+    def new_phase(self) -> Optional[Phase]:
+        return self.action.new_phase
+
+    @property
+    def old_phase(self) -> Phase:
+        return self.action.old_phase
+
+
 class PhaseChangeAction(Action):
     """Action to change the phase.
 
@@ -80,6 +112,8 @@ class PhaseChangeAction(Action):
     ----------
     new_phase : None or Phase
         The resulting phase. By default, `None` uses the next phase.
+    old_phase : Phase
+        The phase that this action was created in.
     """
 
     def __init__(
@@ -94,6 +128,11 @@ class PhaseChangeAction(Action):
     ):
         super().__init__(game, source, priority=priority, canceled=canceled)
         self.new_phase = new_phase
+        self._old_phase = self.game.current_phase
+
+    @property
+    def old_phase(self) -> Phase:
+        return self._old_phase
 
     def doit(self):
         if self.new_phase is None:
@@ -101,11 +140,8 @@ class PhaseChangeAction(Action):
         else:
             self.game.phase_system.current_phase = self.new_phase
 
-    class Pre(EPreAction):
-        """Phase is about to change."""
-
-    class Post(EPostAction):
-        """Phase has changed."""
+    Pre = EPrePhaseChange
+    Post = EPostPhaseChange
 
 
 class AbstractPhaseSystem(Subscriber):

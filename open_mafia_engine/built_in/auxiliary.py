@@ -22,10 +22,8 @@ class TempPhaseAux(AuxObject):
     """Aux object that removes itself after the phase."""
 
     @handler
-    def remove_self(
-        self, event: PhaseChangeAction.Post
-    ) -> Optional[List[RemoveAuxAction]]:
-        if isinstance(event, PhaseChangeAction.Post):
+    def remove_self(self, event: EPostPhaseChange) -> Optional[List[RemoveAuxAction]]:
+        if isinstance(event, EPostPhaseChange):
             return [RemoveAuxAction(self.game, self, target=self)]
 
 
@@ -100,6 +98,6 @@ class CounterPerPhaseAux(CounterAux):
     """CounterAux that resets after every phase ends."""
 
     @handler
-    def reset_every_phase(self, event: PhaseChangeAction.Post) -> None:
-        if isinstance(event, PhaseChangeAction.Post):
+    def reset_every_phase(self, event: EPostPhaseChange) -> None:
+        if isinstance(event, EPostPhaseChange):
             self.value = 0

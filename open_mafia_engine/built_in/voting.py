@@ -370,7 +370,7 @@ class Tally(AuxObject):
         self._vote_history.append(vote)
 
     @handler
-    def reset_on_phase(self, event: PhaseChangeAction.Post):
+    def reset_on_phase(self, event: EPostPhaseChange):
         """Resets votes every phase change."""
         self._vote_history = []
 
