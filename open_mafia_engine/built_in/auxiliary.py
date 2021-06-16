@@ -10,6 +10,7 @@ from open_mafia_engine.core.all import (
     AuxObject,
     CancelAction,
     EPreAction,
+    EPostPhaseChange,
     Game,
     GameObject,
     PhaseChangeAction,

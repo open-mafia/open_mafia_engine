@@ -11,6 +11,7 @@ from open_mafia_engine.core.all import (
     Actor,
     AuxObject,
     EPostAction,
+    EPostPhaseChange,
     EPreAction,
     Game,
     GameObject,
