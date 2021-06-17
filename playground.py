@@ -1,8 +1,6 @@
 from typing import List, Optional, Union
 
-from open_mafia_engine.core.all import *
-from open_mafia_engine.built_in.all import *
-from open_mafia_engine.builders.all import *
+from open_mafia_engine.api import *
 
 # Testing game state
 

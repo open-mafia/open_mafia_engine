@@ -8,3 +8,4 @@ Use as the following:
 
 from open_mafia_engine.core.all import *
 from open_mafia_engine.built_in.all import *
+from open_mafia_engine.builders.all import *

@@ -1,5 +1,7 @@
 # Open Mafia Engine
 
+[![PyPI version](https://badge.fury.io/py/open-mafia-engine.svg)](https://badge.fury.io/py/open-mafia-engine) [![Test Python package "open_mafia_engine"](https://github.com/open-mafia/open_mafia_engine/actions/workflows/python-testing.yml/badge.svg)](https://github.com/open-mafia/open_mafia_engine/actions/workflows/python-testing.yml)
+
 The Open Mafia Engine is a flexible, open-source game engine for Mafia-like games.
 
 See the [Wikipedia article](https://en.wikipedia.org/wiki/Mafia_%28party_game%29)
@@ -16,7 +18,7 @@ from either "real-life" games or online forums such as
 - Event-based architecture, which allows for very complex interactions.
 - Many built-in abilities, victory conditions, etc.
   (This is a lie, but we're working on it!)
-- YAML `Prefab`s let you define a game in a (mostly) human-readable fashion.
+- Games are defined declaratively or using an parametrized GameBuilder.
 - Open source & extensible, with a plugin system in the works.
 
 ## Installing
@@ -30,14 +32,14 @@ development (using Poetry).
 
 ## Getting started
 
-This example starts a 5-player "vanilla" mafia game (1 mafioso vs 4 townies):
+This example starts a 5-player "test" mafia game (1 mafioso vs 4 townies):
 
 ```python
-from open_mafia_engine.api import Prefab
+import open_mafia_engine.api as mafia
 
-prefab = Prefab.load("Vanilla")
+builder = mafia.GameBuilder.load("test")
 players = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eddie']
-game = prefab.create_game(players)
+game = builder.build(players)
 ```
 
 Actually running commands in the engine is pretty complicated for now.
