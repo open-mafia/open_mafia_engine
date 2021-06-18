@@ -1,6 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    NoReturn,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
+import warnings
 
 from makefun import partial
 
@@ -9,7 +21,7 @@ from open_mafia_engine.util.matcher import FuzzyMatcher
 
 from .lobby import AbstractLobby, SimpleLobby
 from .parser import AbstractCommandParser, ShellCommandParser
-from .raw import RawCommand, TUser
+from .raw import RawCommand, TUser, MafiaBadCommand
 
 __all__ = ["command", "CommandHandler", "CommandRunner"]
 
@@ -129,6 +141,10 @@ class CommandRunner(Generic[TUser]):
     Specifying `lobby=True` will, by default, allow only lobby use.
     If you want it always on, use `@command("name", game=True, lobby=True)`
 
+    Commands that don't match any given command will call `default_command()`.
+    The default implementation raises a MafiaBadCommand exception, but you may
+    override it (e.g. to ignore it).
+
     Attributes
     ----------
     parser : AbstractCommandParser
@@ -200,12 +216,22 @@ class CommandRunner(Generic[TUser]):
         )
         return matcher[name]
 
+    def default_command(self, source: str, name: str, *args, **kwargs) -> NoReturn:
+        """Default command definition - override."""
+        rc = RawCommand(source, name, args, kwargs)
+        raise MafiaBadCommand(rc)
+
     def dispatch(self, rc: RawCommand) -> Any:
         """Calls the relevant command given by `rc`.
 
         TODO: Backup handler for in-game and in-lobby handlers.
         """
-        ch: CommandHandler = self.find_command(rc.name)
+        try:
+            ch: CommandHandler = self.find_command(rc.name)
+        except KeyError:
+            # Default command
+            return self.default_command(rc.source, rc.name, *rc.args, **rc.kwargs)
+
         if ch.admin:
             if rc.source not in self.lobby.admin_names:
                 raise RuntimeError(f"Command {ch.name!r} requires admin privileges.")
