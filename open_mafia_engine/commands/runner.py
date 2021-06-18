@@ -158,6 +158,11 @@ class CommandRunner(Generic[TUser]):
         # This will check :)
         self.game = game
 
+    @classmethod
+    def available_commands(cls) -> List[str]:
+        """Returns all commands that are registered."""
+        return list(cls.registered_commands.keys())
+
     @property
     def game(self) -> Optional[Game]:
         return self._game
