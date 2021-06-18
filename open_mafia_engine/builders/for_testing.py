@@ -9,7 +9,15 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
     """Game builder for testing purposes.
 
     Always assigns mafia, then non-mafia, in player name order.
+    Must be at least 2 players (1 mafia, 1 town).
+
+    Parameters
+    ----------
+    n_mafia : int = 1
+        How many mafia players to add.
     """
+
+    n_mafia = int(n_mafia)
 
     n = len(player_names)
     assert isinstance(n_mafia, int)

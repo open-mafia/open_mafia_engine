@@ -121,9 +121,13 @@ class CommandRunner(Generic[TUser]):
     To add or override a command handler, use the `command` decorator:
 
         class MyRunner(CommandRunner[MyUserType]):
-            @command("blah", game=True)
-            def my_blah(self, source: str, *args, **kwargs):
+            @command("foo", game=True)
+            def my_foo(self, source: str, *args, **kwargs):
                 return
+
+    The command decorator defaults to non-admin, in-game actions.
+    Specifying `lobby=True` will, by default, allow only lobby use.
+    If you want it always on, use `@command("name", game=True, lobby=True)`
 
     Attributes
     ----------
@@ -134,7 +138,8 @@ class CommandRunner(Generic[TUser]):
     game : None or Game
         The game state. Defaults to None.
     score_cutoff : int
-
+        The score cutoff for matching command names, from 0 to 100.
+        Default is 80 (relatively strict).
     """
 
     registered_commands: Dict[str, CommandHandler]
@@ -248,12 +253,13 @@ class CommandRunner(Generic[TUser]):
         Will probably need change in AbstractLobby.
         Will definitely need change in Game to handle kicking/modkilling...
         """
+        # TODO: Implement.
 
     @command("create-game", admin=True, lobby=True)
     def create_game(self, source: str, builder_name: str, *args, **kwargs):
         """Creates the game.
 
-        TODO: Implement!
+        TODO: Need to standardize builder options.
         """
         if self.in_game:
             raise ValueError("BUG. Currently in a game - can't create one.")
@@ -268,7 +274,7 @@ class CommandRunner(Generic[TUser]):
         Do we even need this? I assume you'd just make a new runner... :)
 
         TODO: Maybe a bit more elegantly?...
-        TODO: Auto-stop the game when GameEnder works?
+        TODO: Auto-stop the game when EGameEnded occurs? Not sure how that would work.
         """
         self.game = None
 
