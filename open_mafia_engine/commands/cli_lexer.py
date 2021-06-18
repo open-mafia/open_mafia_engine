@@ -3,11 +3,19 @@
 from pygments.lexer import RegexLexer
 from pygments.token import *
 
-__all__ = ["MafiaLexer"]
+__all__ = ["MafiaCliLexer"]
 
 
-class MafiaLexer(RegexLexer):
-    """Custom Pygments lexer for mafia commands."""
+class MafiaCliLexer(RegexLexer):
+    """Custom Pygments lexer for Mafia command-line parser. Not very complete.
+
+    Current syntax:
+
+        COMMAND <arg> <arg>
+
+    There is also support for multi-line comments, but they should be removed.
+    It was mostly for testing highlighting support. :)
+    """
 
     name = "Mafia"
     aliases = ["mafia"]
