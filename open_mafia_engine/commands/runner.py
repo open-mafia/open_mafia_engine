@@ -190,6 +190,26 @@ class CommandRunner(Generic[TUser]):
         self._game = game
 
     @property
+    def lobby(self) -> AbstractLobby[TUser]:
+        return self._lobby
+
+    @lobby.setter
+    def lobby(self, lobby: AbstractLobby[TUser]):
+        if not isinstance(lobby, AbstractLobby):
+            raise TypeError(f"Expected AbstractLobby, got {lobby!r}")
+        self._lobby = lobby
+
+    @property
+    def parser(self) -> AbstractCommandParser:
+        return self._parser
+
+    @parser.setter
+    def parser(self, parser: AbstractCommandParser):
+        if not isinstance(parser, AbstractCommandParser):
+            raise TypeError(f"Expected AbstractCommandParser, got {parser!r}")
+        self._parser = parser
+
+    @property
     def in_game(self) -> bool:
         """True if the game is active."""
         return self._game is not None
