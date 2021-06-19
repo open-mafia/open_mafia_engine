@@ -21,7 +21,7 @@ class OCLastFactionStanding(OutcomeChecker):
                         self.game, self, faction=self.parent, outcome=Outcome.defeat
                     )
                 ]
-            if all(ac.status.get("dead)", False) for ac in enemy):
+            if all(ac.status.get("dead", False) for ac in enemy):
                 return [
                     OutcomeAction(
                         self.game, self, faction=self.parent, outcome=Outcome.victory
