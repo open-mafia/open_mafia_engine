@@ -56,3 +56,15 @@ def test_scenario_1():
     assert "town" in dave_n1_results[0].lower()
 
     # DAY 2
+
+
+def test_game_ending():
+    """Simple test for the game ending properly."""
+
+    game = make_test_game(["Alice", "Bob"])
+    alice = game.actors[0]
+    bob = game.actors[1]
+
+    # Test whether alive constraint works :)
+    alice.status["dead"] = True
+    assert any(isinstance(a, EGameEnded) for a in game.action_queue.history)
