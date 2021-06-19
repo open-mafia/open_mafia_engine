@@ -97,8 +97,11 @@ class EPostPhaseChange(EPostAction):
         return self._action
 
     @property
-    def new_phase(self) -> Optional[Phase]:
-        return self.action.new_phase
+    def new_phase(self) -> Phase:
+        np = self.action.new_phase
+        if np is None:
+            np = self.game.current_phase
+        return np
 
     @property
     def old_phase(self) -> Phase:
