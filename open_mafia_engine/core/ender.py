@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from open_mafia_engine.core.auxiliary import AuxObject
 from open_mafia_engine.core.enums import Outcome
 from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction, handler
+from open_mafia_engine.core.game_object import GameObject
 from open_mafia_engine.core.outcome import EOutcomeAchieved
 
 
@@ -17,8 +18,16 @@ class EndTheGame(Action):
     I'm skeptical. Ending the game is significantly different.
     """
 
-    def __init__(self, game, /, *, priority: float = 999, canceled: bool = False):
-        super().__init__(game, priority=priority, canceled=canceled)
+    def __init__(
+        self,
+        game,
+        source: GameObject,
+        /,
+        *,
+        priority: float = 999,
+        canceled: bool = False,
+    ):
+        super().__init__(game, source, priority=priority, canceled=canceled)
 
     class Pre(EPreAction):
         """The game is about to end."""
@@ -49,4 +58,4 @@ class GameEnder(AuxObject):
         self._outcomes[event.faction.name] = event.outcome
 
         if all(self.outcomes.get(fac) is not None for fac in self.game.faction_names):
-            return EndTheGame(self.game)
+            return [EndTheGame(self.game, self)]
