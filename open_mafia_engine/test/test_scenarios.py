@@ -67,4 +67,4 @@ def test_game_ending():
 
     # Test whether alive constraint works :)
     alice.status["dead"] = True
-    assert any(isinstance(a, EGameEnded) for a in game.action_queue.history)
+    assert any(isinstance(a, EndTheGame) for a in game.action_queue.history)
