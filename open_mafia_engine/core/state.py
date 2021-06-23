@@ -242,7 +242,9 @@ class ATBase(Subscriber):
         """Names of arguments used when calling. Default is empty."""
         return []
 
-    def full_description(self, full_constraints: bool = False) -> str:
+    def full_description(
+        self, full_constraints: bool = False, highlight_method: Callable = None
+    ) -> str:
         """Gets the full description of the Action/Trigger.
 
         If `full_constraints`, also adds the full descriptions of all constraints.
@@ -256,7 +258,12 @@ class ATBase(Subscriber):
         if abil_targs != "":
             abil_targs = f" ({abil_targs})"
 
-        res = f"[{prestr}] {self.name}{abil_targs}: {self.desc}"
+        if highlight_method is None:
+            name = self.name
+        else:
+            name = highlight_method(self.name)
+
+        res = f"[{prestr}] {name}{abil_targs}: {self.desc}"
         if full_constraints:
             fcd = []
             # TODO: Long descriptions for constraints

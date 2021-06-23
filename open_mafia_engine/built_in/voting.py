@@ -99,11 +99,28 @@ class VotingResults(GameObject):
         def mk():
             return defaultdict(float)
 
+        # voter -> target -> qty
         self._map: DefaultDict[int, DefaultDict[int, float]] = defaultdict(mk)
 
     @property
     def options(self) -> VotingOptions:
         return self._options
+
+    @property
+    def vote_map(self) -> List[Tuple[GameObject, float, List[Actor]]]:
+        """Gets the vote counts, along with Actors who vote for them."""
+        res = []
+        for i_t, t in enumerate(self._targets):
+            voters = []
+            total = 0
+            for k, v in self._map.items():
+                qty = v[i_t]
+                total += qty
+                if qty > 0:
+                    voters.append(self._voters[k])
+            res.append((t, total, voters))
+        res = sorted(res, key=lambda x: -x[1])
+        return res
 
     @property
     def vote_counts(self) -> List[Tuple[GameObject, float]]:
