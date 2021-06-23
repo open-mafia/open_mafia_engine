@@ -839,6 +839,11 @@ class Constraint(Subscriber):
         if isinstance(event, EPostAction) and event.action.source == self.parent:
             return self.hook_post_action(event.action)
 
+    @property
+    def prefix_tags(self) -> List[str]:
+        """These are tags used for descriptions, as a prefix."""
+        return []
+
 
 class EventEngine(GameObject):
     """Subscription and broadcasting engine."""

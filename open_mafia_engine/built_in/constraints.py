@@ -40,6 +40,11 @@ class PhaseConstraint(Constraint):
                 f"Wrong phase: currently {cp.name!r}, need {self.phase.name!r}."
             )
 
+    @property
+    def prefix_tags(self) -> List[str]:
+        """These are tags used for descriptions, as a prefix."""
+        return [self.phase.name]
+
 
 class LimitPerPhaseKeyConstraint(Constraint):
     """Allow only N uses per phase, given a key.

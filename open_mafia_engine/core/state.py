@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 import logging
+from textwrap import indent
 import warnings
 from abc import abstractmethod
 from typing import (
@@ -228,6 +229,41 @@ class ATBase(Subscriber):
         ConstraintOwnerAlive(self.game, self)
         ConstraintActorTargetsAlive(self.game, self)
 
+    @property
+    def prefix_tags(self) -> List[str]:
+        """These are used for descriptions."""
+        res = []
+        for con in self.constraints:
+            res += con.prefix_tags
+        return res
+
+    @property
+    def argument_names(self) -> List[str]:
+        """Names of arguments used when calling. Default is empty."""
+        return []
+
+    def full_description(self, full_constraints: bool = False) -> str:
+        """Gets the full description of the Action/Trigger.
+
+        If `full_constraints`, also adds the full descriptions of all constraints.
+        By default, though, it skips these, adding only the prefix tags.
+        """
+        prestr = ", ".join(self.prefix_tags)
+        if prestr == "":
+            prestr = "Any"
+        arg_names = self.argument_names
+        abil_targs = ", ".join(arg_names)
+        if abil_targs != "":
+            abil_targs = f" ({abil_targs})"
+
+        res = f"[{prestr}] {self.name}{abil_targs}: {self.desc}"
+        if full_constraints:
+            fcd = []
+            # TODO: Long descriptions for constraints
+            fcd = [indent(x, ".   ") for x in fcd]
+            res = "\n".join([res] + fcd)
+        return res
+
 
 class ATConstraint(Constraint):
     """Constraint for Actions and Triggers. Will raise if used elsewhere."""
@@ -289,6 +325,10 @@ class Trigger(ATBase):
     def path(self) -> str:
         return get_path(self.owner.name, TRIGGER, self.name)
 
+    @property
+    def prefix_tags(self) -> List[str]:
+        return ["Auto"] + super().prefix_tags
+
 
 class EActivate(Event):
     """Event of ability activation.
@@ -327,6 +367,18 @@ class Ability(ATBase):
     desc : str
         Description. Default is "".
     """
+
+    @property
+    def argument_names(self) -> List[str]:
+        """Names of arguments. User-facing."""
+        sig = inspect.signature(self.activate)
+        res = []
+        for name, p in sig.parameters.items():
+            if p.kind in [p.VAR_KEYWORD, p.VAR_POSITIONAL]:
+                res.append("...")
+            else:
+                res.append(name)
+        return res
 
     @property
     def path(self) -> str:
