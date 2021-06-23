@@ -26,18 +26,20 @@ sortedcontainers = "^2.3.0"
 makefun = "^1.11.3"
 fuzzywuzzy = "^0.18.0"
 cloudpickle = "^1.6.0"
-mkdocs = { version = "^1.1.2", optional = true }
-beautifulsoup4 = { version = "^4.9.3", optional = true }
-requests = { version = "^2.25.1", optional = true }
-"ruamel.yaml" = { version = "^0.17.4", optional = true }
-flake8 = { version = "^3.9.2", optional = true }
-mypy = { version = "^0.800", optional = true }
-pytest = { version = "^6.2.4", optional = true }
-pygments = { version = "~2.9.0", optional = true }
+mkdocs = { version="^1.1.2", optional=true }
+"mkdocs-material" = { version="^7.1.8", optional=true }
+mkdocstrings = { version="^0.15.2", optional=true }
+beautifulsoup4 = { version="^4.9.3", optional=true }
+requests = { version="^2.25.1", optional=true }
+"ruamel.yaml" = { version="^0.17.4", optional=true }
+flake8 = { version="^3.9.2", optional=true }
+mypy = { version="^0.800", optional=true }
+pytest = { version="^6.2.4", optional=true }
+pygments = { version="~2.9.0", optional=true }
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
-docs = ["mkdocs"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings"]
 ruamel = ["ruamel.yaml"]
 dev = ["flake8", "mypy", "pytest"]
 test = ["pytest"]

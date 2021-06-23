@@ -10,11 +10,10 @@ mkdocs:
   fail_on_warning: false
 
 python:
-  version: 3.7
+  version: 3.8
   install:
-    # # I wish this worked, but alas I get a StopIteration error?!
-    # - method: pip
-    #   path: .
-    #   extra_requirements:
-    #     - docs
-    - requirements: "docs/requirements.txt"
+    # We are using "pip" to install, but it will actually run poetry-core
+    - method: pip
+      path: .
+      extra_requirements:
+        - docs
