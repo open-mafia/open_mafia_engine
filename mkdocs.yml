@@ -1,4 +1,9 @@
 site_name: Open Mafia Engine
+theme:
+  name: "material"
+plugins:
+  - search
+  - mkdocstrings
 nav:
   - Home: index.md
   - "User Guide":
@@ -7,7 +12,7 @@ nav:
       - "Abilities": user_guide/abilities.md
       - "Outcomes": user_guide/outcomes.md
       - "Prefabs": user_guide/prefabs.md
-  - "Reference": reference/todo_ref.md
+  - "Reference": reference/index.md
   - "Development":
       - "Installing for dev": development/installing_dev.md
       - "Writing Docs": development/writing_docs.md
