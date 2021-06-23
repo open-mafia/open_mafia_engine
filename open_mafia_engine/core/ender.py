@@ -1,14 +1,41 @@
+from __future__ import annotations
+
 from typing import Dict, List, Optional
 
 from open_mafia_engine.core.auxiliary import AuxObject
+from open_mafia_engine.core.converters import get_faction_by_name
 from open_mafia_engine.core.enums import Outcome
 from open_mafia_engine.core.event_system import Action, EPostAction, EPreAction, handler
-from open_mafia_engine.core.game_object import GameObject
+from open_mafia_engine.core.game_object import GameObject, inject_converters
 from open_mafia_engine.core.outcome import EOutcomeAchieved
+from open_mafia_engine.core.state import Faction
 
 
 class EGameEnded(EPostAction):
     """The game has ended."""
+
+    @property
+    def action(self) -> EndTheGame:
+        return super().action
+
+    @property
+    def outcomes(self) -> Dict[str, Outcome]:
+        return self.action.outcomes
+
+    @inject_converters
+    def outcome_for(self, faction: Faction) -> Outcome:
+        """Returns the outcome for a given faction."""
+        return self.outcomes[faction.name]
+
+    @property
+    def victorious_factions(self) -> List[Faction]:
+        fns = [k for k, v in self.outcomes.items() if v == Outcome.victory]
+        return [get_faction_by_name(self.game, fn) for fn in fns]
+
+    @property
+    def defeated_factions(self) -> List[Faction]:
+        fns = [k for k, v in self.outcomes.items() if v == Outcome.defeat]
+        return [get_faction_by_name(self.game, fn) for fn in fns]
 
 
 class EndTheGame(Action):
@@ -23,10 +50,14 @@ class EndTheGame(Action):
         game,
         source: GameObject,
         /,
+        outcomes: Dict[str, Outcome] = None,
         *,
         priority: float = 999,
         canceled: bool = False,
     ):
+        if outcomes is None:
+            outcomes = {}
+        self.outcomes: Dict[str, Outcome] = dict(outcomes)
         super().__init__(game, source, priority=priority, canceled=canceled)
 
     class Pre(EPreAction):
@@ -58,4 +89,4 @@ class GameEnder(AuxObject):
         self._outcomes[event.faction.name] = event.outcome
 
         if all(self.outcomes.get(fac) is not None for fac in self.game.faction_names):
-            return [EndTheGame(self.game, self)]
+            return [EndTheGame(self.game, self, self.outcomes)]
