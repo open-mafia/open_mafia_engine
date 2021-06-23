@@ -67,8 +67,8 @@ class CommandHandler(object):
         self.lobby = bool(lobby)
         self.admin = bool(admin)
 
-    def __set_name__(self, owner: Type[CommandRunner], name: str):
-        self.bound_name = name
+    def __set_name__(self, owner: Type[CommandRunner], name_: str):
+        self.bound_name = name_
         _RC = "registered_commands"
 
         # self.registered[name] = self  # FIXME: change to the following?
@@ -77,7 +77,7 @@ class CommandHandler(object):
         if not hasattr(owner, _RC):
             v = dict(**getattr(super(owner), _RC, {}))
             setattr(owner, _RC, v)
-        owner.registered_commands[name] = self
+        owner.registered_commands[self.name] = self
 
     def __get__(self, obj: CommandRunner, objtype=None):
         return partial(self.func, obj)
