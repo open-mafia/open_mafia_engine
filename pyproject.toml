@@ -26,6 +26,7 @@ sortedcontainers = "^2.3.0"
 makefun = "^1.11.3"
 fuzzywuzzy = "^0.18.0"
 cloudpickle = "^1.6.0"
+typer = "^0.3.2"
 mkdocs = { version="^1.1.2", optional=true }
 "mkdocs-material" = { version="^7.1.8", optional=true }
 mkdocstrings = { version="^0.15.2", optional=true }
