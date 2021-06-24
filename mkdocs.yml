@@ -1,6 +1,43 @@
 site_name: Open Mafia Engine
+repo_url: https://github.com/open-mafia/open_mafia_engine/
+site_author: Open Mafia Team
+site_description: Engine for Mafia or Werewolf-style games
+
+# NOTE: This allows looking at docs locally
+# See https://www.mkdocs.org/user-guide/configuration/#use_directory_urls
+site_url: ""
+use_directory_urls: false
+
+nav:
+  - Home: index.md
+  - "User Guide":
+      - "Main Concepts": user_guide/concepts.md
+      - "Game State": user_guide/state.md
+      - "Abilities": user_guide/abilities.md
+      - "Outcomes": user_guide/outcomes.md
+      - "Prefabs": user_guide/prefabs.md
+  - "Reference": reference/index.md
+  - "Development":
+      - "Installing for dev": development/installing_dev.md
+      - "Writing Docs": development/writing_docs.md
+  - About: about.md
+
 theme:
   name: "material"
+  palette:
+    - scheme: default
+      primary: red
+      accent: red
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: red
+      accent: red
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
 # Plugins: https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
 plugins:
   - search
@@ -15,16 +52,8 @@ markdown_extensions:
   # - pymdownx.emoji:
   #     emoji_index: !!python/name:pymdownx.emoji.gemoji
   #     emoji_generator: !!python/name:pymdownx.emoji.to_svg
-nav:
-  - Home: index.md
-  - "User Guide":
-      - "Main Concepts": user_guide/concepts.md
-      - "Game State": user_guide/state.md
-      - "Abilities": user_guide/abilities.md
-      - "Outcomes": user_guide/outcomes.md
-      - "Prefabs": user_guide/prefabs.md
-  - "Reference": reference/index.md
-  - "Development":
-      - "Installing for dev": development/installing_dev.md
-      - "Writing Docs": development/writing_docs.md
-  - About: about.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/open-mafia
