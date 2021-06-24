@@ -1,9 +1,20 @@
 site_name: Open Mafia Engine
 theme:
   name: "material"
+# Plugins: https://squidfunk.github.io/mkdocs-material/reference/code-blocks/
 plugins:
   - search
+  - autorefs
   - mkdocstrings
+markdown_extensions:
+  - pymdownx.highlight:
+      use_pygments: true
+      linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  # - pymdownx.emoji:
+  #     emoji_index: !!python/name:pymdownx.emoji.gemoji
+  #     emoji_generator: !!python/name:pymdownx.emoji.to_svg
 nav:
   - Home: index.md
   - "User Guide":

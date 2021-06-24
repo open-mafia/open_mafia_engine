@@ -689,7 +689,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [extras]
 bay12 = ["beautifulsoup4", "requests"]
 dev = ["flake8", "mypy", "pytest"]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "pygments"]
 pygments = ["pygments"]
 ruamel = ["ruamel.yaml"]
 test = ["pytest"]
@@ -697,7 +697,7 @@ test = ["pytest"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "8b4fa8f707c1449a4927f852c5c01f2a36981a06104e61e37369ca6ee4bb47d6"
+content-hash = "ae2046edfe2adf7e1a24916ff162fc626323385e53bf5212f8b521a42b6486aa"
 
 [metadata.files]
 appdirs = [
