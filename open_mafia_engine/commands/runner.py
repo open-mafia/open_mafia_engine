@@ -280,6 +280,19 @@ class CommandRunner(Generic[TUser]):
         """Alias for 'join'."""
         return self.join(source)
 
+    @command("leave", lobby=True)
+    def leave(self, source: str):
+        """Leaves the lobby."""
+        user = self.user_for(source)
+        if user is None:
+            raise ValueError(f"No user found for {source!r}. Possibly not implemented?")
+        self.lobby.remove_player(source, user)  # [source] = user
+
+    @command("out", lobby=True)
+    def _leave2(self, source: str):
+        """Alias for 'leave'."""
+        return self.leave(source)
+
     @command("force-join", admin=True, lobby=True)
     def force_join(self, source: str, *targets: List[str]):
         """Force one or more users to join the lobby."""

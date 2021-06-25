@@ -47,8 +47,16 @@ class AbstractLobby(Mapping, Generic[TUser]):
         """Add the player to the game."""
 
     @abstractmethod
+    def remove_player(self, name: str, user: TUser):
+        """Remove the player from the game."""
+
+    @abstractmethod
     def add_admin(self, name: str, user: TUser):
-        """Add the player to the game."""
+        """Add the admin to the game."""
+
+    @abstractmethod
+    def remove_admin(self, name: str, user: TUser):
+        """Remove the admin from the game."""
 
     @property
     def player_names(self) -> List[str]:
