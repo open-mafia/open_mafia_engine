@@ -113,5 +113,13 @@ class SimpleLobby(AbstractLobby[TUser]):
     def add_admin(self, name: str, user: TUser):
         self._admins[name] = user
 
+    def remove_admin(self, name: str, user: TUser):
+        if name in self._admins:
+            del self._admins[name]
+
     def add_player(self, name: str, user: TUser):
         self._players[name] = user
+
+    def remove_player(self, name: str, user: TUser):
+        if name in self._players:
+            del self._players[name]

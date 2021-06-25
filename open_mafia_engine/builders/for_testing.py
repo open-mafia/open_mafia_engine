@@ -27,6 +27,8 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
     game = Game()
     mafia = Faction(game, "Mafia")
     OCLastFactionStanding(game, mafia)
+    FactionChatCreatorAux(game, mafia)
+
     town = Faction(game, "Town")
     OCLastFactionStanding(game, town)
 
