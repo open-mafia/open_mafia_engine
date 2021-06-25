@@ -10,7 +10,7 @@ from .runner import CommandHandler, CommandRunner, command
 
 PYGMENTS_AVAILABLE: bool
 try:
-    from .cli_lexer import MafiaCliLexer
+    from .cli_lexer import ImplicitMafiaCliLexer, MafiaCliLexer
 
     PYGMENTS_AVAILABLE = True
 except ImportError:
