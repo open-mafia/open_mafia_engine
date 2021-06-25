@@ -38,21 +38,33 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
 
     n_town = n - n_mafia
 
+    vote_desc = "Vote for your target. This is a free action."
+
     for i in range(n_mafia):
         act = Actor(game, player_names[i])
         mafia.add_actor(act)
         # Voting
-        vote = VoteAbility(game, act, name="Vote", tally=tally)
+        vote = VoteAbility(game, act, name="Vote", tally=tally, desc=vote_desc)
         PhaseConstraint(game, vote, phase="day")
         # Mafia kill
-        mk = KillAbility(game, act, name="Mafia Kill")
+        mk = KillAbility(
+            game,
+            act,
+            name="Mafia Kill",
+            desc="Kill the target. Only 1 mafioso can use this.",
+        )
         LimitPerPhaseActorConstraint(game, mk, limit=1)
         LimitPerPhaseKeyConstraint(game, mk, key="mafia_kill_limit")
         PhaseConstraint(game, mk, phase="night")
         ConstraintNoSelfFactionTarget(game, mk)
         if i == 2:
             # Second mafioso can roleblock
-            block = RoleBlockAbility(game, act, name="Roleblock")
+            block = RoleBlockAbility(
+                game,
+                act,
+                name="Roleblock",
+                desc="Blocks the target from acting this night.",
+            )
             PhaseConstraint(game, block, phase="night")
             LimitPerPhaseActorConstraint(game, block, limit=1)
             ConstraintNoSelfFactionTarget(game, block)
@@ -61,7 +73,7 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
         act = Actor(game, player_names[n_mafia + i])
         town.add_actor(act)
         # Voting
-        vote = VoteAbility(game, act, name="Vote", tally=tally)
+        vote = VoteAbility(game, act, name="Vote", tally=tally, desc=vote_desc)
         PhaseConstraint(game, vote, phase="day")
         if i == 1:
             # Second townie is a protector/doctor

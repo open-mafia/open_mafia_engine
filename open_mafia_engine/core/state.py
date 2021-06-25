@@ -460,7 +460,7 @@ class Ability(ATBase):
         sig_init = "TODO"  # TODO: Actually create a proper init signature!
 
         # TODO: Set sig_init
-        def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = ""):
+        def __init__(self, game: Game, /, owner: Actor, name: str, desc: str = desc):
             super().__init__(game, owner, name, desc=desc)
 
         @with_signature(sig_activate)
