@@ -328,7 +328,7 @@ class CommandRunner(Generic[TUser]):
         if self.in_game:
             raise ValueError("BUG. Currently in a game - can't create one.")
         builder = GameBuilder.load(builder_name)
-        game = builder.build(player_names=self.lobby.player_names, *args, **kwargs)
+        game = builder.build(self.lobby.player_names, *args, **kwargs)
         self.game = game
 
     @command("destroy-game", admin=True, game=True)

@@ -36,7 +36,7 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
     GameEnder(game)  # ends the game when all factions get an Outcome
     tally = LynchTally(game)  # lynch tally
 
-    n_town = n - 1
+    n_town = n - n_mafia
 
     for i in range(n_mafia):
         act = Actor(game, player_names[i])

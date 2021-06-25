@@ -19,3 +19,13 @@ def test_builder_by_name():
     builder = GameBuilder.load("test")
     game = builder.build(["Alice", "Bob"])
     assert game.actor_names == ["Alice", "Bob"]
+
+
+def test_builder_args():
+    """Tests building the game."""
+    from open_mafia_engine.builders.for_testing import make_test_game  # noqa
+
+    names = ["Alice", "Bob", "Charlie", "Dave", "Emily"]
+    builder = GameBuilder.load("test")
+    game = builder.build(names, n_mafia=2)
+    assert game.actor_names == names
