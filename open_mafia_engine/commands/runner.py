@@ -219,11 +219,15 @@ class CommandRunner(Generic[TUser]):
         """True if the game is not active."""
         return not self.in_game
 
+    def pre_check_command(self, rc: RawCommand):
+        """Override for additional command checking"""
+
     def parse_and_run(self, source: str, obj: str) -> List[Tuple[RawCommand, Any]]:
         """Parses commands and runs them."""
         rcs = self.parser.parse(source, obj)
         res = []
         for rc in rcs:
+            self.pre_check_command(rc)
             out_i = self.dispatch(rc)
             res.append((rcs, out_i))
         return res
