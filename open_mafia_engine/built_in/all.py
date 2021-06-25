@@ -19,14 +19,14 @@ from .constraints import (
 from .information import (
     BaseInformationAction,
     BaseInspectAction,
-    FactionInspectAbility,
-    FactionInspectAction,
+    InspectFactionAbility,
+    InspectFactionAction,
 )
 from .kills import DeathCausingAction, KillAbility, KillAction, LynchAction
 from .lynch_tally import LynchTally
 from .outcome import OCLastFactionStanding
 from .phases import PhaseChangeAbility
-from .protect import KillProtectAbility, KillProtectAction, KillProtectorAux
+from .protect import ProtectFromKillAbility, ProtectFromKillAction, ProtectorFromKillAux
 from .redirect import (
     ActorRedirectAction,
     ActorRedirectorAux,

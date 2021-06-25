@@ -63,13 +63,13 @@ def make_test_game(player_names: List[str], n_mafia: int = 1) -> Game:
         PhaseConstraint(game, vote, phase="day")
         if i == 1:
             # Second townie is a protector/doctor
-            prot = KillProtectAbility(game, act, name="Protect")
+            prot = ProtectFromKillAbility(game, act, name="Protect")
             PhaseConstraint(game, prot, phase="night")
             LimitPerPhaseActorConstraint(game, prot, limit=1)
             ConstraintNoSelfTarget(game, prot)
         elif i == 2:
             # Third townie is a detective
-            insp = FactionInspectAbility(game, act, name="Faction Inspect")
+            insp = InspectFactionAbility(game, act, name="Faction Inspect")
             LimitPerPhaseActorConstraint(game, insp, limit=1)
             PhaseConstraint(game, insp, phase="night")
             ConstraintNoSelfTarget(game, insp)

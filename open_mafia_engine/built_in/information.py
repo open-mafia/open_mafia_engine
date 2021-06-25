@@ -80,7 +80,7 @@ class BaseInspectAction(BaseInformationAction):
     # doit()
 
 
-class FactionInspectAction(BaseInspectAction):
+class InspectFactionAction(BaseInspectAction):
     """Inspect the factions of a player."""
 
     def doit(self):
@@ -89,10 +89,10 @@ class FactionInspectAction(BaseInspectAction):
         self.inform(msg)
 
 
-FactionInspectAbility = Ability.generate(
-    FactionInspectAction,
+InspectFactionAbility = Ability.generate(
+    InspectFactionAction,
     params=["target"],
-    name="FactionInspectAbility",
+    name="InspectFactionAbility",
     doc="Ability to inspect someone's faction(s).",
     desc="Inspect target's faction(s).",
 )

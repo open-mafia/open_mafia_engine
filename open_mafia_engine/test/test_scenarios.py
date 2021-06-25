@@ -18,7 +18,7 @@ def test_scenario_1():
     # Bob: Vote
     # Charlie: Vote, Protect
     # Dave: Vote, Inspect
-    res_key = FactionInspectAction.status_key()
+    res_key = InspectFactionAction.status_key()
 
     # STARTUP
     # nothing yet

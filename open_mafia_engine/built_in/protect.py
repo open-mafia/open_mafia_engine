@@ -16,7 +16,7 @@ from .auxiliary import TempPhaseAux
 from .kills import KillAction
 
 
-class KillProtectorAux(TempPhaseAux):
+class ProtectorFromKillAux(TempPhaseAux):
     """Aux object that protects the target from kills."""
 
     def __init__(
@@ -58,7 +58,7 @@ class KillProtectorAux(TempPhaseAux):
             ]
 
 
-class KillProtectAction(Action):
+class ProtectFromKillAction(Action):
     """Action that protects the tarte from kills until the end of the phase."""
 
     def __init__(
@@ -79,13 +79,13 @@ class KillProtectAction(Action):
         return self._target
 
     def doit(self):
-        KillProtectorAux(self.game, target=self.target)
+        ProtectorFromKillAux(self.game, target=self.target)
 
 
-KillProtectAbility = Ability.generate(
-    KillProtectAction,
+ProtectFromKillAbility = Ability.generate(
+    ProtectFromKillAction,
     params=["target"],
-    name="KillProtectAbility",
+    name="ProtectFromKillAbility",
     doc="Ability to protect from kills",
     desc="Protects the target from kills.",
 )
