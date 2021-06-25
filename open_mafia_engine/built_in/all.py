@@ -35,6 +35,7 @@ from .redirect import (
     CreateRedirectAction,
 )
 from .roleblock import RoleBlockAbility, RoleBlockAction, RoleBlockerAux
+from .startup import ECreateFactionChat, FactionChatCreatorAux
 from .triggers import UnkillableTrigger, UnlynchableTrigger
 from .voting import (
     AbstractVoteTarget,
