@@ -41,13 +41,13 @@ class MafiaCliLexer(RegexLexer):
             ('"', Name.Exception, "args"),
         ],
         "args": [
-            (R'"', Text, "args-quote"),
+            (R'"', String.Double, "args-quote"),
             (R"\b.*\n", Text, "root"),
             (R"\s+\n", Text, "root"),
         ],
         "args-quote": [
-            ('[^"]+', String),
-            ('"', String, "#pop"),
+            ('[^"]+', String.Double),
+            ('"', String.Double, "#pop"),
         ],
     }
 
@@ -79,12 +79,12 @@ class ImplicitMafiaCliLexer(RegexLexer):
             ('"', Name.Exception, "args"),
         ],
         "args": [
-            (R'"', Text, "args-quote"),
+            (R'"', String.Double, "args-quote"),
             (R"\b.*\n", Text, "root"),
             (R"\s+\n", Text, "root"),
         ],
         "args-quote": [
-            ('[^"]+', String),
-            ('"', String, "#pop"),
+            ('[^"]+', String.Double),
+            ('"', String.Double, "#pop"),
         ],
     }
