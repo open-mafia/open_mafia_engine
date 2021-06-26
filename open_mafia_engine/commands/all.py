@@ -3,7 +3,7 @@
 # flake8: noqa
 import warnings as _w
 
-from .lobby import AbstractLobby
+from .lobby import AbstractLobby, AutoAddStrLobby, SimpleDictLobby
 from .parser import AbstractCommandParser, ShellCommandParser
 from .raw import RawCommand, TUser
 from .runner import CommandHandler, CommandRunner, command

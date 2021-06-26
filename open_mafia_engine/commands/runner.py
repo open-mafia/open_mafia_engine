@@ -19,7 +19,7 @@ from makefun import partial
 from open_mafia_engine.core.all import ABILITY, EActivate, Game, GameBuilder, get_path
 from open_mafia_engine.util.matcher import FuzzyMatcher
 
-from .lobby import AbstractLobby, SimpleLobby
+from .lobby import AbstractLobby, SimpleDictLobby
 from .parser import AbstractCommandParser, ShellCommandParser
 from .raw import RawCommand, TUser, MafiaBadCommand
 
@@ -150,7 +150,7 @@ class CommandRunner(Generic[TUser]):
     parser : AbstractCommandParser
         Your own parser implementation, or ShellCommandParser() by default.
     lobby : AbstractLobby
-        Your own lobby implementation, or SimpleLobby[TUser]() by default.
+        Your own lobby implementation, or SimpleDictLobby[TUser]() by default.
     game : None or Game
         The game state. Defaults to None.
     score_cutoff : int
@@ -163,7 +163,7 @@ class CommandRunner(Generic[TUser]):
     def __init__(
         self,
         parser: AbstractCommandParser = ShellCommandParser(),
-        lobby: AbstractLobby[TUser] = SimpleLobby[TUser](),
+        lobby: AbstractLobby[TUser] = SimpleDictLobby[TUser](),
         game: Optional[Game] = None,
         *,
         score_cutoff: int = 80,

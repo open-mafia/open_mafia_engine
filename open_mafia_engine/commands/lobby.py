@@ -18,7 +18,7 @@ from typing import (
 
 from .raw import TUser
 
-__all__ = ["AbstractLobby", "SimpleLobby"]
+__all__ = ["AbstractLobby", "SimpleDictLobby", "AutoAddStrLobby"]
 
 
 class AbstractLobby(Mapping, Generic[TUser]):
@@ -87,7 +87,7 @@ class AbstractLobby(Mapping, Generic[TUser]):
         return len(keys)
 
 
-class SimpleLobby(AbstractLobby[TUser]):
+class SimpleDictLobby(AbstractLobby[TUser]):
     """Simple lobby implementation."""
 
     def __init__(
@@ -123,3 +123,44 @@ class SimpleLobby(AbstractLobby[TUser]):
     def remove_player(self, name: str, user: TUser):
         if name in self._players:
             del self._players[name]
+
+
+class AutoAddStrLobby(AbstractLobby[str]):
+    """String-based lobby that adds any users automatically."""
+
+    def __init__(self, admin_names: List[str] = [], player_names: List[str] = []):
+        self._admin_names = set(admin_names)
+        self._player_names = set(player_names)
+
+    @property
+    def players(self) -> Dict[str, str]:
+        return {x: x for x in self._player_names}
+
+    @property
+    def admins(self) -> Dict[str, str]:
+        return {x: x for x in self._admin_names}
+
+    @property
+    def player_names(self) -> List[str]:
+        return sorted(self.players.keys())
+
+    @property
+    def admin_names(self) -> List[str]:
+        return sorted(self.admins.keys())
+
+    def add_admin(self, name: str, user: str):
+        assert name == user
+        self._admin_names.add(name)
+
+    def remove_admin(self, name: str, user: str):
+        self._admin_names.discard(name)
+
+    def add_player(self, name: str, user: str):
+        assert name == user
+        self._player_names.add(name)
+
+    def remove_player(self, name: str, user: str):
+        self._player_names.discard(name)
+
+    def __getitem__(self, k: str) -> str:
+        return k
