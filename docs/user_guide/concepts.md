@@ -13,8 +13,13 @@ is that you can reach *anything* game-related via the `Game` instance.
 
 ## GameObject
 
-All engine objects inherit from `GameObject`. This class gives a reasonably readable
-`__repr__` for free, and also tracks all non-abstract subclasses.
+All engine objects inherit from [`GameObject`](../reference/game_object.md#GameObject).
+This class gives a reasonably readable `__repr__` for free, and also tracks
+all non-abstract subclasses.
+
+Each `GameObject` holds a refence to its parent `Game`, which allows it to
+automatically use [converters](utilities.md#converters) in the `__init__` method,
+as long as you use typing hints to define your custom classes.
 
 ## Events, Actions and Subscribers
 
@@ -27,9 +32,9 @@ An `Action` is essentially a delayed function call.
 Each `Action` object references its `source` (the entity that created the action),
 some parameters, `priority` and whether it's `cancelled`.
 
-A `Subscriber` object `subscribe`s to particular types of
-events. `Subscriber.respond_to_event` takes an `Event` and `Game` context and
-optionally returns an `Action` (the response).
+A `Subscriber` object subscribes to particular types of
+events. An `EventHandler` (usually a method wrapped in `@handler` or `@handles`)
+takes particular types of `Event`s and returns one or more `Action`s (the response).
 
 ## Event and Action Logic
 
@@ -38,12 +43,12 @@ optionally returns an `Action` (the response).
 Let's go through the event handling logic.
 
 1. The `game` begins to `process_event(e)` for some event `e`.
-2. The `game` goes through all `game.subscribers` that are relevant for `e`.
-3. Each (relevant) `Subscriber` responds to the event, returning `None` or some `Action`.
-4. Each non-None `Action` is added to the `game.action_queue`
+2. The `game` broadcasts to all event handlers for `e`.
+3. Each handler responds to the event, returning `None` or a list of `Action`s.
+4. Each `Action` is added to the `game.action_queue`
 5. Depending on the phase, the `ActionQueue` is proccessed either immediately or at the end of the phase.
 
-Essentially, each `Subscriber` returns a delayed `Action` in response to the `Event`.
+Essentially, each `EventHandler` a delayed `Action` in response to the `Event`.
 
 ### Action Queues
 
@@ -102,5 +107,23 @@ of the Open Mafia Engine.
 
 Creating a simple action is fairly simple, since all this response logic is part
 of the Engine itself. More involved actions can require multiple types (e. g. an
-`Action`, `ActivatedAbility` and some sort of watcher), but another framework would
-not be this flexible. Events can make debugging interactions fairly difficult, though.
+`Action`, `Ability` and some sort of watcher), but another framework would not be
+this flexible. Events can make debugging interactions fairly difficult, though.
+
+## Class Reference
+
+::: open_mafia_engine.core.event_system
+    handler: python
+    rendering:
+        docstring_style: numpy
+        heading_level: 3
+        show_source: false
+        # show_root_heading: false
+
+::: open_mafia_engine.core.state
+    handler: python
+    rendering:
+        docstring_style: numpy
+        heading_level: 3
+        show_source: false
+        # show_root_heading: false
