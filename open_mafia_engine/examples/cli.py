@@ -257,6 +257,7 @@ application = Application(
 
 
 def main():
+    # TODO: Add Typer arguments to load external modules.
     update_status_text()
     application.run()
 

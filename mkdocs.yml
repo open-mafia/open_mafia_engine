@@ -10,8 +10,7 @@ use_directory_urls: false
 
 nav:
   - Home: index.md
-  - "Getting Started":
-      - "Quickstart": getting_started/quickstart.md
+  - "Quickstart": getting_started/quickstart.md
   - "User Guide":
       - "Main Concepts": user_guide/concepts.md
       - "Game State": user_guide/state.md
