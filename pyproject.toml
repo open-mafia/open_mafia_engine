@@ -38,7 +38,7 @@ flake8 = { version="^3.9.2", optional=true }
 mypy = { version="^0.800", optional=true }
 pytest = { version="^6.2.4", optional=true }
 pygments = { version="~2.9.0", optional=true }
-
+prompt-toolkit = { version="^3.0.19", optional=true }
 
 [tool.poetry.extras]
 bay12 = ["beautifulsoup4", "requests"]
@@ -47,6 +47,7 @@ ruamel = ["ruamel.yaml"]
 dev = ["flake8", "mypy", "pytest"]
 test = ["pytest"]
 pygments = ["pygments"]
+examples = ["prompt-toolkit", "pygments"]
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
