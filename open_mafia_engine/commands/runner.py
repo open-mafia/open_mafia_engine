@@ -175,9 +175,23 @@ class CommandRunner(Generic[TUser]):
         self.game = game
 
     @classmethod
-    def available_commands(cls) -> List[str]:
+    def all_available_commands(cls) -> List[str]:
         """Returns all commands that are registered."""
         return list(cls.registered_commands.keys())
+
+    def currently_available_commands(self, source: str = None) -> List[str]:
+        """Returns all commands that are currently available."""
+        all_cmds = self.all_available_commands()
+
+        def chk(cmd: str) -> bool:
+            # FIXME
+            try:
+                self.pre_dispatch_check(cmd, source=source)
+            except Exception:
+                return False
+            return True
+
+        return [cmd for cmd in all_cmds if chk(cmd)]
 
     @property
     def game(self) -> Optional[Game]:
@@ -240,29 +254,42 @@ class CommandRunner(Generic[TUser]):
         )
         return matcher[name]
 
+    # TODO: Syntax for default command?
     def default_command(self, source: str, name: str, *args, **kwargs) -> NoReturn:
         """Default command definition - override."""
         rc = RawCommand(source, name, args, kwargs)
         raise MafiaBadCommand(rc)
 
-    def dispatch(self, rc: RawCommand) -> Any:
-        """Calls the relevant command given by `rc`.
+    def pre_dispatch_check(self, cmd: str, source: str = None) -> CommandHandler:
+        """Gets the command handler for a given command name, with checked access.
 
-        TODO: Backup handler for in-game and in-lobby handlers.
+        Checks whether the command is available for a certain source.
+        If not - raises an exception.
         """
         try:
-            ch: CommandHandler = self.find_command(rc.name)
+            ch: CommandHandler = self.find_command(cmd)
         except KeyError:
-            # Default command
-            return self.default_command(rc.source, rc.name, *rc.args, **rc.kwargs)
+            # TODO: Instead return a default command? ...
+            raise KeyError(f"No such command: {cmd!r}.")
 
         if ch.admin:
-            if rc.source not in self.lobby.admin_names:
+            if source not in self.lobby.admin_names:
                 raise RuntimeError(f"Command {ch.name!r} requires admin privileges.")
         if self.in_lobby and not ch.lobby:
             raise RuntimeError(f"Command {ch.name!r} not available in lobby.")
         if self.in_game and not ch.game:
             raise RuntimeError(f"Command {ch.name!r} not available during game.")
+        return ch
+
+    def dispatch(self, rc: RawCommand) -> Any:
+        """Calls the relevant command given by `rc`."""
+        try:
+            ch: CommandHandler = self.pre_dispatch_check(rc.name, source=rc.source)
+        except KeyError:
+            # Default command
+            return self.default_command(rc.source, rc.name, *rc.args, **rc.kwargs)
+        except Exception:
+            raise
 
         # TODO: Possibly add debug output here?
         return ch.func(self, rc.source, *rc.args, **rc.kwargs)
