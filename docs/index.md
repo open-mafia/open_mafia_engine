@@ -1,6 +1,7 @@
 # Open Mafia Engine
 
 [![PyPI version](https://badge.fury.io/py/open-mafia-engine.svg)](https://badge.fury.io/py/open-mafia-engine)
+[![Stable Release](https://img.shields.io/github/release/open-mafia/open_mafia_engine.svg)](https://github.com/open-mafia/open_mafia_engine/releases)
 [![Docs](https://readthedocs.org/projects/open-mafia-engine/badge/?version=latest)](https://open-mafia-engine.readthedocs.io/en/latest/)
 
 [![Test Python package "open_mafia_engine"](https://github.com/open-mafia/open_mafia_engine/actions/workflows/python-testing.yml/badge.svg)](https://github.com/open-mafia/open_mafia_engine/actions/workflows/python-testing.yml)
