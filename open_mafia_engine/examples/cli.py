@@ -139,7 +139,7 @@ def update_status_text():
                             vls.append("No Lynch")
                         else:
                             vls.append(str(vl))
-                        vres.append("  " + ", ".join(vls))
+                    vres.append("  " + ", ".join(vls))
                 except Exception:
                     pass
                 txt += "\n" + "\n".join(vres)
