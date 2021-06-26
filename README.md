@@ -17,9 +17,9 @@ from either "real-life" games or online forums such as
 
 - Event-based architecture, which allows for very complex interactions.
 - Many built-in abilities, victory conditions, etc.
-  (This is a lie, but we're working on it!)
+  (Not "many" yet, but we're working on it!)
 - Games are defined declaratively or using an parametrized GameBuilder.
-- Open source & extensible, with a plugin system in the works.
+- Open source & extensible.
 
 ## Installing
 
@@ -44,6 +44,14 @@ game = builder.build(players)
 
 ## Example Application
 
-This repository includes an example command-line application:
+This repository includes an example text-based Mafia app, runnable like:
 
-[![Example CLI Application](docs/examples/ExampleMafiaCLI.gif)]
+```bash
+mafia-cli
+# or
+python -m open_mafia_engine.example.cli
+```
+
+This is what the UI looks like:
+
+![Example CLI Application](docs/examples/ExampleMafiaCLI.gif)

@@ -20,6 +20,7 @@ nav:
   - "Development":
       - "Installing for dev": development/installing_dev.md
       - "Writing Docs": development/writing_docs.md
+      - "Example Applications": examples/index.md
   - About: about.md
 
 theme:
