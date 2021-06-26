@@ -42,7 +42,8 @@ players = ['Alice', 'Bob', 'Charlie', 'Dave', 'Eddie']
 game = builder.build(players)
 ```
 
-Actually running commands in the engine is pretty complicated for now.
-We're working to improve the experience.
+## Example Application
 
-See `playground.py` in the repository for an example game.
+This repository includes an example command-line application:
+
+[![Example CLI Application](docs/examples/ExampleMafiaCLI.gif)]
