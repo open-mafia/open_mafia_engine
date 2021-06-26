@@ -2,6 +2,7 @@
 
 import shlex
 import traceback
+from textwrap import dedent, indent
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.document import Document
@@ -70,10 +71,25 @@ def set_status_text(msg: str):
 
 
 def update_status_text():
+    admstr = ", ".join(runner.lobby.admin_names)
     if runner.in_game:
-        txt = "[In Game]\n"
+        game: mafia.Game = runner.game
+        txt = f"[In Game]\n\nAdmins: {admstr}\nPhase: {game.current_phase.name}\n"
+        for act in game.actors:
+            txt += (
+                "\n-----------------\n"
+                + f"{act.name} - {', '.join(f.name for f in act.factions)}"
+                + indent(
+                    "\n".join([abil.full_description() for abil in act.abilities]),
+                    "  ",
+                )
+            )
+            if len(act.status) > 0:
+                txt += "\nStatus:" + "\n".join(
+                    [f"  {k}: {v}" for k, v in act.status.items()]
+                )
     else:
-        txt = "[In Lobby]\n\n"
+        txt = f"[In Lobby]\n\nAdmins: {admstr}\nPlayers:\n"
         if len(runner.lobby.players) == 0:
             txt += "  <no players>"
         else:
