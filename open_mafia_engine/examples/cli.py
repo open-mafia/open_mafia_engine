@@ -1,5 +1,14 @@
 """Example command-line application built using prompt_toolkit and open_mafia_engine."""
 
+try:
+    import prompt_toolkit
+except ImportError:
+    raise ImportError(
+        "Please install prompt_toolkit, either directly or via extras:\n"
+        "pip install open_mafia_engine[examples]",
+        name="prompt_toolkit",
+    )
+
 import shlex
 import traceback
 from textwrap import indent
