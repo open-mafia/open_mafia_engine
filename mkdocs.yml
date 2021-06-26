@@ -10,6 +10,8 @@ use_directory_urls: false
 
 nav:
   - Home: index.md
+  - "Getting Started":
+      - "Quickstart": getting_started/quickstart.md
   - "User Guide":
       - "Main Concepts": user_guide/concepts.md
       - "Game State": user_guide/state.md
@@ -23,7 +25,6 @@ nav:
       - "Command Interface": reference/commands.md
       - "Utility Functions": reference/util.md
       - "Exceptions": reference/errors.md
-      #
   - "Development":
       - "Installing for dev": development/installing_dev.md
       - "Writing Docs": development/writing_docs.md

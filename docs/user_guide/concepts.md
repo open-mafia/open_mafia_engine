@@ -13,7 +13,7 @@ is that you can reach *anything* game-related via the `Game` instance.
 
 ## GameObject
 
-All engine objects inherit from [`GameObject`](../reference/game_object.md#GameObject).
+All engine objects inherit from [`GameObject`][open_mafia_engine.core.game_object.GameObject].
 This class gives a reasonably readable `__repr__` for free, and also tracks
 all non-abstract subclasses.
 

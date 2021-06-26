@@ -27,9 +27,9 @@ from either "real-life" games or online forums such as
 
 ## Installing
 
-Install the latest stable version via pip:
+Install the latest stable version, with recommended dependencies, via pip:
 
-`pip install open_mafia_engine`
+`pip install open_mafia_engine[recommended]`
 
 See the [dev docs](development/installing_dev.md) to install for local
 development (using Poetry).
