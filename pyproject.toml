@@ -31,8 +31,6 @@ mkdocs = { version="^1.1.2", optional=true }
 "mkdocs-material" = { version="^7.1.8", optional=true }
 mkdocstrings = { version="^0.15.2", optional=true }
 pymdown-extensions = { version="^8.2", optional=true }
-beautifulsoup4 = { version="^4.9.3", optional=true }
-requests = { version="^2.25.1", optional=true }
 "ruamel.yaml" = { version="^0.17.4", optional=true }
 flake8 = { version="^3.9.2", optional=true }
 mypy = { version="^0.800", optional=true }
@@ -41,13 +39,12 @@ pygments = { version="~2.9.0", optional=true }
 prompt-toolkit = { version="^3.0.19", optional=true }
 
 [tool.poetry.extras]
-bay12 = ["beautifulsoup4", "requests"]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "pymdownx", "pygments"]
-ruamel = ["ruamel.yaml"]
 dev = ["flake8", "mypy", "pytest"]
-test = ["pytest"]
-pygments = ["pygments"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "pymdownx", "pygments"]
 examples = ["prompt-toolkit", "pygments"]
+pygments = ["pygments"]
+ruamel = ["ruamel.yaml"]
+test = ["pytest"]
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
@@ -56,6 +53,9 @@ pytest = "^6.2.2"
 mkdocs = "^1.1.2"
 isort = "^5.7.0"
 mypy = "^0.800"
+
+[tool.poetry.scripts]
+mafia-cli = 'open_mafia_engine.examples.cli:main'
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
