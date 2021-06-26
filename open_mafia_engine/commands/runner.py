@@ -328,6 +328,7 @@ class CommandRunner(Generic[TUser]):
         """Creates the game.
 
         TODO: Need to standardize builder options.
+        For example, 'game name' would be pretty important!
         """
         if self.in_game:
             raise ValueError("BUG. Currently in a game - can't create one.")
