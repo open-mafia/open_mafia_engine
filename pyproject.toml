@@ -38,9 +38,8 @@ mypy = { version="^0.800", optional=true }
 [tool.poetry.extras]
 recommended = ["prompt-toolkit", "pygments", "pytest"] # to run examples and tests
 dev = ["flake8", "mypy", "pytest"]
-docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "pymdownx", "pygments"]
+docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "pymdown-extensions", "pygments"]
 examples = ["prompt-toolkit", "pygments"]
-pygments = ["pygments"]
 test = ["pytest"]
 
 [tool.poetry.dev-dependencies]
