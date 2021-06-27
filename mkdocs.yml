@@ -15,8 +15,7 @@ nav:
       - "Main Concepts": user_guide/concepts.md
       - "Game State": user_guide/state.md
       - "Abilities": user_guide/abilities.md
-      - "Outcomes": user_guide/outcomes.md
-      - "Prefabs": user_guide/prefabs.md
+      - "Outcomes: Winning and Losing": user_guide/outcomes.md
   - "Reference":
       - "Core": reference/core.md
       - "Game Builders": reference/builders.md

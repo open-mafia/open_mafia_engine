@@ -1,4 +1,4 @@
-# Outcomes - Winning and Losing
+# Outcomes: Winning and Losing
 
 ## Outcome Basics
 
@@ -30,5 +30,5 @@ auxiliary object - it keeps track of all outcomes and creates the `EndTheGame`
 action, followed by the `EGameEnded` event.
 
 Currently, nothing actually happens when the game ends, but you can subscribe
-to the `EGameEnded` event in your own application (via `AuxGameObject`) to wrap
+to the `EGameEnded` event in your own application (via `AuxObject`) to wrap
 up the game and award the victory to the proper alignment(s).

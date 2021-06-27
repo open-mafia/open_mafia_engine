@@ -1,4 +1,4 @@
-# Core Concepts
+# Main Concepts
 
 ## Game
 
@@ -109,21 +109,3 @@ Creating a simple action is fairly simple, since all this response logic is part
 of the Engine itself. More involved actions can require multiple types (e. g. an
 `Action`, `Ability` and some sort of watcher), but another framework would not be
 this flexible. Events can make debugging interactions fairly difficult, though.
-
-## Class Reference
-
-::: open_mafia_engine.core.event_system
-    handler: python
-    rendering:
-        docstring_style: numpy
-        heading_level: 3
-        show_source: false
-        # show_root_heading: false
-
-::: open_mafia_engine.core.state
-    handler: python
-    rendering:
-        docstring_style: numpy
-        heading_level: 3
-        show_source: false
-        # show_root_heading: false
