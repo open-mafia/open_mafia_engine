@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-mafia-engine"
-version = "0.5.0-beta.2"
+version = "0.5.0"
 readme = "README.md"
 description = "Open Mafia Engine - a framework for mafia/werewolf games."
 authors = ["Open Mafia Team <openmafiateam@gmail.com>"]
