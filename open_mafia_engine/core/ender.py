@@ -67,7 +67,7 @@ class EndTheGame(Action):
 
     def doit(self):
         """Ends the game, setting the phase to 'shutdown'."""
-        self.game.phase_system.current_phase = self.game.phase_system.shutdown
+        self.game.change_phase(self.game.phase_system.shutdown)
 
 
 class GameEnder(AuxObject):

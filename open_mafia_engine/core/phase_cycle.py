@@ -295,13 +295,14 @@ class SimplePhaseCycle(AbstractPhaseSystem):
     def bump_phase(self) -> Phase:
         """Updates the phase to use the next one, then returns the current one.
 
-        Trying to bump on `shutdown` phase will raise an error.
+        Trying to bump on `shutdown` phase will be ignored.
         """
         if self._i == self._STARTUP:
             self._i = 0
             return self.current_phase
         elif self._i == self._SHUTDOWN:
-            raise ValueError(f"Cannot bump shutdown phase: {self.shutdown}")
+            return self.current_phase
+            # raise ValueError(f"Cannot bump shutdown phase: {self.shutdown}")
         self._i += 1
         return self.current_phase
 

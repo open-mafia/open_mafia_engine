@@ -3,14 +3,14 @@
 # flake8: noqa
 import warnings as _w
 
-from .lobby import AbstractLobby
+from .lobby import AbstractLobby, AutoAddStrLobby, SimpleDictLobby
 from .parser import AbstractCommandParser, ShellCommandParser
 from .raw import RawCommand, TUser
 from .runner import CommandHandler, CommandRunner, command
 
 PYGMENTS_AVAILABLE: bool
 try:
-    from .cli_lexer import MafiaCliLexer
+    from .cli_lexer import ImplicitMafiaCliLexer, MafiaCliLexer
 
     PYGMENTS_AVAILABLE = True
 except ImportError:

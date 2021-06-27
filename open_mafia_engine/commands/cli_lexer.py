@@ -3,39 +3,88 @@
 from pygments.lexer import RegexLexer
 from pygments.token import *
 
-__all__ = ["MafiaCliLexer"]
+__all__ = ["MafiaCliLexer", "ImplicitMafiaCliLexer"]
 
 
 class MafiaCliLexer(RegexLexer):
-    """Custom Pygments lexer for Mafia command-line parser. Not very complete.
+    """Custom Pygments lexer for 'multi-user' Mafia command-line parser.
+
+    Current syntax:
+
+        USER COMMAND <arg> <arg>
+
+    No argument validation is done, only quoting.
+    """
+
+    name = "MultiMafia"
+    aliases = ["multi-mafia"]
+    filenames = []
+
+    tokens = {
+        "root": [
+            (R"^\s*", Text, "user"),
+        ],
+        "user": [
+            (R'"', Name.Variable, "user-quote"),
+            (R"\b\S+\b", Name.Variable, "command"),
+        ],
+        "user-quote": [
+            ('[^"]+', Name.Variable),
+            ('"', Name.Variable, "command"),
+        ],
+        "command": [
+            (R'"', Name.Exception, "command-quote"),
+            (R"\b\S+\b", Name.Exception, "args"),
+        ],
+        "command-quote": [
+            ('[^"]+', Name.Exception),
+            ('"', Name.Exception, "args"),
+        ],
+        "args": [
+            (R'"', String.Double, "args-quote"),
+            (R"\b.*\n", Text, "root"),
+            (R"\s+\n", Text, "root"),
+        ],
+        "args-quote": [
+            ('[^"]+', String.Double),
+            ('"', String.Double, "#pop"),
+        ],
+    }
+
+
+class ImplicitMafiaCliLexer(RegexLexer):
+    """Custom Pygments lexer for 'single-user' Mafia command-line parser.
 
     Current syntax:
 
         COMMAND <arg> <arg>
 
-    There is also support for multi-line comments, but they should be removed.
-    It was mostly for testing highlighting support. :)
+    No argument validation is done, only quoting.
     """
 
-    name = "Mafia"
-    aliases = ["mafia"]
+    name = "ImplicitMafia"
+    aliases = ["implicit-mafia", "single-mafia"]
     filenames = []
 
     tokens = {
         "root": [
-            (R"\b^[\w'-]+\b", Keyword),
-            (R"/\*", Keyword.Pseudo, "comment"),
-            (R"\"", Name.Variable, "complexquote"),
-            (R"\s", Text),
+            (R"^\s*", Text, "command"),
         ],
-        "complexquote": [
-            (R"\"", Name.Variable, "#pop"),
-            (R"\S", Name.Variable),
+        "command": [
+            (R'"', Name.Exception, "command-quote"),
+            (R"\b\S+\b", Name.Exception, "args"),
         ],
-        "comment": [
-            (R"[^*/]", Keyword.Pseudo),
-            (R"/\*", Keyword.Pseudo, "#push"),
-            (R"\*/", Keyword.Pseudo, "#pop"),
-            (R"[*/]", Keyword.Pseudo),
+        "command-quote": [
+            ('[^"]+', Name.Exception),
+            ('"', Name.Exception, "args"),
+        ],
+        "args": [
+            (R'"', String.Double, "args-quote"),
+            (R"\b.*\n", Text, "root"),
+            (R"\s+\n", Text, "root"),
+        ],
+        "args-quote": [
+            ('[^"]+', String.Double),
+            ('"', String.Double, "#pop"),
         ],
     }
