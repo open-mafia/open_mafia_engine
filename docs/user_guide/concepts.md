@@ -1,8 +1,12 @@
 # Main Concepts
 
+This page, along with the rest of the User Guide, helps understand how the
+Open Mafia Engine is built and how to build your own, custom things on top.
+
 ## Game
 
-`Game` is the main class of the Engine. It does the following:
+[`Game`][open_mafia_engine.core.game.Game] is the main class of the Engine.
+It does the following:
 
 1. Holds all game state (players, alignments, phases, etc.)
 2. Handles subscriptions, broadcasts and processes events.
@@ -18,23 +22,26 @@ This class gives a reasonably readable `__repr__` for free, and also tracks
 all non-abstract subclasses.
 
 Each `GameObject` holds a refence to its parent `Game`, which allows it to
-automatically use [converters](utilities.md#converters) in the `__init__` method,
-as long as you use typing hints to define your custom classes.
+automatically use [converters][open_mafia_engine.core.game_object.inject_converters] in the `__init__` method,
+or elsewhere, as long as you use [typing hints](https://docs.python.org/3/library/typing.html).
 
 ## Events, Actions and Subscribers
 
 The Open Mafia Engine is primarily Event-based, see
 [Event-driven Architecture on Wikipedia](https://en.wikipedia.org/wiki/Event-driven_architecture).
 
-An `Event` typically represents some change in the game's state.
+An [`Event`][open_mafia_engine.core.event_system.Event] typically represents some change in the game's state.
 
-An `Action` is essentially a delayed function call.
+An [`Action`][open_mafia_engine.core.event_system.Action] is essentially a delayed function call.
 Each `Action` object references its `source` (the entity that created the action),
 some parameters, `priority` and whether it's `cancelled`.
 
-A `Subscriber` object subscribes to particular types of
-events. An `EventHandler` (usually a method wrapped in `@handler` or `@handles`)
-takes particular types of `Event`s and returns one or more `Action`s (the response).
+A [`Subscriber`][open_mafia_engine.core.event_system.Subscriber]
+object subscribes to particular types of events through event handlers.
+An [`EventHandler`][open_mafia_engine.core.event_system.EventHandler]
+(usually a method wrapped in [`@handler`][open_mafia_engine.core.event_system.handler]
+or [`@handles`][open_mafia_engine.core.event_system.handles])
+takes particular types of `Event`s and returns zero or more `Action`s (the response).
 
 ## Event and Action Logic
 
@@ -46,13 +53,15 @@ Let's go through the event handling logic.
 2. The `game` broadcasts to all event handlers for `e`.
 3. Each handler responds to the event, returning `None` or a list of `Action`s.
 4. Each `Action` is added to the `game.action_queue`
-5. Depending on the phase, the `ActionQueue` is proccessed either immediately or at the end of the phase.
+5. Depending on the phase, the [`ActionQueue`][open_mafia_engine.core.event_system.ActionQueue]
+   is proccessed either immediately or at the end of the phase.
 
 Essentially, each `EventHandler` a delayed `Action` in response to the `Event`.
 
 ### Action Queues
 
-An `ActionQueue` is just that - a queue of delayed actions.
+An [`ActionQueue`][open_mafia_engine.core.event_system.ActionQueue]
+is just that - a queue of delayed actions.
 Actions are sorted by their `priority` (higher priority goes first), then by the
 order they were recieved. This means the action order should be deterministic.
 
@@ -67,12 +76,12 @@ Each `ActionQueue` also holds the history of executed actions, for reference
 `ActionQueue.process_all(game)` runs through all enqueued actions one by one.
 For each action:
 
-1. An `EPreAction` (pre-action `Event`) is created.
+1. An [`EPreAction`][open_mafia_engine.core.event_system.EPreAction] (pre-action `Event`) is created.
 2. This `EPreAction` is broadcast to all relevant `Subscriber`s, who create `Action`s in response.
 3. A new, secondary `ActionQueue` is formed using these actions, and that queue is run through.
 4. If the current `Action` was cancelled,
 5. Otherwise, `action.doit(game)` is run (i. e. the action occurs).
-6. An `EPostAction` (post-action `Event`) is created and broadcast.
+6. An [`EPostAction`][open_mafia_engine.core.event_system.EPostAction] (post-action `Event`) is created and broadcast.
 7. The responses to the `EPostAction` form their own `ActionQueue` that is also run through.
 8. The history of all sub-queues is added to the current history, along with the action itself.
 
@@ -93,7 +102,7 @@ This sort of event framework is common in many user interface applications,
 though usually it's done in a top-down manner, with callbacks depending on
 changes in the state.
 
-In the Open Mafia Engine, you can think of `Subscriber`s as being the "callbacks",
+In the Open Mafia Engine, you can think of `EventHandler`s as being the "callbacks",
 and the `Action`s as their effects.
 
 However, in order to allow "countering" or otherwise modifying actions (for example,

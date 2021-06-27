@@ -4,20 +4,25 @@
 
 The most familiar type of ability for mafia players is the "activated" ability,
 where the player decides when to "activate" the ability. This is represented in
-the engine by the `Ability` type. Some examples: voting, night kills, protection,
-role blocking, double-voting.
+the engine by the [`Ability`][open_mafia_engine.core.state.Ability] type.
+Some examples: voting, night kills, protection, role blocking, double-voting.
 
-"Automatic" or "passive" abilities are `Triggers`, which perform actions
-in response to external events. Though the player may percieve these to be
-different (e. g. having multiple lives seems different than being a Paranoid
-Gun Owner), the implementation is similar: both `subscribe` to particular
-`Event` types and create `Action`s in response.
+"Automatic" or "passive" abilities are [`Triggers`][open_mafia_engine.core.state.Trigger],
+which perform actions in response to external events.
+Though the player may percieve these to be different (e. g. having multiple lives
+seems different than being a Paranoid Gun Owner), the implementation is similar:
+both handle particular `Event` types and create `Action`s in response.
+
+Note that both are derived from [`ATBase`][open_mafia_engine.core.state.ATBase].
+This class automatically applies [`Constraint`s][open_mafia_engine.core.event_system.Constraint]
+to objects' event handlers.
 
 ## Abilities
 
 An `Ability` is probably the easiest case to implement.
-It handles `EActivateAbility` events, which signal that we want to activate a
-particular ability, and responds with a corresponding `Action`, given the params.
+It handles [`EActivate`][open_mafia_engine.core.state.EActivate] events,
+which signal that we want to activate a particular ability, and responds with
+a corresponding `Action`, given the sent parameters.
 
 To create a custom Ability, you can either `Ability` and override
 the `activate()` (and possibly `__init__()`) method(s):
@@ -53,9 +58,9 @@ The most typical ones are:
 - The source (`Actor`, parent of `ability`) must be alive.
 - The target must be alive (if an `Actor`).
 - You can use the ability only during the (day) or (night).
-- Only one player from your `Alignment` may use this ability, and once per night.
+- Only one player from your `Faction` may use this ability, and once per night.
 
-These conditions are represented by `Constraint` objects.
+These conditions are represented by [`Constraint`][open_mafia_engine.core.event_system.Constraint] objects.
 If a `Constraint` is violated, the `Ability` or `Trigger` doesn't actually return
 the action(s) back to the action queue that called it, which means the ability or
 trigger don't actually run.
