@@ -16,6 +16,10 @@ nav:
       - "Game State": user_guide/state.md
       - "Abilities": user_guide/abilities.md
       - "Outcomes: Winning and Losing": user_guide/outcomes.md
+  - "Development":
+      - "Installing for dev": development/installing_dev.md
+      - "Example Applications": examples/index.md
+      - "Writing Docs": development/writing_docs.md
   - "Reference":
       - "Core": reference/core.md
       - "Game Builders": reference/builders.md
@@ -23,10 +27,6 @@ nav:
       - "Command Interface": reference/commands.md
       - "Utility Functions": reference/util.md
       - "Exceptions": reference/errors.md
-  - "Development":
-      - "Installing for dev": development/installing_dev.md
-      - "Writing Docs": development/writing_docs.md
-      - "Example Applications": examples/index.md
   - About: about.md
 
 theme:
