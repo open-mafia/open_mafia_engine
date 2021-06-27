@@ -29,6 +29,21 @@ the `activate()` (and possibly `__init__()`) method(s):
 
 ```python
 class MyAbility(Ability):
+
+    def __init__(
+        self,
+        game: Game,
+        /,
+        owner: Actor, 
+        name: str,
+        desc: str = "Does arg2 to arg1.",
+        *,
+        use_default_constraints: bool = True,
+    ):
+        super().__init__(
+            game, owner, name=name, desc=desc, 
+            use_default_constraints=use_default_constraints,
+        )
     
     def activate(self, arg1: Actor, arg2: str) -> Optional[List[Action]]:
         return []
@@ -42,7 +57,9 @@ MyAbility = Ability.generate(
 )
 ```
 
-This does the same as the above, but auto-generates the `MyAbility` class.
+This does the same as the above, but auto-generates the `MyAbility` class
+(note that "name" in the generator is the class name, while "name" in the
+`__init__` function is the display name of the ability.)
 
 ## Triggers
 
@@ -63,6 +80,5 @@ The most typical ones are:
 These conditions are represented by [`Constraint`][open_mafia_engine.core.event_system.Constraint] objects.
 If a `Constraint` is violated, the `Ability` or `Trigger` doesn't actually return
 the action(s) back to the action queue that called it, which means the ability or
-trigger don't actually run.
-
-TODO: Update constraint docs, I removed the outdated section.
+trigger don't actually run. It will currently just send a warning to the logging
+module... this is not super elegant, but it works well enough for now. 😅
