@@ -9,15 +9,6 @@ game objects.
 The Mafia Console App is a full-screen console application written using the
 `open_mafia_engine` and `prompt_toolkit`.
 
-To be able to run it, make sure you installed `open_mafia_engine` with at least
-the `examples` extra:
-
-```bash
-pip install open_mafia_engine[examples]
-# or, if developing locally:
-poetry install -E examples
-```
-
 This is what it looks like:
 
 ![Example CLI Application](ExampleMafiaCLI.gif)
@@ -25,6 +16,15 @@ This is what it looks like:
 The left panel shows the current state, both when in a lobby and when in an
 actual game. The right panel shows the command history. The input is at the
 bottom, and it has some auto-completion and highlighting.
+
+To be able to run it, make sure you installed `open_mafia_engine` with at least
+the `examples` extra (`recommended` also works):
+
+```bash
+pip install open_mafia_engine[examples]
+# or, if developing locally:
+poetry install -E examples
+```
 
 To get started, run the app:
 

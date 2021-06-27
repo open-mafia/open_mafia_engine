@@ -12,13 +12,14 @@ nav:
   - Home: index.md
   - "Quickstart": getting_started/quickstart.md
   - "User Guide":
-      - "Main Concepts": user_guide/concepts.md
+      - "Base Objects": user_guide/base_objects.md
+      - "Event System": user_guide/event_system.md
       - "Game State": user_guide/state.md
       - "Abilities": user_guide/abilities.md
-      - "Outcomes: Winning and Losing": user_guide/outcomes.md
+      - "Outcomes and Game End": user_guide/outcomes.md
   - "Development":
-      - "Installing for dev": development/installing_dev.md
       - "Example Applications": examples/index.md
+      - "Development Setup": development/installing_dev.md
       - "Writing Docs": development/writing_docs.md
   - "Reference":
       - "Core": reference/core.md

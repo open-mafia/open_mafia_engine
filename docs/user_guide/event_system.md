@@ -1,34 +1,10 @@
-# Main Concepts
-
-This page, along with the rest of the User Guide, helps understand how the
-Open Mafia Engine is built and how to build your own, custom things on top.
-
-## Game
-
-[`Game`][open_mafia_engine.core.game.Game] is the main class of the Engine.
-It does the following:
-
-1. Holds all game state (players, alignments, phases, etc.)
-2. Handles subscriptions, broadcasts and processes events.
-3. Resolves actions in the proper order.
-
-These things will be discussed later. The main thing to keep in mind for now
-is that you can reach *anything* game-related via the `Game` instance.
-
-## GameObject
-
-All engine objects inherit from [`GameObject`][open_mafia_engine.core.game_object.GameObject].
-This class gives a reasonably readable `__repr__` for free, and also tracks
-all non-abstract subclasses.
-
-Each `GameObject` holds a refence to its parent `Game`, which allows it to
-automatically use [converters][open_mafia_engine.core.game_object.inject_converters] in the `__init__` method,
-or elsewhere, as long as you use [typing hints](https://docs.python.org/3/library/typing.html).
-
-## Events, Actions and Subscribers
+# Event System
 
 The Open Mafia Engine is primarily Event-based, see
 [Event-driven Architecture on Wikipedia](https://en.wikipedia.org/wiki/Event-driven_architecture).
+The Event/Action system is what drives all state change in the game.
+
+## Events, Actions and Subscribers
 
 An [`Event`][open_mafia_engine.core.event_system.Event] typically represents some change in the game's state.
 
